@@ -1,0 +1,219 @@
+---
+import "../styles/globals.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  ogUrl?: string;
+  ogType?: string;
+  lang?: string;
+  navItems?: Array<{ label: string; href: string }>;
+}
+
+const {
+  title = "Automation List",
+  description = "Discover the best automation tools and workflows for your productivity needs.",
+  ogTitle,
+  ogDescription = description,
+  ogImage,
+  ogUrl,
+  ogType = "website",
+  lang = "en",
+  navItems: navItemsProp,
+} = Astro.props;
+
+const navItems = navItemsProp || [
+  { label: "Home", href: "/eng/" },
+  { label: "Features", href: "/eng/features" },
+  { label: "Categories", href: "/eng/categories" },
+  { label: "Blog", href: "/eng/blog" },
+  { label: "Contact", href: "/eng/contact" },
+];
+
+// Language switching logic
+const currentPath = Astro.url.pathname;
+const isGerman = currentPath.startsWith("/de/");
+const isEnglish = currentPath.startsWith("/eng/");
+
+// Determine the target language and URL
+let languageToggleUrl: string;
+let languageToggleLabel: string;
+
+if (isGerman) {
+  // Currently on German page, switch to English
+  // Replace /de/ with /eng/
+  languageToggleUrl = currentPath.replace(/^\/de/, "/eng") || "/eng/";
+  languageToggleLabel = "EN";
+} else if (isEnglish) {
+  // Currently on English page, switch to German
+  // Replace /eng/ with /de/
+  languageToggleUrl = currentPath.replace(/^\/eng/, "/de") || "/de/";
+  languageToggleLabel = "DE";
+} else {
+  // Fallback for root pages or other paths
+  // Default to switching to German
+  languageToggleUrl = "/de/";
+  languageToggleLabel = "DE";
+}
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={ogTitle || title} />
+    <meta property="og:description" content={ogDescription} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogUrl && <meta property="og:url" content={ogUrl} />}
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content={ogTitle || title} />
+    <meta property="twitter:description" content={ogDescription} />
+    {ogImage && <meta property="twitter:image" content={ogImage} />}
+
+    <!-- MailerLite Universal -->
+    <script is:inline>
+      (function (w, d, e, u, f, l, n) {
+        w[f] =
+          w[f] ||
+          function () {
+            (w[f].q = w[f].q || []).push(arguments);
+          };
+        l = d.createElement(e);
+        l.async = 1;
+        l.src = u;
+        n = d.getElementsByTagName(e)[0];
+        n.parentNode.insertBefore(l, n);
+      })(window, document, "script", "https://assets.mailerlite.com/js/universal.js", "ml");
+      window.ml && window.ml("account", "1905335");
+    </script>
+    <!-- End MailerLite Universal -->
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-orange-500 shadow-sm">
+      <nav class="container-px mx-auto max-w-7xl">
+        <div class="flex items-center justify-between h-12">
+          <!-- LOGO -->
+          <div class="flex-shrink-0">
+            <a href={isGerman ? "/de/" : isEnglish ? "/eng/" : "/eng/"} class="text-lg font-bold text-gray-900 hover:text-brand-600 transition-colors">
+              Automation List
+            </a>
+          </div>
+
+          <!-- NAV LINKS -->
+          <div class="hidden md:flex items-center space-x-1">
+            {navItems.map((item) => (
+              <a
+                href={item.href}
+                class="text-sm font-medium text-gray-900 px-2.5 py-1 rounded-md hover:bg-brand-50 transition-colors"
+                class:list={[
+                  Astro.url.pathname === item.href && "bg-brand-100 text-brand-600"
+                ]}
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+
+          <!-- DE TOGGLE & MOBILE MENU -->
+          <div class="flex items-center space-x-3">
+            <a
+              href={languageToggleUrl}
+              class="text-sm font-medium text-gray-700 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50 transition-colors"
+              aria-label={`Switch to ${languageToggleLabel === "DE" ? "German" : "English"}`}
+            >
+              {languageToggleLabel}
+            </a>
+
+            <!-- MOBILE MENU BUTTON -->
+            <button
+              type="button"
+              class="md:hidden p-1.5 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label="Toggle menu"
+              id="mobile-menu-toggle"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- MOBILE MENU -->
+        <div
+          id="mobile-menu"
+          class="hidden md:hidden border-t border-orange-500 py-3"
+        >
+          <div class="flex flex-col space-y-2">
+            {navItems.map((item) => (
+              <a
+                href={item.href}
+                class="text-sm font-medium text-gray-700 hover:text-brand-600 transition-colors px-3 py-1.5 rounded-md hover:bg-gray-50"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main>
+      <slot />
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-200 bg-white mt-auto">
+      <div class="container-px mx-auto max-w-7xl py-8">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+          <!-- COPYRIGHT -->
+          <div class="text-sm text-gray-600 mb-4 md:mb-0">
+            © {new Date().getFullYear()} Automation List. All rights reserved.
+          </div>
+
+          <!-- FOOTER LINKS -->
+          <div class="flex items-center space-x-6">
+            {navItems.map((item) => (
+              <a
+                href={item.href}
+                class="text-sm text-gray-600 hover:text-brand-600 transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- MOBILE MENU SCRIPT -->
+    <script>
+      const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+      const mobileMenu = document.getElementById("mobile-menu");
+
+      mobileMenuToggle?.addEventListener("click", () => {
+        mobileMenu?.classList.toggle("hidden");
+      });
+    </script>
+  </body>
+</html>
+

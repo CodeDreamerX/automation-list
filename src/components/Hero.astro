@@ -1,0 +1,134 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  exploreVendorsText?: string;
+  submitCompanyText?: string;
+  highlightText?: string;
+}
+
+const {
+  title = "The Independent Directory for Industrial Automation",
+  description = "Discover vendors, products, and integrators for industrial automation solutions—all in one unbiased platform.",
+  exploreVendorsText = "Explore Vendors",
+  submitCompanyText = "Submit Your Company",
+  highlightText = "Industrial Automation",
+} = Astro.props;
+
+// Function to split title into parts for highlighting
+function splitTitle(fullTitle: string, highlight: string): Array<{ text: string; highlight: boolean }> {
+  if (!highlight) return [{ text: fullTitle, highlight: false }];
+  
+  // Escape special regex characters
+  const escaped = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts: Array<{ text: string; highlight: boolean }> = [];
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = regex.exec(fullTitle)) !== null) {
+    // Add text before match
+    if (match.index > lastIndex) {
+      parts.push({ text: fullTitle.slice(lastIndex, match.index), highlight: false });
+    }
+    // Add highlighted match
+    parts.push({ text: match[1], highlight: true });
+    lastIndex = regex.lastIndex;
+  }
+  
+  // Add remaining text
+  if (lastIndex < fullTitle.length) {
+    parts.push({ text: fullTitle.slice(lastIndex), highlight: false });
+  }
+  
+  // If no matches found, return original title
+  if (parts.length === 0) {
+    return [{ text: fullTitle, highlight: false }];
+  }
+  
+  return parts;
+}
+
+const titleParts = splitTitle(title, highlightText);
+---
+<section id="hero" class="relative py-8 md:py-12 overflow-hidden hero-section">
+  <!-- Plain white background -->
+  <div class="absolute inset-0 bg-white"></div>
+  
+  <div class="container-px mx-auto max-w-7xl relative z-10">
+    <div class="max-w-3xl mx-auto text-center">
+      <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 hero-heading">
+        {titleParts.map((part) => {
+          if (part.highlight) {
+            return <span class="text-highlight">{part.text}</span>;
+          }
+          return part.text;
+        })}
+      </h1>
+      <p class="text-base md:text-lg text-[#495057] mb-6 leading-relaxed hero-description">
+        {description}
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a 
+          href="/vendors" 
+          class="hero-btn-primary text-sm px-5 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6EEB] focus-visible:ring-offset-2"
+        >
+          {exploreVendorsText}
+        </a>
+        <a 
+          href="/submit" 
+          class="hero-btn-secondary text-sm px-5 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6EEB] focus-visible:ring-offset-2"
+        >
+          {submitCompanyText}
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    .hero-heading {
+      color: #212529;
+      line-height: 1.2;
+    }
+    
+    .text-highlight {
+      color: #2F6EEB;
+      display: block;
+      margin-top: 0.25rem;
+      margin-bottom: 0.25rem;
+      font-weight: bold;
+    }
+    
+    .hero-description {
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    
+    .hero-btn-primary {
+      background-color: #2F6EEB;
+      color: #FFFFFF;
+      border-radius: 0.25rem;
+      border: none;
+      transition: background-color 0.2s ease;
+      font-weight: 500;
+    }
+    
+    .hero-btn-primary:hover {
+      background-color: #2563eb;
+    }
+    
+    .hero-btn-secondary {
+      background-color: #FFFFFF;
+      color: #2F6EEB;
+      border: 1px solid #2F6EEB;
+      border-radius: 0.25rem;
+      transition: background-color 0.2s ease;
+      font-weight: 500;
+    }
+    
+    .hero-btn-secondary:hover {
+      background-color: #f8f9fa;
+    }
+  </style>
+</section>
+

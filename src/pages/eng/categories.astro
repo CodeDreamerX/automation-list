@@ -1,0 +1,30 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Categories from "../../components/Categories.astro";
+
+const engNavItems = [
+  { label: "Home", href: "/eng/" },
+  { label: "Features", href: "/eng/features" },
+  { label: "Categories", href: "/eng/categories" },
+  { label: "Blog", href: "/eng/blog" },
+  { label: "Contact", href: "/eng/contact" },
+];
+---
+
+<BaseLayout 
+  title="Categories - Automation List"
+  description="Browse industrial automation categories including PLCs, SCADA/HMI, Robotics, Sensors & IO, Motion & Drives, and System Integrators."
+  lang="en"
+  navItems={engNavItems}
+>
+  <Categories />
+</BaseLayout>
+
+
+
+
+
+
+
+
+

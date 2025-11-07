@@ -1,0 +1,22 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Categories from "../../components/Categories.astro";
+
+const deNavItems = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Funktionen", href: "/de/features" },
+  { label: "Kategorien", href: "/de/categories" },
+  { label: "Blog", href: "/de/blog" },
+  { label: "Kontakt", href: "/de/contact" },
+];
+---
+
+<BaseLayout 
+  title="Kategorien - Automation List"
+  description="Durchsuchen Sie Industrieautomatisierungskategorien, einschließlich SPS, SCADA/HMI, Robotik, Sensoren & IO, Bewegung & Antriebe und Systemintegratoren."
+  lang="de"
+  navItems={deNavItems}
+>
+  <Categories />
+</BaseLayout>
+

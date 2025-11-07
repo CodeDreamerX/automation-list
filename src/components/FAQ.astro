@@ -1,0 +1,64 @@
+---
+interface Props {
+  title?: string;
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
+}
+
+const {
+  title = "Frequently Asked Questions",
+  faqs = [
+    {
+      question: "How do you maintain independence?",
+      answer: "We are completely independent. We don't accept paid placements, affiliate commissions, or any form of pay-to-rank. All vendors are evaluated using the same transparent criteria based on publicly available information.",
+    },
+    {
+      question: "Are categories transparent?",
+      answer: "Yes. Our categories are clearly defined and organized logically. Each vendor is placed in categories based on their actual products and capabilities, not marketing positioning.",
+    },
+    {
+      question: "Do vendors pay to be listed?",
+      answer: "No. There is no pay-to-rank system. Vendors cannot pay for better placement or visibility. All listings are based on objective information and user needs.",
+    },
+    {
+      question: "Can I submit my company to be listed?",
+      answer: "Yes! We welcome submissions from automation vendors. Use the 'Submit Your Company' button to send us your details. We'll review and add qualifying vendors to our directory—free of charge.",
+    },
+    {
+      question: "How do you ensure accuracy?",
+      answer: "We verify all information through public sources, vendor websites, and documentation. Our independent research ensures you get factual, unbiased information to make informed decisions.",
+    },
+  ],
+} = Astro.props;
+---
+
+<section id="faq" class="py-16 md:py-24 bg-white">
+  <div class="container-px mx-auto max-w-4xl">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+        {title}
+      </h2>
+      <div class="mx-auto w-16 h-1 bg-orange-500 rounded-full"></div>
+    </div>
+    <div class="space-y-4">
+      {faqs.map((faq) => (
+        <details class="card group">
+          <summary class="cursor-pointer font-semibold text-gray-900 list-none flex items-center justify-between">
+            <span class="group-hover:text-brand-600 transition-colors pr-4">{faq.question}</span>
+            <svg class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <div class="mt-4 pt-4 border-t border-gray-200">
+            <p class="text-gray-600 leading-relaxed">
+              {faq.answer}
+            </p>
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+

@@ -1,0 +1,39 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const engNavItems = [
+  { label: "Home", href: "/eng/" },
+  { label: "Features", href: "/eng/features" },
+  { label: "Categories", href: "/eng/categories" },
+  { label: "Blog", href: "/eng/blog" },
+  { label: "Contact", href: "/eng/contact" },
+];
+---
+
+<BaseLayout 
+  title="Automation List - Coming Soon"
+  description="Join our waitlist to be notified when Automation List launches. Discover the best automation tools and workflows for your productivity needs."
+  lang="en"
+  navItems={engNavItems}
+>
+  <section class="min-h-screen flex items-center justify-center bg-white py-16">
+    <div class="container-px mx-auto max-w-2xl text-center">
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+        Coming Soon
+      </h1>
+      <p class="text-xl md:text-2xl text-gray-600 mb-4">
+        The Independent Directory for Industrial Automation
+      </p>
+      <p class="text-base md:text-lg text-gray-500 mb-12 max-w-xl mx-auto">
+        We're building something amazing. Join our waitlist to get early access to our directory of trusted automation vendors and solutions.
+      </p>
+      
+      <div class="max-w-2xl mx-auto">
+        <div class="ml-embedded" data-form="eOFEpE"></div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+
+

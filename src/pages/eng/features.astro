@@ -1,0 +1,42 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Benefits from "../../components/Benefits.astro";
+
+const engNavItems = [
+  { label: "Home", href: "/eng/" },
+  { label: "Features", href: "/eng/features" },
+  { label: "Categories", href: "/eng/categories" },
+  { label: "Blog", href: "/eng/blog" },
+  { label: "Contact", href: "/eng/contact" },
+];
+---
+
+<BaseLayout 
+  title="Features - Automation List"
+  description="Discover the features of our independent industrial automation directory including vendor-neutral coverage, smart filtering, and verified profiles."
+  lang="en"
+  navItems={engNavItems}
+>
+  <section class="py-16 md:py-24 bg-white">
+    <div class="container-px mx-auto max-w-7xl">
+      <div class="max-w-3xl mx-auto text-center mb-16">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          Platform Features
+        </h1>
+        <p class="text-lg text-gray-700 leading-relaxed">
+          Our independent directory provides comprehensive, unbiased information about industrial automation solutions.
+        </p>
+      </div>
+      <Benefits />
+    </div>
+  </section>
+</BaseLayout>
+
+
+
+
+
+
+
+
+

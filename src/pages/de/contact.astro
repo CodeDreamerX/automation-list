@@ -1,0 +1,44 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const deNavItems = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Funktionen", href: "/de/features" },
+  { label: "Kategorien", href: "/de/categories" },
+  { label: "Blog", href: "/de/blog" },
+  { label: "Kontakt", href: "/de/contact" },
+];
+---
+
+<BaseLayout 
+  title="Kontakt - Automation List"
+  description="Kontaktieren Sie Automation List für Fragen, Einreichungen oder Partnerschaftsanfragen."
+  lang="de"
+  navItems={deNavItems}
+>
+  <section class="py-16 md:py-24 bg-white">
+    <div class="container-px mx-auto max-w-3xl">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+Kontaktieren Sie uns
+        </h1>
+        <p class="text-lg text-gray-700 leading-relaxed">
+Haben Sie Fragen oder möchten Sie Ihr Unternehmen einreichen? Wir würden gerne von Ihnen hören.
+        </p>
+      </div>
+      
+      <div class="card">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+Kontakt aufnehmen
+        </h2>
+        <p class="text-gray-600 mb-6">
+Für allgemeine Anfragen, Unternehmenseinreichungen oder Partnerschaftsmöglichkeiten kontaktieren Sie uns bitte.
+        </p>
+        <p class="text-gray-600">
+Kontaktformular kommt bald.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+

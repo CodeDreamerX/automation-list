@@ -1,0 +1,35 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const deNavItems = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Funktionen", href: "/de/features" },
+  { label: "Kategorien", href: "/de/categories" },
+  { label: "Blog", href: "/de/blog" },
+  { label: "Kontakt", href: "/de/contact" },
+];
+---
+
+<BaseLayout 
+  title="Blog - Automation List"
+  description="Neueste Artikel und Einblicke in Industrieautomatisierung, Technologietrends und Branchennachrichten."
+  lang="de"
+  navItems={deNavItems}
+>
+  <section class="py-16 md:py-24 bg-white">
+    <div class="container-px mx-auto max-w-7xl">
+      <div class="max-w-3xl mx-auto text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+Blog
+        </h1>
+        <p class="text-lg text-gray-700 leading-relaxed mb-8">
+Bleiben Sie auf dem Laufenden mit den neuesten Einblicken, Branchennachrichten und Technologietrends in der Industrieautomatisierung.
+        </p>
+        <p class="text-gray-600">
+Blogbeiträge kommen bald.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+

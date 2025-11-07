@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const engNavItems = [
+  { label: "Home", href: "/eng/" },
+  { label: "Features", href: "/eng/features" },
+  { label: "Categories", href: "/eng/categories" },
+  { label: "Blog", href: "/eng/blog" },
+  { label: "Contact", href: "/eng/contact" },
+];
+---
+
+<BaseLayout 
+  title="Blog - Automation List"
+  description="Latest articles and insights about industrial automation, technology trends, and industry news."
+  lang="en"
+  navItems={engNavItems}
+>
+  <section class="py-16 md:py-24 bg-white">
+    <div class="container-px mx-auto max-w-7xl">
+      <div class="max-w-3xl mx-auto text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          Blog
+        </h1>
+        <p class="text-lg text-gray-700 leading-relaxed mb-8">
+          Stay updated with the latest insights, industry news, and technology trends in industrial automation.
+        </p>
+        <p class="text-gray-600">
+          Blog posts coming soon.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+
+
+
+
+
+
+
+

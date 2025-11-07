@@ -1,0 +1,34 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Benefits from "../../components/Benefits.astro";
+
+const deNavItems = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Funktionen", href: "/de/features" },
+  { label: "Kategorien", href: "/de/categories" },
+  { label: "Blog", href: "/de/blog" },
+  { label: "Kontakt", href: "/de/contact" },
+];
+---
+
+<BaseLayout 
+  title="Funktionen - Automation List"
+  description="Entdecken Sie die Funktionen unseres unabhängigen Verzeichnisses für Industrieautomatisierung, einschließlich anbieterneutraler Abdeckung, intelligenter Filterung und verifizierter Profile."
+  lang="de"
+  navItems={deNavItems}
+>
+  <section class="py-16 md:py-24 bg-white">
+    <div class="container-px mx-auto max-w-7xl">
+      <div class="max-w-3xl mx-auto text-center mb-16">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+Plattform-Funktionen
+        </h1>
+        <p class="text-lg text-gray-700 leading-relaxed">
+Unser unabhängiges Verzeichnis bietet umfassende, unvoreingenommene Informationen über Industrieautomatisierungslösungen.
+        </p>
+      </div>
+      <Benefits />
+    </div>
+  </section>
+</BaseLayout>
+

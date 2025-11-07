@@ -1,0 +1,56 @@
+---
+interface Props {
+  title?: string;
+  steps?: Array<{
+    title: string;
+    description: string;
+  }>;
+}
+
+const {
+  title = "How It Works",
+  steps = [
+    {
+      title: "Browse Categories",
+      description: "Explore our comprehensive directory organized by automation categories and use cases.",
+    },
+    {
+      title: "Compare Vendors",
+      description: "Review detailed information about features, pricing, and capabilities side by side.",
+    },
+    {
+      title: "Contact Confidently",
+      description: "Reach out to vendors with the confidence that comes from unbiased, independent information.",
+    },
+  ],
+} = Astro.props;
+---
+
+<section id="how-it-works" class="py-16 md:py-24 bg-white">
+  <div class="container-px mx-auto max-w-7xl">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+        {title}
+      </h2>
+      <div class="mx-auto w-16 h-1 bg-orange-500 rounded-full"></div>
+    </div>
+    <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+      {steps.map((step, index) => (
+        <div class="text-center">
+          <div class="mb-6 flex justify-center">
+            <div class={`h-16 w-16 ${index === 1 ? 'bg-orange-100' : 'bg-brand-100'} rounded-full flex items-center justify-center`}>
+              <span class={`text-2xl font-bold ${index === 1 ? 'text-orange-600' : 'text-brand-600'}`}>{index + 1}</span>
+            </div>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-3">
+            {step.title}
+          </h3>
+          <p class="text-gray-600 leading-relaxed">
+            {step.description}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
