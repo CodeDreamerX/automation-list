@@ -1,4 +1,34 @@
----
-// Redirect root to English version
-return Astro.redirect("/eng/", 301);
----
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+    </style>
+    <script>
+      (function () {
+        try {
+          const host = window.location.hostname;
+          const redirectToGerman = /\.ch$/.test(host);
+          const target = redirectToGerman ? '/de/' : '/eng/';
+          if (window.location.pathname !== target) {
+            window.location.replace(target);
+          }
+        } catch (err) {
+          window.location.replace('/eng/');
+        }
+      })();
+    </script>
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=/eng/" />
+    </noscript>
+  </head>
+  <body></body>
+</html>
