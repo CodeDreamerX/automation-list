@@ -28,7 +28,7 @@ const {
       {categories.map((category, index) => (
         <a
           href={`/categories/${category.slug}`}
-          class="card hover:shadow-md transition-shadow group relative overflow-hidden"
+          class={`card card-bubble hover:shadow-md transition-shadow group ${index === 2 || index === 5 ? 'card-bubble--orange' : ''}`}
         >
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brand-600 transition-colors">

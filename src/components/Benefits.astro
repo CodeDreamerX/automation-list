@@ -3,6 +3,7 @@ interface Props {
   benefits?: Array<{
     title: string;
     description: string;
+    accent?: "brand" | "orange";
   }>;
 }
 
@@ -11,14 +12,17 @@ const {
     {
       title: "Vendor-neutral coverage",
       description: "Comprehensive listings without bias toward any single vendor or brand. Get fair comparisons and independent insights for informed decisions.",
+      accent: "brand",
     },
     {
       title: "Smart filtering",
       description: "Filter by protocols, industry, and technical specifications. Find exactly what you need with precision search capabilities.",
+      accent: "brand",
     },
     {
       title: "Verified profiles",
       description: "All companies and products are verified for accuracy. Trust the information you find in our directory.",
+      accent: "orange",
     },
   ],
 } = Astro.props;
@@ -30,33 +34,38 @@ const {
       <div class="mx-auto w-16 h-1 bg-orange-500 rounded-full"></div>
     </div>
     <div class="grid md:grid-cols-3 gap-8">
-      {benefits.map((benefit, index) => (
-        <div class="card hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-          <div class={`mb-4 h-12 w-12 ${index === 2 ? 'bg-orange-100' : 'bg-brand-100'} rounded-lg flex items-center justify-center`}>
-            {index === 0 && (
-              <svg class="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            )}
-            {index === 1 && (
-              <svg class="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-            )}
-            {index === 2 && (
-              <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
+      {benefits.map((benefit, index) => {
+        const accent = benefit.accent ?? "brand";
+        const isOrange = accent === "orange";
+
+        return (
+          <div class={`card card-bubble hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${isOrange ? 'card-bubble--orange' : ''}`}>
+            <div class={`mb-4 h-12 w-12 ${isOrange ? 'bg-orange-100' : 'bg-brand-100'} rounded-lg flex items-center justify-center`}>
+              {index === 0 && (
+                <svg class={`h-6 w-6 ${isOrange ? 'text-orange-600' : 'text-brand-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              )}
+              {index === 1 && (
+                <svg class={`h-6 w-6 ${isOrange ? 'text-orange-600' : 'text-brand-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              )}
+              {index === 2 && (
+                <svg class={`h-6 w-6 ${isOrange ? 'text-orange-600' : 'text-brand-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">
+              {benefit.title}
+            </h3>
+            <p class="text-gray-600 leading-relaxed">
+              {benefit.description}
+            </p>
           </div>
-          <h3 class="text-xl font-semibold text-gray-900 mb-3">
-            {benefit.title}
-          </h3>
-          <p class="text-gray-600 leading-relaxed">
-            {benefit.description}
-          </p>
-        </div>
-      ))}
+        );
+      })}
     </div>
   </div>
 </section>

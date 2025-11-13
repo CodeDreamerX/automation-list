@@ -64,6 +64,38 @@
     @apply bg-white rounded-lg border border-gray-200 shadow-sm p-6;
   }
 
+  .card-bubble {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-bubble::after {
+    content: "";
+    position: absolute;
+    width: 13rem;
+    height: 13rem;
+    background: radial-gradient(circle at center, rgba(37, 99, 235, 0.22) 0%, rgba(37, 99, 235, 0) 70%);
+    top: -5rem;
+    right: -5rem;
+    border-radius: 9999px;
+    transform: scale(0.6);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease;
+    pointer-events: none;
+  }
+
+  .card-bubble:hover::after,
+  .card-bubble:focus-visible::after,
+  .card-bubble:focus::after {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+
+  .card-bubble--orange::after {
+    background: radial-gradient(circle at center, rgba(249, 115, 22, 0.24) 0%, rgba(249, 115, 22, 0) 70%);
+  }
+
   /* Primary button */
   .btn-primary {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-brand-500 text-white hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors;
