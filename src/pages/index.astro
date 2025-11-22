@@ -17,17 +17,17 @@
         try {
           const host = window.location.hostname;
           const redirectToGerman = /\.ch$/.test(host);
-          const target = redirectToGerman ? '/de/' : '/eng/';
+          const target = redirectToGerman ? '/de/' : '/en/';
           if (window.location.pathname !== target) {
             window.location.replace(target);
           }
         } catch (err) {
-          window.location.replace('/eng/');
+          window.location.replace('/en/');
         }
       })();
     </script>
     <noscript>
-      <meta http-equiv="refresh" content="0; url=/eng/" />
+      <meta http-equiv="refresh" content="0; url=/en/" />
     </noscript>
   </head>
   <body></body>

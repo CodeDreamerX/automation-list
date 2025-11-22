@@ -26,17 +26,17 @@ const {
 } = Astro.props;
 
 const navItems = navItemsProp || [
-  { label: "Home", href: "/eng/" },
-  { label: "Features", href: "/eng/features" },
-  { label: "Categories", href: "/eng/categories" },
-  { label: "Blog", href: "/eng/blog" },
-  { label: "Contact", href: "/eng/contact" },
+  { label: "Home", href: "/en/" },
+  { label: "Features", href: "/en/features" },
+  { label: "Categories", href: "/en/categories" },
+  { label: "Blog", href: "/en/blog" },
+  { label: "Contact", href: "/en/contact" },
 ];
 
 // Language switching logic
 const currentPath = Astro.url.pathname;
 const isGerman = currentPath.startsWith("/de/");
-const isEnglish = currentPath.startsWith("/eng/");
+const isEnglish = currentPath.startsWith("/en/");
 
 // Determine the target language and URL
 let languageToggleUrl: string;
@@ -44,13 +44,13 @@ let languageToggleLabel: string;
 
 if (isGerman) {
   // Currently on German page, switch to English
-  // Replace /de/ with /eng/
-  languageToggleUrl = currentPath.replace(/^\/de/, "/eng") || "/eng/";
+  // Replace /de/ with /en/
+  languageToggleUrl = currentPath.replace(/^\/de/, "/en") || "/en/";
   languageToggleLabel = "EN";
 } else if (isEnglish) {
   // Currently on English page, switch to German
-  // Replace /eng/ with /de/
-  languageToggleUrl = currentPath.replace(/^\/eng/, "/de") || "/de/";
+  // Replace /en/ with /de/
+  languageToggleUrl = currentPath.replace(/^\/en/, "/de") || "/de/";
   languageToggleLabel = "DE";
 } else {
   // Fallback for root pages or other paths
@@ -108,7 +108,7 @@ if (isGerman) {
         <div class="flex items-center justify-between h-12">
           <!-- LOGO -->
           <div class="flex-shrink-0">
-            <a href={isGerman ? "/de/" : isEnglish ? "/eng/" : "/eng/"} class="text-lg font-bold text-gray-900 hover:text-brand-600 transition-colors">
+            <a href={isGerman ? "/de/" : isEnglish ? "/en/" : "/en/"} class="text-lg font-bold text-gray-900 hover:text-brand-600 transition-colors">
               Automation List
             </a>
           </div>
