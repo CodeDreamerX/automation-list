@@ -1,0 +1,170 @@
+---
+import { supabase } from '../../lib/supabaseClient';
+
+interface Props {
+  lang: "en" | "de";
+  pageTitle: string;
+}
+
+const { lang, pageTitle } = Astro.props;
+
+// Parse URL parameters
+const searchQuery = Astro.url.searchParams.get('q') || '';
+const countryFilter = Astro.url.searchParams.get('country') || '';
+const categoryFilter = Astro.url.searchParams.get('category') || '';
+
+// Fetch all vendors from Supabase
+const { data: vendors, error } = await supabase
+  .from('vendors')
+  .select('name, slug, country, region, category, technologies, tags');
+
+if (error) {
+  console.error('Error fetching vendors:', error);
+}
+
+// Initialize filtered vendors
+let filteredVendors = vendors || [];
+
+// Apply search filter (case-insensitive)
+if (searchQuery) {
+  const query = searchQuery.toLowerCase();
+  filteredVendors = filteredVendors.filter(vendor => {
+    const nameMatch = vendor.name?.toLowerCase().includes(query) ?? false;
+    const technologiesMatch = vendor.technologies ? vendor.technologies.toLowerCase().includes(query) : false;
+    const tagsMatch = vendor.tags ? vendor.tags.toLowerCase().includes(query) : false;
+    return nameMatch || technologiesMatch || tagsMatch;
+  });
+}
+
+// Apply country filter (exact match)
+if (countryFilter) {
+  filteredVendors = filteredVendors.filter(vendor => 
+    vendor.country === countryFilter
+  );
+}
+
+// Apply category filter (exact match)
+if (categoryFilter) {
+  filteredVendors = filteredVendors.filter(vendor => 
+    vendor.category === categoryFilter
+  );
+}
+
+// Extract unique lists for filter dropdowns
+const uniqueCountryList = Array.from(
+  new Set((vendors || []).map(v => v.country).filter(Boolean))
+).sort();
+
+const uniqueCategoryList = Array.from(
+  new Set((vendors || []).map(v => v.category).filter(Boolean))
+).sort();
+
+// Helper function to format technologies for display
+function formatTechnologies(technologies: string | null): string {
+  if (!technologies) return '';
+  const techArray = technologies.split(',').map(t => t.trim());
+  return techArray.slice(0, 3).join(', ') + (techArray.length > 3 ? '...' : '');
+}
+---
+
+<div class="container-px mx-auto max-w-7xl px-4 py-10">
+  <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+  <!-- Search and Filter Form -->
+  <div class="border border-gray-200 rounded-lg p-4 mb-8 bg-white shadow-sm">
+    <form method="GET">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Search Bar -->
+        <div>
+          <input
+            type="text"
+            name="q"
+            value={searchQuery}
+            placeholder={lang === "de" ? "Suchen..." : "Search..."}
+            class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
+          />
+        </div>
+
+        <!-- Country Filter -->
+        <div>
+          <select
+            name="country"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
+          >
+            <option value="">{lang === "de" ? "Alle Länder" : "All Countries"}</option>
+            {uniqueCountryList.map(country => (
+              <option value={country} selected={country === countryFilter}>
+                {country}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <!-- Category Filter -->
+        <div>
+          <select
+            name="category"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
+          >
+            <option value="">{lang === "de" ? "Alle Kategorien" : "All Categories"}</option>
+            {uniqueCategoryList.map(category => (
+              <option value={category} selected={category === categoryFilter}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <!-- Filter Button -->
+      <div class="mt-4">
+        <button
+          type="submit"
+          class="bg-brand-600 text-white px-4 py-2 rounded-md hover:bg-brand-700 text-sm font-medium"
+        >
+          {lang === "de" ? "Filtern" : "Filter"}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Result Count -->
+  <p class="text-sm text-gray-600 mb-4">{filteredVendors.length} vendors found</p>
+
+  <!-- Vendor Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {filteredVendors.length > 0 ? (
+      filteredVendors.map(vendor => (
+        <div class="border border-gray-200 rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition">
+          <h2 class="text-lg font-semibold text-gray-900 mb-1">{vendor.name}</h2>
+          
+          <p class="text-sm text-gray-600">{vendor.region}{vendor.region && vendor.country ? ', ' : ''}{vendor.country}</p>
+
+          {vendor.category && (
+            <span class="inline-block mt-3 px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+              {vendor.category}
+            </span>
+          )}
+
+          {vendor.technologies && (
+            <p class="text-xs text-gray-500 mt-2">{formatTechnologies(vendor.technologies)}</p>
+          )}
+
+          <a
+            href={`/vendor/${vendor.slug}`}
+            class="inline-block mt-4 text-sm text-brand-700 hover:text-brand-800 font-medium"
+          >
+            View details →
+          </a>
+        </div>
+      ))
+    ) : (
+      <div class="col-span-full text-center py-12">
+        <p class="text-gray-600">
+          {lang === "de" ? "Keine Anbieter gefunden." : "No vendors found."}
+        </p>
+      </div>
+    )}
+  </div>
+</div>
+
