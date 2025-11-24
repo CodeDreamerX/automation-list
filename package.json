@@ -10,10 +10,14 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "5.15.3",
-    "tailwindcss": "4.1.10",
+    "@supabase/supabase-js": "^2.84.0",
+    "@tailwindcss/typography": "0.5.19",
     "@tailwindcss/vite": "4.1.10",
-    "@tailwindcss/typography": "0.5.19"
+    "astro": "^5.16.0",
+    "papaparse": "^5.5.3",
+    "tailwindcss": "4.1.10"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.5.0"
   }
 }
-

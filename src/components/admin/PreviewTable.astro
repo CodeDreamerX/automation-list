@@ -1,0 +1,91 @@
+---
+import { SCHEMA_FIELDS, REQUIRED_FIELDS, type ValidationResult } from '../../lib/admin/csvUtils';
+
+interface Props {
+  normalizedData: any[];
+  validationResults: ValidationResult[];
+  rowCount: number;
+}
+
+const { normalizedData, validationResults, rowCount } = Astro.props;
+---
+
+<div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+  <h2 class="text-xl font-semibold text-gray-900 mb-4">
+    Preview (First 10 Rows)
+  </h2>
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-300">
+      <thead class="bg-gray-100">
+        <tr>
+          {SCHEMA_FIELDS.map((key) => (
+            <th class="px-4 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-b border-gray-300">
+              {key}
+              {REQUIRED_FIELDS.includes(key) && (
+                <span class="text-red-600 ml-1">*</span>
+              )}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {normalizedData.slice(0, 10).map((row, idx) => {
+          const validation = validationResults[idx];
+          const hasErrors = validation.missingRequired.length > 0;
+          const hasWarnings = validation.invalidEmail || validation.invalidWebsite || validation.duplicateSlug;
+          
+          // Determine row background color with alternating pattern
+          let rowClass = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+          if (hasErrors) {
+            rowClass = idx % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
+          } else if (hasWarnings) {
+            rowClass = idx % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
+          }
+          
+          return (
+            <tr class={`${rowClass} border-b border-gray-200`}>
+              {SCHEMA_FIELDS.map((field) => {
+                const value = row[field];
+                const isRequired = REQUIRED_FIELDS.includes(field);
+                const isMissing = isRequired && (!value || value === null);
+                
+                // Determine cell background color
+                let cellClass = 'px-4 py-3 text-sm text-gray-900 text-left';
+                if (isMissing) {
+                  cellClass += ' bg-red-200';
+                } else if (field === 'email' && validation.invalidEmail) {
+                  cellClass += ' bg-yellow-200';
+                } else if (field === 'website' && validation.invalidWebsite) {
+                  cellClass += ' bg-yellow-200';
+                } else if (field === 'slug' && validation.duplicateSlug) {
+                  cellClass += ' bg-yellow-200';
+                }
+                
+                // Limit width for description column
+                let cellStyle = '';
+                if (field === 'description') {
+                  cellStyle = 'max-w-md';
+                }
+                
+                return (
+                  <td class={cellClass} class:list={[cellStyle]}>
+                    <div class={field === 'description' ? 'truncate' : ''} title={field === 'description' ? value?.toString() : ''}>
+                      {value?.toString() || <span class="text-gray-400 italic">(empty)</span>}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+  
+  {rowCount > 10 && (
+    <p class="mt-4 text-sm text-gray-600">
+      Showing first 10 of {rowCount} rows
+    </p>
+  )}
+</div>
+

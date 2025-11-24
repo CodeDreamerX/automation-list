@@ -1,0 +1,77 @@
+---
+interface InsertResult {
+  rowNumber: number;
+  slug: string;
+  status: 'inserted' | 'duplicate' | 'error';
+  message: string;
+}
+
+interface Props {
+  insertResults: InsertResult[];
+}
+
+const { insertResults } = Astro.props;
+
+const totalAttempted = insertResults.length;
+const successfullyInserted = insertResults.filter(r => r.status === 'inserted').length;
+const duplicateSlugs = insertResults.filter(r => r.status === 'duplicate').length;
+const rowsWithErrors = insertResults.filter(r => r.status === 'error').length;
+const rowsSkipped = insertResults.filter(r => r.status === 'duplicate' || r.status === 'error').length;
+const hasFailedRows = rowsSkipped > 0;
+---
+
+<div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">Insert Results Summary</h2>
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <div class="text-sm font-medium text-gray-600 mb-2">Total Attempted</div>
+      <div class="text-3xl font-bold text-gray-900">{totalAttempted}</div>
+    </div>
+    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+      <div class="text-sm font-medium text-gray-600 mb-2">Successfully Inserted</div>
+      <div class="text-3xl font-bold text-green-600">
+        {successfullyInserted}
+      </div>
+    </div>
+    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+      <div class="text-sm font-medium text-gray-600 mb-2">Duplicate Slugs</div>
+      <div class="text-3xl font-bold text-yellow-600">
+        {duplicateSlugs}
+      </div>
+    </div>
+    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+      <div class="text-sm font-medium text-gray-600 mb-2">Rows with Errors</div>
+      <div class="text-3xl font-bold text-red-600">
+        {rowsWithErrors}
+      </div>
+    </div>
+    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <div class="text-sm font-medium text-gray-600 mb-2">Rows Skipped</div>
+      <div class="text-3xl font-bold text-gray-600">
+        {rowsSkipped}
+      </div>
+    </div>
+  </div>
+  
+  {/* Action Buttons */}
+  <div class="mt-6 flex flex-wrap gap-3">
+    {hasFailedRows && (
+      <a
+        href="?download_failed=true"
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+      >
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Download failed rows as CSV
+      </a>
+    )}
+    <a
+      href="?start_over=true"
+      class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-orange-500 border border-orange-600 rounded-md hover:bg-orange-600 transition-colors"
+    >
+      Reset / Upload new CSV
+    </a>
+  </div>
+</div>
+
