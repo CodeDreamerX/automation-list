@@ -1,5 +1,15 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabaseClient";
+import HowItWorks from "../../components/HowItWorks.astro";
+import PageHero from "../../components/PageHero.astro";
+import WhyThisDirectory from "../../components/WhyThisDirectory.astro";
+import UserBenefits from "../../components/UserBenefits.astro";
+import VendorBenefits from "../../components/VendorBenefits.astro";
+import SearchForm from "../../components/SearchForm.astro";
+import CategoryGrid from "../../components/CategoryGrid.astro";
+import FeaturedVendors from "../../components/FeaturedVendors.astro";
+import ExploreCTA from "../../components/ExploreCTA.astro";
 
 // German translations
 const deNavItems = [
@@ -11,6 +21,61 @@ const deNavItems = [
   { label: "Kontakt", href: "/de/contact" },
 ];
 
+// Fetch featured vendors (3-6 random vendors)
+const { data: allVendors } = await supabase
+  .from('vendors')
+  .select('name, slug, country, category, technologies');
+
+// Shuffle and select up to 6 vendors
+const featured = allVendors 
+  ? [...allVendors].sort(() => Math.random() - 0.5).slice(0, 6)
+  : [];
+
+// Helper function to format technologies for display
+function formatTechnologies(technologies: string | null): string {
+  if (!technologies) return '';
+  const techArray = technologies.split(',').map(t => t.trim());
+  return techArray.slice(0, 3).join(', ') + (techArray.length > 3 ? '...' : '');
+}
+
+// Category data for CategoryGrid (German)
+const categories = [
+  {
+    name: "Systemintegratoren",
+    description: "PLC, SCADA, MES, Antriebstechnik",
+    href: "/de/vendors?category=System+Integrator",
+  },
+  {
+    name: "Robotik-Integratoren",
+    description: "Robotiksystem-Integration und Automatisierung",
+    href: "/de/vendors?category=Robotics+Integrator",
+  },
+  {
+    name: "MES & SCADA Experten",
+    description: "Manufacturing Execution und Supervisory Control",
+    href: "/de/vendors?category=MES+SCADA+Expert",
+  },
+  {
+    name: "Maschinenbauer (OEM)",
+    description: "Originalausrüstungsherstellung und Konstruktion",
+    href: "/de/vendors?category=Machine+Builder+OEM",
+  },
+  {
+    name: "Industrielle IT & IoT",
+    description: "Industrielle Konnektivität und IoT-Lösungen",
+    href: "/de/vendors?category=Industrial+IT+IoT",
+  },
+  {
+    name: "Vision & Sicherheitssysteme",
+    description: "Bildverarbeitung und Sicherheitslösungen",
+    href: "/de/vendors?category=Vision+Safety+Systems",
+  },
+  {
+    name: "Schaltschrankbau & Elektrotechnik",
+    description: "Elektroschaltkästen und Steuerungssysteme",
+    href: "/de/vendors?category=Panel+Building+Electrical",
+  },
+];
 ---
 
 <BaseLayout 
@@ -19,25 +84,97 @@ const deNavItems = [
   lang="de"
   navItems={deNavItems}
 >
-  <section class="min-h-screen flex items-center justify-center bg-white py-16">
-    <div class="container-px mx-auto max-w-2xl text-center">
-      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-        Demnächst verfügbar
-      </h1>
-      <p class="text-xl md:text-2xl text-gray-600 mb-4">
-        Das unabhängige Verzeichnis für Industrieautomatisierung
-      </p>
-      <p class="text-base md:text-lg text-gray-500 mb-12 max-w-xl mx-auto">
-        Melden Sie sich für unsere Warteliste an, um benachrichtigt zu werden.
-      </p>
-      
-      <div class="max-w-2xl mx-auto">
-        <div class="ml-embedded" data-form="eOFEpE"></div>
-        <p class="text-sm text-gray-400 mt-6">
-          Wir senden Ihnen niemals Spam. Sie können sich jederzeit abmelden.
-        </p>
-      </div>
-    </div>
-  </section>
+  <PageHero
+    title="Finden Sie die besten Industrieautomatisierungsanbieter weltweit"
+    description="Vergleichen Sie Systemintegratoren, OEMs, Robotikexperten, MES/SCADA-Spezialisten und industrielle IT-Anbieter — anbieterneutral und von Automatisierungsingenieuren erstellt."
+    primaryButtonText="Verzeichnis durchsuchen →"
+    primaryButtonHref="/de/vendors"
+    secondaryButtonText="Warteliste beitreten"
+    secondaryButtonHref="#waitlist"
+  />
+
+  <SearchForm 
+    title="Verzeichnis durchsuchen"
+    action="/de/vendors"
+    placeholder="Anbieter, Technologien oder Kategorien suchen..."
+    buttonText="Suchen"
+  />
+
+  <CategoryGrid 
+    title="Nach Kategorie durchsuchen"
+    categories={categories}
+  />
+
+  <FeaturedVendors
+    title="Ausgewählte Anbieter"
+    vendors={featured}
+    viewAllHref="/de/vendors"
+    viewAllText="Alle Anbieter anzeigen →"
+    vendorHrefPrefix="/de/vendor"
+    vendorLinkText="Profil anzeigen →"
+    formatTechnologies={formatTechnologies}
+  />
+
+  <WhyThisDirectory
+    title="Warum dieses Verzeichnis?"
+    description="Automation-List ist ein anbieterneutrales Verzeichnis, das von Automatisierungsingenieuren erstellt wurde. Keine gesponserten Rankings, keine Agenturen, die Ergebnisse manipulieren — nur saubere, strukturierte Daten."
+    benefits={[
+      "Anbieterneutral und unvoreingenommen",
+      "Erstellt von Automatisierungsfachleuten",
+      "Klare Kategorien und Technologiezuordnung",
+      "Globale Abdeckung",
+      "Ständige Weiterentwicklung",
+    ]}
+  />
+
+  <HowItWorks 
+    title="So funktioniert's"
+    steps={[
+      {
+        title: "1. Suchen",
+        description: "Finden Sie Anbieter nach Kategorie, Technologie oder Land.",
+      },
+      {
+        title: "2. Vergleichen",
+        description: "Prüfen Sie Profile, Fähigkeiten und Technologien.",
+      },
+      {
+        title: "3. Kontaktieren",
+        description: "Kontaktieren Sie direkt — ohne Zwischenhändler.",
+      },
+    ]}
+  />
+
+  <UserBenefits 
+    title="Vorteile für Nutzer"
+    benefits={[
+      "Vertrauenswürdige Integratoren schneller finden",
+      "Transparente Anbieterprofile",
+      "Nach Technologien und Standort filtern",
+      "Verifizierte Geschäftsdaten",
+    ]}
+  />
+
+  <VendorBenefits 
+    title="Vorteile für Anbieter"
+    benefits={[
+      "Sichtbarkeit erhöhen",
+      "SEO-optimiertes Profil",
+      "Neutrale Plattform (keine bezahlten Rankings)",
+      "Hersteller und Integratoren erreichen",
+      "Optionale Premium-Platzierungen (demnächst)",
+    ]}
+    ctaText="Ihr Unternehmen hinzufügen →"
+    ctaHref="/de/contact"
+  />
+
+  <ExploreCTA 
+    title="Bereit, Automatisierungsanbieter zu erkunden?"
+    description="Finden Sie vertrauenswürdige Integratoren und Automatisierungspartner weltweit."
+    primaryButtonText="Verzeichnis durchsuchen →"
+    primaryButtonHref="/de/vendors"
+    secondaryButtonText="Warteliste beitreten"
+    secondaryButtonHref="#waitlist"
+  />
 </BaseLayout>
 

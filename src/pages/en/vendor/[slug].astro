@@ -1,0 +1,354 @@
+---
+export const prerender = false;
+
+import { supabase } from '../../../lib/supabaseClient';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  // Fetch all vendor slugs from Supabase
+  const { data: vendors, error } = await supabase
+    .from('vendors')
+    .select('slug');
+
+  if (error) {
+    console.error('Error fetching vendor slugs:', error);
+    return [];
+  }
+
+  // Generate paths for each slug
+  return (vendors || []).map((vendor) => ({
+    params: { slug: vendor.slug },
+  }));
+}
+
+// Fetch full vendor data by slug - ALL FIELDS
+const { slug } = Astro.params;
+
+const { data: vendor, error } = await supabase
+  .from('vendors')
+  .select('*')
+  .eq('slug', slug)
+  .maybeSingle();
+
+if (error) {
+  console.error('Error fetching vendor:', error);
+}
+
+if (!vendor) {
+  return Astro.redirect('/en/vendors');
+}
+
+const engNavItems = [
+  { label: "Home", href: "/en/" },
+  { label: "Features", href: "/en/features" },
+  { label: "Categories", href: "/en/categories" },
+  { label: "Vendors", href: "/en/vendors" },
+  { label: "Blog", href: "/en/blog" },
+  { label: "Contact", href: "/en/contact" },
+];
+
+const backUrl = "/en/vendors";
+
+// Helper function to split comma-separated values into array
+function splitValue(value: string | string[] | null | undefined): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  return String(value).split(',').map(item => item.trim()).filter(Boolean);
+}
+
+// Helper function to format array or string values for display
+function formatValue(value: string | string[] | null | undefined): string {
+  if (!value) return '';
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+  return String(value);
+}
+
+// Helper function to truncate description
+function truncateDescription(text: string | null | undefined, maxLength: number = 300): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + '...';
+}
+
+// Determine plan status
+const plan = vendor.plan || 'free';
+const isFeatured = vendor.featured === true || plan === 'featured';
+const isPro = plan === 'pro' || isFeatured;
+const isFree = plan === 'free' && !isFeatured;
+const isOgMember = vendor.og_member === true;
+
+// Build location string
+function getLocation(): string {
+  const parts: string[] = [];
+  if (vendor.city) parts.push(vendor.city);
+  if (vendor.region) parts.push(vendor.region);
+  if (vendor.country) parts.push(vendor.country);
+  return parts.join(', ');
+}
+
+const location = getLocation();
+---
+
+<BaseLayout 
+  title={`${vendor.name} - Vendor Details - Automation List`}
+  description={vendor.description ? truncateDescription(vendor.description, 160) : `Learn more about ${vendor.name}, a leading vendor in industrial automation.`}
+  lang="en"
+  navItems={engNavItems}
+>
+  <div class="container-px mx-auto max-w-4xl px-4 py-10">
+    <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
+      ← Back to Vendors
+    </a>
+
+    <!-- SECTION 1 — HEADER -->
+    <div class={`mb-8 text-center ${isFeatured ? 'border-2 border-orange-300 rounded-lg p-6 bg-orange-50/30' : ''}`}>
+      {vendor.logo_url && (
+        <img 
+          src={vendor.logo_url} 
+          alt={`${vendor.name} logo`}
+          class="mx-auto mb-4 max-h-24 max-w-48 object-contain"
+        />
+      )}
+      
+      <h1 class="text-3xl font-bold text-gray-900 mb-3">{vendor.name}</h1>
+      
+      <!-- Badges -->
+      <div class="flex flex-wrap justify-center gap-2 mb-4">
+        {isFeatured && (
+          <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+            Featured Vendor
+          </span>
+        )}
+        {isPro && !isFeatured && (
+          <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+            Pro
+          </span>
+        )}
+        {isOgMember && (
+          <span class="inline-block px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+            OG Member — Price Locked Forever
+          </span>
+        )}
+      </div>
+
+      {vendor.category && (
+        <p class="text-sm text-gray-600 mb-2">
+          <span class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+            {vendor.category}
+          </span>
+        </p>
+      )}
+
+      {location && (
+        <p class="text-sm text-gray-600 mb-4">{location}</p>
+      )}
+
+      {vendor.website && (
+        <a 
+          href={vendor.website} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          class="inline-block px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900 transition"
+        >
+          Visit Website →
+        </a>
+      )}
+    </div>
+
+    <!-- SECTION 2 — DESCRIPTION -->
+    <div class="mb-8">
+      {vendor.description && (
+        <>
+          <h2 class="text-xl font-semibold text-gray-900 mb-3">About</h2>
+          <p class="text-gray-700 text-sm leading-relaxed">
+            {isFree ? truncateDescription(vendor.description, 300) : vendor.description}
+          </p>
+          {isFree && (
+            <p class="text-sm text-gray-500 italic mt-3 p-3 bg-gray-50 rounded border border-gray-200">
+              This is a free vendor listing. Upgrade to Pro to unlock full profile.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+
+    <!-- SECTION 3 — GRID BLOCKS (conditionally rendered) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <!-- Technologies -->
+      {vendor.technologies && (
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Technologies</h3>
+          {isFree ? (
+            <div class="flex flex-wrap gap-2">
+              {splitValue(vendor.technologies).slice(0, 2).map((tech) => (
+                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div class="flex flex-wrap gap-2">
+              {splitValue(vendor.technologies).map((tech) => (
+                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <!-- Certifications - Pro only -->
+      {isPro && vendor.certifications && (
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Certifications</h3>
+          <div class="flex flex-wrap gap-2">
+            {splitValue(vendor.certifications).map((cert) => (
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                {cert}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Languages - Pro only -->
+      {isPro && vendor.languages && (
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Languages</h3>
+          <div class="flex flex-wrap gap-2">
+            {splitValue(vendor.languages).map((lang) => (
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                {lang}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Industries - Pro only -->
+      {isPro && vendor.industries && (
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Industries</h3>
+          <div class="flex flex-wrap gap-2">
+            {splitValue(vendor.industries).map((industry) => (
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                {industry}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Tags - Pro only -->
+      {isPro && vendor.tags && (
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Tags</h3>
+          <div class="flex flex-wrap gap-2">
+            {splitValue(vendor.tags).map((tag) => (
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Categories - Pro only -->
+      {isPro && vendor.categories && (
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Categories</h3>
+          <div class="flex flex-wrap gap-2">
+            {splitValue(vendor.categories).map((cat) => (
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                {cat}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <!-- SECTION 4 — COMPANY FACTS (pro/featured only) -->
+    {isPro && (vendor.year_founded || vendor.employee_count || vendor.hourly_rate || vendor.region || vendor.country) && (
+      <div class="border border-gray-200 rounded-lg p-6 mb-8 bg-gray-50">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Company Facts</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {vendor.year_founded && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Year Founded</p>
+              <p class="text-sm font-medium text-gray-900">{vendor.year_founded}</p>
+            </div>
+          )}
+          {vendor.employee_count && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Employees</p>
+              <p class="text-sm font-medium text-gray-900">{vendor.employee_count}</p>
+            </div>
+          )}
+          {vendor.hourly_rate && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Hourly Rate</p>
+              <p class="text-sm font-medium text-gray-900">{vendor.hourly_rate}</p>
+            </div>
+          )}
+          {(vendor.region || vendor.country) && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Location</p>
+              <p class="text-sm font-medium text-gray-900">{location}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    <!-- SECTION 5 — CONTACT CARD (pro/featured only) -->
+    {isPro && (vendor.email || vendor.phone || vendor.address) && (
+      <div class="border border-gray-200 rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Contact</h2>
+        <div class="space-y-3">
+          {vendor.email && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Email</p>
+              <a href={`mailto:${vendor.email}`} class="text-sm text-brand-700 hover:text-brand-800">
+                {vendor.email}
+              </a>
+            </div>
+          )}
+          {vendor.phone && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Phone</p>
+              <a href={`tel:${vendor.phone}`} class="text-sm text-brand-700 hover:text-brand-800">
+                {vendor.phone}
+              </a>
+            </div>
+          )}
+          {vendor.address && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Address</p>
+              <p class="text-sm text-gray-900">{vendor.address}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    <!-- SECTION 6 — UPGRADE CTA (free only) -->
+    {isFree && (
+      <div class="border-2 border-orange-200 rounded-lg p-6 bg-orange-50 text-center">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Want to unlock full profile?</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Contact us to upgrade to Pro and showcase your complete vendor profile.
+        </p>
+        <a 
+          href="/en/contact" 
+          class="inline-block px-6 py-2 bg-orange-600 text-white rounded-md text-sm font-medium hover:bg-orange-700 transition"
+        >
+          Contact Us to Upgrade
+        </a>
+      </div>
+    )}
+  </div>
+</BaseLayout>

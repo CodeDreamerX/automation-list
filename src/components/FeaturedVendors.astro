@@ -1,0 +1,117 @@
+---
+interface Vendor {
+  name: string;
+  slug: string;
+  country?: string | null;
+  category?: string | null;
+  technologies?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
+  priority?: number | null;
+}
+
+interface Props {
+  title?: string;
+  vendors: Vendor[];
+  viewAllHref: string;
+  viewAllText?: string;
+  vendorHrefPrefix: string;
+  vendorLinkText?: string;
+  formatTechnologies?: (tech: string | null) => string;
+  truncateDescription?: (text: string | null | undefined, maxLength?: number) => string;
+  isFeatured?: (vendor: Vendor) => boolean;
+}
+
+const {
+  title = "Featured Vendors",
+  vendors,
+  viewAllHref,
+  viewAllText = "View All Vendors →",
+  vendorHrefPrefix,
+  vendorLinkText = "View Profile →",
+  formatTechnologies = (tech: string | null) => {
+    if (!tech) return '';
+    const techArray = tech.split(',').map(t => t.trim());
+    return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
+  },
+  truncateDescription = (text: string | null | undefined, maxLength: number = 120) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '…';
+  },
+  isFeatured = () => false,
+} = Astro.props;
+---
+
+<section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
+  <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h2>
+  {vendors.length > 0 ? (
+    <>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {vendors.map((vendor, i) => {
+          const vendorIsFeatured = isFeatured(vendor);
+          return (
+            <div
+              class={`fade-in-up border rounded-lg p-6 shadow-sm hover:shadow-md transition ${
+                vendorIsFeatured 
+                  ? 'border-yellow-300 bg-yellow-50/30 shadow-lg' 
+                  : 'border-gray-200'
+              }`}
+              style={`animation-delay: ${i * 0.07}s`}
+            >
+              {vendorIsFeatured && (
+                <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full mb-3">
+                  Featured Vendor
+                </span>
+              )}
+              
+              {vendor.logo_url && (
+                <div class="flex justify-center">
+                  <img 
+                    src={vendor.logo_url} 
+                    alt={`${vendor.name} logo`}
+                    class="max-h-12 object-contain mx-auto mb-4"
+                    onerror="this.style.display='none'"
+                  />
+                </div>
+              )}
+              
+              <h3 class="text-lg font-semibold text-gray-900 mb-1">{vendor.name}</h3>
+              
+              {vendor.country && (
+                <p class="text-sm text-gray-600 mb-2">{vendor.country}</p>
+              )}
+              
+              {vendor.category && (
+                <span class="inline-block mb-2 px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+                  {vendor.category}
+                </span>
+              )}
+              
+              {vendor.technologies && (
+                <p class="text-xs text-gray-500 mb-3">{formatTechnologies(vendor.technologies)}</p>
+              )}
+              
+              {vendor.description && (
+                <p class="text-sm text-gray-600 mb-4">{truncateDescription(vendor.description, 120)}</p>
+              )}
+              
+              <a 
+                href={`${vendorHrefPrefix}/${vendor.slug}`}
+                class="inline-block text-sm text-brand-700 hover:text-brand-800 font-medium"
+              >
+                {vendorLinkText}
+              </a>
+            </div>
+          );
+        })}
+      </div>
+      <div class="text-center mt-10">
+        <a href={viewAllHref} class="text-brand-700 font-medium hover:underline">{viewAllText}</a>
+      </div>
+    </>
+  ) : (
+    <p class="text-center text-gray-600">No featured vendors available at the moment.</p>
+  )}
+</section>
+

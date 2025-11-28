@@ -1,0 +1,33 @@
+---
+interface Props {
+  title?: string;
+  placeholder?: string;
+  buttonText?: string;
+  action: string;
+  method?: string;
+}
+
+const {
+  title = "Search the Directory",
+  placeholder = "Search vendors, technologies or categories...",
+  buttonText = "Search",
+  action,
+  method = "GET",
+} = Astro.props;
+---
+
+<section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
+  <h2 class="text-xl font-semibold text-gray-900 mb-4 text-center">{title}</h2>
+  <form action={action} method={method} class="flex gap-3">
+    <input 
+      type="text" 
+      name="q" 
+      placeholder={placeholder}
+      class="flex-grow border border-gray-300 rounded-md px-4 py-2 text-sm" 
+    />
+    <button class="px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900">
+      {buttonText}
+    </button>
+  </form>
+</section>
+

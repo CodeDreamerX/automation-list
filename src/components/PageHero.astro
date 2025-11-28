@@ -1,0 +1,49 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  primaryButtonText: string;
+  primaryButtonHref: string;
+  secondaryButtonText?: string;
+  secondaryButtonHref?: string;
+}
+
+const {
+  title,
+  description,
+  primaryButtonText,
+  primaryButtonHref,
+  secondaryButtonText,
+  secondaryButtonHref,
+} = Astro.props;
+---
+
+<section class="fade-in-up-slow container-px mx-auto max-w-7xl px-4 py-24 md:py-32">
+  <div class="max-w-3xl mx-auto text-center">
+    <h1 class="text-4xl font-bold text-gray-900 text-center mb-4">
+      {title}
+    </h1>
+
+    <p class="text-lg text-gray-600 text-center max-w-2xl mx-auto mb-8">
+      {description}
+    </p>
+
+    <div class="flex justify-center gap-4 mb-12">
+      <a 
+        href={primaryButtonHref} 
+        class="px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900 transition"
+      >
+        {primaryButtonText}
+      </a>
+      {secondaryButtonText && secondaryButtonHref && (
+        <a 
+          href={secondaryButtonHref} 
+          class="px-6 py-3 border border-gray-300 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-50 transition"
+        >
+          {secondaryButtonText}
+        </a>
+      )}
+    </div>
+  </div>
+</section>
+

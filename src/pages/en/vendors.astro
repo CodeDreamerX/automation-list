@@ -1,1 +1,22 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import VendorList from "../../components/vendors/VendorList.astro";
 
+const engNavItems = [
+  { label: "Home", href: "/en/" },
+  { label: "Features", href: "/en/features" },
+  { label: "Categories", href: "/en/categories" },
+  { label: "Vendors", href: "/en/vendors" },
+  { label: "Blog", href: "/en/blog" },
+  { label: "Contact", href: "/en/contact" },
+];
+---
+
+<BaseLayout 
+  title="Vendors - Automation List"
+  description="Browse our directory of industrial automation vendors worldwide."
+  lang="en"
+  navItems={engNavItems}
+>
+  <VendorList lang="en" pageTitle="Vendors Directory" />
+</BaseLayout>

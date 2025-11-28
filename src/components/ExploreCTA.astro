@@ -1,0 +1,33 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  primaryButtonText?: string;
+  primaryButtonHref?: string;
+  secondaryButtonText?: string;
+  secondaryButtonHref?: string;
+}
+
+const {
+  title = "Ready to explore automation vendors?",
+  description = "Find trusted integrators and automation partners worldwide.",
+  primaryButtonText = "Browse Directory →",
+  primaryButtonHref = "/en/vendors",
+  secondaryButtonText = "Join Waitlist",
+  secondaryButtonHref = "#waitlist",
+} = Astro.props;
+---
+
+<section class="fade-in-up-delayed container-px mx-auto max-w-7xl px-4 py-16 md:py-20 text-center">
+  <h2 class="text-3xl font-bold text-gray-900 mb-4">{title}</h2>
+  <p class="text-gray-600 mb-8">{description}</p>
+  <div class="flex justify-center gap-4">
+    <a href={primaryButtonHref} class="px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900">
+      {primaryButtonText}
+    </a>
+    <a href={secondaryButtonHref} class="px-6 py-3 border border-gray-300 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-50">
+      {secondaryButtonText}
+    </a>
+  </div>
+</section>
+

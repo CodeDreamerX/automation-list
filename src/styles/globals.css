@@ -53,6 +53,26 @@
   }
 }
 
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.fade-in-up-delayed {
+  animation: fadeInUp 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.fade-in-up-slow {
+  animation: fadeInUp 1s ease-out forwards;
+  opacity: 0;
+}
+
 @layer utilities {
   /* Container with horizontal padding */
   .container-px {

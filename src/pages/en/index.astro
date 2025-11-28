@@ -1,5 +1,16 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabaseClient";
+import { isFeatured } from "../../lib/vendors/isFeatured";
+import HowItWorks from "../../components/HowItWorks.astro";
+import PageHero from "../../components/PageHero.astro";
+import WhyThisDirectory from "../../components/WhyThisDirectory.astro";
+import UserBenefits from "../../components/UserBenefits.astro";
+import VendorBenefits from "../../components/VendorBenefits.astro";
+import SearchForm from "../../components/SearchForm.astro";
+import CategoryGrid from "../../components/CategoryGrid.astro";
+import FeaturedVendors from "../../components/FeaturedVendors.astro";
+import ExploreCTA from "../../components/ExploreCTA.astro";
 
 const engNavItems = [
   { label: "Home", href: "/en/" },
@@ -9,6 +20,78 @@ const engNavItems = [
   { label: "Blog", href: "/en/blog" },
   { label: "Contact", href: "/en/contact" },
 ];
+
+// Fetch ALL vendors
+const { data: vendors } = await supabase
+  .from("vendors")
+  .select("*");
+
+// Filter featured vendors
+const featured = vendors ? vendors.filter(v => isFeatured(v)) : [];
+
+// Sort featured vendors by priority ASC
+featured.sort((a, b) => (a.priority || 999) - (b.priority || 999));
+
+// Limit to 6 vendors
+let featuredVendors = featured.slice(0, 6);
+
+// Fallback logic: if no featured vendors, use 6 random vendors (but don't mark as featured)
+if (featuredVendors.length === 0 && vendors && vendors.length > 0) {
+  featuredVendors = [...vendors].sort(() => Math.random() - 0.5).slice(0, 6);
+}
+
+// Helper function to format technologies for display (first 2 only)
+function formatTechnologies(technologies: string | null): string {
+  if (!technologies) return '';
+  const techArray = technologies.split(',').map(t => t.trim());
+  return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
+}
+
+// Helper function to truncate description
+function truncateDescription(text: string | null | undefined, maxLength: number = 120): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + '…';
+}
+
+// Category data for CategoryGrid
+const categories = [
+  {
+    name: "System Integrators",
+    description: "PLC, SCADA, MES, motion control",
+    href: "/en/vendors?category=System+Integrator",
+  },
+  {
+    name: "Robotics Integrators",
+    description: "Robotic systems integration and automation",
+    href: "/en/vendors?category=Robotics+Integrator",
+  },
+  {
+    name: "MES & SCADA Experts",
+    description: "Manufacturing execution and supervisory control",
+    href: "/en/vendors?category=MES+SCADA+Expert",
+  },
+  {
+    name: "Machine Builders (OEM)",
+    description: "Original equipment manufacturing and design",
+    href: "/en/vendors?category=Machine+Builder+OEM",
+  },
+  {
+    name: "Industrial IT & IoT",
+    description: "Industrial connectivity and IoT solutions",
+    href: "/en/vendors?category=Industrial+IT+IoT",
+  },
+  {
+    name: "Vision & Safety Systems",
+    description: "Machine vision and safety solutions",
+    href: "/en/vendors?category=Vision+Safety+Systems",
+  },
+  {
+    name: "Panel Building & Electrical",
+    description: "Electrical panels and control systems",
+    href: "/en/vendors?category=Panel+Building+Electrical",
+  },
+];
 ---
 
 <BaseLayout 
@@ -17,23 +100,40 @@ const engNavItems = [
   lang="en"
   navItems={engNavItems}
 >
-  <section class="min-h-screen flex items-center justify-center bg-white py-16">
-    <div class="container-px mx-auto max-w-2xl text-center">
-      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-        Coming Soon
-      </h1>
-      <p class="text-xl md:text-2xl text-gray-600 mb-4">
-        The Independent Directory for Industrial Automation
-      </p>
-      <p class="text-base md:text-lg text-gray-500 mb-12 max-w-xl mx-auto">
-        We're building something amazing. Join our waitlist to get early access to our directory of trusted automation vendors and solutions.
-      </p>
-      
-      <div class="max-w-2xl mx-auto">
-        <div class="ml-embedded" data-form="eOFEpE"></div>
-      </div>
-    </div>
-  </section>
+  <PageHero
+    title="Find the Best Industrial Automation Vendors Worldwide"
+    description="Compare system integrators, OEMs, robotics experts, MES/SCADA specialists and industrial IT vendors — vendor-neutral and built by automation engineers."
+    primaryButtonText="Browse Directory →"
+    primaryButtonHref="/en/vendors"
+    secondaryButtonText="Join Waitlist"
+    secondaryButtonHref="#waitlist"
+  />
+
+  <SearchForm 
+    action="/en/vendors"
+    placeholder="Search vendors, technologies or categories..."
+  />
+
+  <CategoryGrid categories={categories} />
+
+  <FeaturedVendors
+    vendors={featuredVendors}
+    viewAllHref="/en/vendors"
+    vendorHrefPrefix="/en/vendor"
+    formatTechnologies={formatTechnologies}
+    truncateDescription={truncateDescription}
+    isFeatured={isFeatured}
+  />
+
+  <WhyThisDirectory />
+
+  <HowItWorks />
+
+  <UserBenefits />
+
+  <VendorBenefits />
+
+  <ExploreCTA />
 </BaseLayout>
 
 

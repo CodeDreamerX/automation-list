@@ -129,7 +129,9 @@ function formatTechnologies(technologies: string | null): string {
   </div>
 
   <!-- Result Count -->
-  <p class="text-sm text-gray-600 mb-4">{filteredVendors.length} vendors found</p>
+  <p class="text-sm text-gray-600 mb-4">
+    {filteredVendors.length} {lang === "de" ? "Anbieter gefunden" : "vendors found"}
+  </p>
 
   <!-- Vendor Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -151,10 +153,10 @@ function formatTechnologies(technologies: string | null): string {
           )}
 
           <a
-            href={`/vendor/${vendor.slug}`}
+            href={`/${lang}/vendor/${vendor.slug}`}
             class="inline-block mt-4 text-sm text-brand-700 hover:text-brand-800 font-medium"
           >
-            View details →
+            {lang === "de" ? "Details anzeigen →" : "View details →"}
           </a>
         </div>
       ))

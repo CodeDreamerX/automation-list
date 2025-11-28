@@ -1,0 +1,36 @@
+---
+interface Props {
+  title?: string;
+  benefits?: string[];
+  ctaText?: string;
+  ctaHref?: string;
+}
+
+const {
+  title = "Benefits for Vendors",
+  benefits = [
+    "Increase visibility",
+    "SEO-optimized profile",
+    "Neutral platform (no paid ranking)",
+    "Reach manufacturers and integrators",
+    "Optional premium placements (coming soon)",
+  ],
+  ctaText = "Add Your Company →",
+  ctaHref = "/en/contact",
+} = Astro.props;
+---
+
+<section class="fade-in-up-delayed container-px mx-auto max-w-7xl px-4 py-16 md:py-20 border-t border-gray-200 mt-8 pt-8">
+  <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h2>
+  <ul class="space-y-3 text-gray-700 text-center max-w-xl mx-auto">
+    {benefits.map((benefit) => (
+      <li>✓ {benefit}</li>
+    ))}
+  </ul>
+  <div class="text-center mt-8">
+    <a href={ctaHref} class="px-6 py-3 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50">
+      {ctaText}
+    </a>
+  </div>
+</section>
+
