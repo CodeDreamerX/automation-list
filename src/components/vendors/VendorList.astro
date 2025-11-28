@@ -8,10 +8,19 @@ interface Props {
 
 const { lang, pageTitle } = Astro.props;
 
-// Parse URL parameters
-const searchQuery = Astro.url.searchParams.get('q') || '';
-const countryFilter = Astro.url.searchParams.get('country') || '';
-const categoryFilter = Astro.url.searchParams.get('category') || '';
+// Parse URL parameters (decode URL-encoded values safely)
+function safeDecode(param: string | null): string {
+  if (!param) return '';
+  try {
+    return decodeURIComponent(param).trim();
+  } catch {
+    return param.trim();
+  }
+}
+
+const searchQuery = safeDecode(Astro.url.searchParams.get('q'));
+const countryFilter = safeDecode(Astro.url.searchParams.get('country'));
+const categoryFilter = safeDecode(Astro.url.searchParams.get('category'));
 
 // Fetch all vendors from Supabase
 const { data: vendors, error } = await supabase
@@ -27,12 +36,13 @@ let filteredVendors = vendors || [];
 
 // Apply search filter (case-insensitive)
 if (searchQuery) {
-  const query = searchQuery.toLowerCase();
+  const query = searchQuery.toLowerCase().trim();
   filteredVendors = filteredVendors.filter(vendor => {
     const nameMatch = vendor.name?.toLowerCase().includes(query) ?? false;
+    const categoryMatch = vendor.category?.toLowerCase().includes(query) ?? false;
     const technologiesMatch = vendor.technologies ? vendor.technologies.toLowerCase().includes(query) : false;
     const tagsMatch = vendor.tags ? vendor.tags.toLowerCase().includes(query) : false;
-    return nameMatch || technologiesMatch || tagsMatch;
+    return nameMatch || categoryMatch || technologiesMatch || tagsMatch;
   });
 }
 
@@ -72,7 +82,7 @@ function formatTechnologies(technologies: string | null): string {
 
   <!-- Search and Filter Form -->
   <div class="border border-gray-200 rounded-lg p-4 mb-8 bg-white shadow-sm">
-    <form method="GET">
+    <form method="GET" action={Astro.url.pathname}>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Search Bar -->
         <div>
@@ -116,22 +126,56 @@ function formatTechnologies(technologies: string | null): string {
         </div>
       </div>
 
-      <!-- Filter Button -->
-      <div class="mt-4">
+      <!-- Filter Buttons -->
+      <div class="mt-4 flex gap-3">
         <button
           type="submit"
           class="bg-brand-600 text-white px-4 py-2 rounded-md hover:bg-brand-700 text-sm font-medium"
         >
           {lang === "de" ? "Filtern" : "Filter"}
         </button>
+        {(searchQuery || countryFilter || categoryFilter) && (
+          <a
+            href={Astro.url.pathname}
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium"
+          >
+            {lang === "de" ? "Zurücksetzen" : "Clear"}
+          </a>
+        )}
       </div>
     </form>
   </div>
 
   <!-- Result Count -->
-  <p class="text-sm text-gray-600 mb-4">
-    {filteredVendors.length} {lang === "de" ? "Anbieter gefunden" : "vendors found"}
-  </p>
+  <div class="mb-4">
+    <p class="text-sm text-gray-600">
+      {filteredVendors.length} {lang === "de" ? "Anbieter gefunden" : "vendors found"}
+      {(searchQuery || countryFilter || categoryFilter) && (
+        <span class="text-xs text-gray-500 ml-2">
+          ({lang === "de" ? "gefiltert" : "filtered"})
+        </span>
+      )}
+    </p>
+    {(searchQuery || countryFilter || categoryFilter) && (
+      <div class="mt-2 flex flex-wrap gap-2">
+        {searchQuery && (
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+            {lang === "de" ? "Suche" : "Search"}: "{searchQuery}"
+          </span>
+        )}
+        {countryFilter && (
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+            {lang === "de" ? "Land" : "Country"}: {countryFilter}
+          </span>
+        )}
+        {categoryFilter && (
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
+            {lang === "de" ? "Kategorie" : "Category"}: {categoryFilter}
+          </span>
+        )}
+      </div>
+    )}
+  </div>
 
   <!-- Vendor Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

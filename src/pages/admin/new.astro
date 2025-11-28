@@ -1,0 +1,147 @@
+---
+export const prerender = false;
+
+import { supabase } from '../../lib/supabaseClient';
+import { protectAdminRoute } from '../../lib/admin/authUtils';
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import VendorForm from '../../components/admin/VendorForm.astro';
+
+// Handle logout first (before auth check)
+if (Astro.url.searchParams.get('logout') === 'true') {
+  const { clearAuthCookie } = await import('../../lib/admin/authUtils');
+  clearAuthCookie(Astro.cookies);
+  return Astro.redirect('/admin/login?logout=true');
+}
+
+// Check authentication and redirect if not logged in
+const redirectResponse = await protectAdminRoute(Astro.cookies);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+// Handle form submission
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  
+  // Prepare insert object
+  const insertData: any = {
+    name: formData.get('name')?.toString() || null,
+    slug: formData.get('slug')?.toString() || null,
+    description: formData.get('description')?.toString() || null,
+    website: formData.get('website')?.toString() || null,
+    email: formData.get('email')?.toString() || null,
+    phone: formData.get('phone')?.toString() || null,
+    address: formData.get('address')?.toString() || null,
+    city: formData.get('city')?.toString() || null,
+    region: formData.get('region')?.toString() || null,
+    country: formData.get('country')?.toString() || null,
+    category: formData.get('category')?.toString() || null,
+    technologies: formData.get('technologies')?.toString() || null,
+    languages: formData.get('languages')?.toString() || null,
+    certifications: formData.get('certifications')?.toString() || null,
+    tags: formData.get('tags')?.toString() || null,
+    industries: formData.get('industries')?.toString() || null,
+    year_founded: formData.get('year_founded')?.toString() || null,
+    employee_count: formData.get('employee_count')?.toString() || null,
+    hourly_rate: formData.get('hourly_rate')?.toString() || null,
+    plan: formData.get('plan')?.toString() || 'free',
+    priority: formData.get('priority')?.toString() ? parseInt(formData.get('priority')!.toString()) : null,
+    featured: formData.get('featured') === 'on',
+    og_member: formData.get('og_member') === 'on',
+    featured_until: formData.get('featured_until')?.toString() || null,
+    meta_title: formData.get('meta_title')?.toString() || null,
+    meta_description: formData.get('meta_description')?.toString() || null,
+    canonical_url: formData.get('canonical_url')?.toString() || null,
+    logo_url: formData.get('logo_url')?.toString() || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  // Handle categories array
+  const categoriesInput = formData.get('categories')?.toString() || '';
+  if (categoriesInput) {
+    insertData.categories = categoriesInput.split(',').map(c => c.trim()).filter(Boolean);
+  } else {
+    insertData.categories = null;
+  }
+
+  // Check if slug already exists
+  const slug = insertData.slug;
+  if (slug) {
+    const { data: existingVendor } = await supabase
+      .from('vendors')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    
+    if (existingVendor) {
+      console.error('Error: Slug already exists');
+      // Redirect back with error
+      return Astro.redirect('/admin/new?error=slug_exists');
+    }
+  }
+
+  // Insert new vendor into database
+  const { data, error } = await supabase
+    .from('vendors')
+    .insert([insertData])
+    .select();
+
+  if (error) {
+    console.error('Error creating vendor:', error);
+    // Redirect back with error
+    return Astro.redirect('/admin/new?error=create_failed');
+  } else if (data && data.length > 0) {
+    // Redirect to edit page of the newly created vendor
+    return Astro.redirect(`/admin/edit/${data[0].id}`);
+  } else {
+    // Redirect back to admin panel if creation failed
+    return Astro.redirect('/admin');
+  }
+}
+
+// Empty vendor object for new vendor form
+const emptyVendor = null;
+
+// Check for error messages
+const error = Astro.url.searchParams.get('error');
+let errorMessage = '';
+if (error === 'slug_exists') {
+  errorMessage = 'A vendor with this slug already exists. Please choose a different slug.';
+} else if (error === 'create_failed') {
+  errorMessage = 'Failed to create vendor. Please check all required fields and try again.';
+}
+---
+
+<AdminLayout title="Create New Vendor - Admin Panel" currentPath="/admin">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Create New Vendor</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Add a new vendor to the Automation List directory
+        </p>
+      </div>
+      <a
+        href="/admin"
+        class="text-sm text-gray-600 hover:text-gray-900"
+      >
+        ← Back to Vendor List
+      </a>
+    </div>
+
+    <!-- ERROR MESSAGE -->
+    {errorMessage && (
+      <div class="bg-red-50 border border-red-200 rounded-md p-4">
+        <p class="text-sm text-red-700">{errorMessage}</p>
+      </div>
+    )}
+
+    <!-- VENDOR FORM -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <VendorForm vendor={emptyVendor} />
+    </div>
+  </div>
+</AdminLayout>
+

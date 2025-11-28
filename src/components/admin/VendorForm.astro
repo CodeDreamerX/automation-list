@@ -1,0 +1,477 @@
+---
+interface Props {
+  vendor: any;
+}
+
+const { vendor } = Astro.props;
+const isNewVendor = !vendor || !vendor.id;
+---
+
+<form id="vendor-form" method="POST" class="space-y-8">
+  <!-- BASIC INFORMATION -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      Basic Information
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+          Name *
+        </label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={vendor?.name || ''}
+          required
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+      
+      <div>
+        <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">
+          Slug *
+        </label>
+        <input
+          type="text"
+          id="slug"
+          name="slug"
+          value={vendor?.slug || ''}
+          required
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+    </div>
+    
+    <div>
+      <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+        Description
+      </label>
+      <textarea
+        id="description"
+        name="description"
+        rows="5"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      >{vendor?.description || ''}</textarea>
+    </div>
+    
+    <div>
+      <label for="website" class="block text-sm font-medium text-gray-700 mb-1">
+        Website
+      </label>
+      <input
+        type="url"
+        id="website"
+        name="website"
+        value={vendor?.website || ''}
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+  </section>
+
+  <!-- CONTACT INFORMATION -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      Contact Information
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+          Email
+        </label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={vendor?.email || ''}
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+      
+      <div>
+        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
+          Phone
+        </label>
+        <input
+          type="tel"
+          id="phone"
+          name="phone"
+          value={vendor?.phone || ''}
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+    </div>
+    
+    <div>
+      <label for="address" class="block text-sm font-medium text-gray-700 mb-1">
+        Address
+      </label>
+      <input
+        type="text"
+        id="address"
+        name="address"
+        value={vendor?.address || ''}
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
+          City
+        </label>
+        <input
+          type="text"
+          id="city"
+          name="city"
+          value={vendor?.city || ''}
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+      
+      <div>
+        <label for="region" class="block text-sm font-medium text-gray-700 mb-1">
+          Region
+        </label>
+        <input
+          type="text"
+          id="region"
+          name="region"
+          value={vendor?.region || ''}
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+      
+      <div>
+        <label for="country" class="block text-sm font-medium text-gray-700 mb-1">
+          Country *
+        </label>
+        <input
+          type="text"
+          id="country"
+          name="country"
+          value={vendor?.country || ''}
+          required
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORIZATION -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      Categorization
+    </h2>
+    
+    <div>
+      <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+        Category *
+      </label>
+      <input
+        type="text"
+        id="category"
+        name="category"
+        value={vendor?.category || ''}
+        required
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="categories" class="block text-sm font-medium text-gray-700 mb-1">
+        Categories (comma-separated)
+      </label>
+      <input
+        type="text"
+        id="categories"
+        name="categories"
+        value={Array.isArray(vendor?.categories) ? vendor.categories.join(', ') : (vendor?.categories || '')}
+        placeholder="Category 1, Category 2, Category 3"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="technologies" class="block text-sm font-medium text-gray-700 mb-1">
+        Technologies (comma-separated)
+      </label>
+      <input
+        type="text"
+        id="technologies"
+        name="technologies"
+        value={vendor?.technologies || ''}
+        placeholder="Technology 1, Technology 2"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="languages" class="block text-sm font-medium text-gray-700 mb-1">
+        Languages (comma-separated)
+      </label>
+      <input
+        type="text"
+        id="languages"
+        name="languages"
+        value={vendor?.languages || ''}
+        placeholder="English, German, French"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="certifications" class="block text-sm font-medium text-gray-700 mb-1">
+        Certifications (comma-separated)
+      </label>
+      <input
+        type="text"
+        id="certifications"
+        name="certifications"
+        value={vendor?.certifications || ''}
+        placeholder="Certification 1, Certification 2"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">
+        Tags (comma-separated)
+      </label>
+      <input
+        type="text"
+        id="tags"
+        name="tags"
+        value={vendor?.tags || ''}
+        placeholder="tag1, tag2, tag3"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="industries" class="block text-sm font-medium text-gray-700 mb-1">
+        Industries (comma-separated)
+      </label>
+      <input
+        type="text"
+        id="industries"
+        name="industries"
+        value={vendor?.industries || ''}
+        placeholder="Industry 1, Industry 2"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+  </section>
+
+  <!-- COMPANY INFORMATION -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      Company Information
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label for="year_founded" class="block text-sm font-medium text-gray-700 mb-1">
+          Year Founded
+        </label>
+        <input
+          type="number"
+          id="year_founded"
+          name="year_founded"
+          value={vendor?.year_founded || ''}
+          min="1800"
+          max="2100"
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+      
+      <div>
+        <label for="employee_count" class="block text-sm font-medium text-gray-700 mb-1">
+          Employee Count
+        </label>
+        <input
+          type="text"
+          id="employee_count"
+          name="employee_count"
+          value={vendor?.employee_count || ''}
+          placeholder="e.g., 50-100"
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+      
+      <div>
+        <label for="hourly_rate" class="block text-sm font-medium text-gray-700 mb-1">
+          Hourly Rate
+        </label>
+        <input
+          type="text"
+          id="hourly_rate"
+          name="hourly_rate"
+          value={vendor?.hourly_rate || ''}
+          placeholder="e.g., €50-100"
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAN & FEATURING -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      Plan & Featuring
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="plan" class="block text-sm font-medium text-gray-700 mb-1">
+          Plan
+        </label>
+        <select
+          id="plan"
+          name="plan"
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        >
+          <option value="free" selected={vendor?.plan === 'free' || !vendor?.plan}>Free</option>
+          <option value="pro" selected={vendor?.plan === 'pro'}>Pro</option>
+          <option value="featured" selected={vendor?.plan === 'featured'}>Featured</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">
+          Priority (1-5)
+        </label>
+        <select
+          id="priority"
+          name="priority"
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        >
+          <option value="">None</option>
+          <option value="1" selected={vendor?.priority === 1}>1</option>
+          <option value="2" selected={vendor?.priority === 2}>2</option>
+          <option value="3" selected={vendor?.priority === 3}>3</option>
+          <option value="4" selected={vendor?.priority === 4}>4</option>
+          <option value="5" selected={vendor?.priority === 5}>5</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="featured_until" class="block text-sm font-medium text-gray-700 mb-1">
+          Featured Until
+        </label>
+        <input
+          type="date"
+          id="featured_until"
+          name="featured_until"
+          value={vendor?.featured_until ? new Date(vendor.featured_until).toISOString().split('T')[0] : ''}
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      </div>
+      
+      <div class="flex items-center">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            id="featured"
+            name="featured"
+            checked={vendor?.featured === true}
+            class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+          />
+          <span class="text-sm font-medium text-gray-700">Featured</span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="flex items-center">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          id="og_member"
+          name="og_member"
+          checked={vendor?.og_member === true}
+          class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+        />
+        <span class="text-sm font-medium text-gray-700">OG Member</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- SEO METADATA -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      SEO Metadata
+    </h2>
+    
+    <div>
+      <label for="meta_title" class="block text-sm font-medium text-gray-700 mb-1">
+        Meta Title
+      </label>
+      <input
+        type="text"
+        id="meta_title"
+        name="meta_title"
+        value={vendor?.meta_title || ''}
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="meta_description" class="block text-sm font-medium text-gray-700 mb-1">
+        Meta Description
+      </label>
+      <textarea
+        id="meta_description"
+        name="meta_description"
+        rows="3"
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      >{vendor?.meta_description || ''}</textarea>
+    </div>
+    
+    <div>
+      <label for="canonical_url" class="block text-sm font-medium text-gray-700 mb-1">
+        Canonical URL
+      </label>
+      <input
+        type="url"
+        id="canonical_url"
+        name="canonical_url"
+        value={vendor?.canonical_url || ''}
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+    
+    <div>
+      <label for="logo_url" class="block text-sm font-medium text-gray-700 mb-1">
+        Logo URL
+      </label>
+      <input
+        type="url"
+        id="logo_url"
+        name="logo_url"
+        value={vendor?.logo_url || ''}
+        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+      />
+    </div>
+  </section>
+
+  <!-- SUBMIT BUTTONS -->
+  <div class="flex items-center justify-between pt-4 border-t">
+    <a
+      href="/admin"
+      class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
+    >
+      Cancel
+    </a>
+    <button
+      type="submit"
+      class="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-900 transition-colors font-medium"
+    >
+      {isNewVendor ? 'Create Vendor' : 'Save Changes'}
+    </button>
+  </div>
+</form>
+

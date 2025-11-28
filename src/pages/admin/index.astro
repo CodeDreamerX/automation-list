@@ -1,610 +1,178 @@
 ---
 export const prerender = false;
 
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import Papa from 'papaparse';
 import { supabase } from '../../lib/supabaseClient';
-import { 
-  SCHEMA_FIELDS, 
-  REQUIRED_FIELDS, 
-  normalizeRow, 
-  validateRow, 
-  generateCSV,
-  type ValidationResult 
-} from '../../lib/admin/csvUtils';
-import { 
-  checkAuth, 
-  setAuthCookie, 
-  clearAuthCookie, 
-  clearDataCookies, 
-  verifyPassword 
-} from '../../lib/admin/authUtils';
-import AuthForm from '../../components/admin/AuthForm.astro';
-import UploadForm from '../../components/admin/UploadForm.astro';
-import PreviewTable from '../../components/admin/PreviewTable.astro';
-import Statistics from '../../components/admin/Statistics.astro';
-import ResultsSummary from '../../components/admin/ResultsSummary.astro';
-import ResultsTable from '../../components/admin/ResultsTable.astro';
+import { checkAuth, protectAdminRoute } from '../../lib/admin/authUtils';
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import VendorTable from '../../components/admin/VendorTable.astro';
 
-const engNavItems = [
-  { label: "Home", href: "/en/" },
-  { label: "Features", href: "/en/features" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
-
-// Helper function to recalculate validation counts
-function calculateValidationCounts(validationResults: ValidationResult[]) {
-  let totalRowsWithErrors = 0;
-  let totalRowsWithWarnings = 0;
-  
-  for (const validation of validationResults) {
-    if (validation.missingRequired.length > 0) {
-      totalRowsWithErrors++;
-    }
-    if (validation.invalidEmail || validation.invalidWebsite || validation.duplicateSlug) {
-      totalRowsWithWarnings++;
-    }
-  }
-  
-  return { totalRowsWithErrors, totalRowsWithWarnings };
-}
-
-// Helper function to validate all rows
-function validateAllRows(data: any[]): { validationResults: ValidationResult[]; allSlugs: string[] } {
-  const validationResults: ValidationResult[] = [];
-  const allSlugs: string[] = [];
-  
-  for (const row of data) {
-    if (row.slug) {
-      allSlugs.push(row.slug);
-    }
-  }
-  
-  for (let i = 0; i < data.length; i++) {
-    const validation = validateRow(data[i], i, allSlugs);
-    validationResults.push(validation);
-  }
-  
-  return { validationResults, allSlugs };
-}
-
-// Handle logout
+// Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
+  const { clearAuthCookie } = await import('../../lib/admin/authUtils');
   clearAuthCookie(Astro.cookies);
-  return Astro.redirect('/admin');
+  return Astro.redirect('/admin/login?logout=true');
 }
 
-// Handle start over
-if (Astro.url.searchParams.get('start_over') === 'true') {
-  clearDataCookies(Astro.cookies);
-  return Astro.redirect('/admin');
+// Check authentication and redirect if not logged in
+const redirectResponse = await protectAdminRoute(Astro.cookies);
+if (redirectResponse) {
+  return redirectResponse;
 }
 
-// Handle download failed rows CSV
-if (Astro.request.method === 'GET' && Astro.url.searchParams.get('download_failed') === 'true') {
-  const failedRowNumbersCookie = Astro.cookies.get('failed_row_numbers')?.value;
-  const storedData = Astro.cookies.get('parsed_data')?.value;
-  
-  if (failedRowNumbersCookie && storedData) {
-    try {
-      const failedRowNumbers = JSON.parse(failedRowNumbersCookie) as number[];
-      const allNormalizedData = JSON.parse(storedData) as any[];
-      
-      if (failedRowNumbers.length > 0 && allNormalizedData.length > 0) {
-        const failedRowData = failedRowNumbers.map(rowNum => {
-          const row = allNormalizedData[rowNum - 1];
-          return row || null;
-        }).filter(row => row !== null);
-        
-        const csv = generateCSV(failedRowData, SCHEMA_FIELDS);
-        
-        return new Response(csv, {
-          headers: {
-            'Content-Type': 'text/csv',
-            'Content-Disposition': `attachment; filename="failed_rows_${new Date().toISOString().split('T')[0]}.csv"`
-          }
-        });
-      }
-    } catch (e) {
-      // Ignore errors
-    }
-  }
-}
+// Get search query from URL
+const searchQuery = Astro.url.searchParams.get('q') || '';
 
-// Initialize state variables
-let authenticated = checkAuth(Astro.cookies);
-let passwordError = false;
-let uploadMessage = '';
-let normalizedData: any[] | null = null;
-let rowCount = 0;
-let validationResults: ValidationResult[] | null = null;
-let unknownColumnsWarning: string[] = [];
-let totalRowsWithErrors = 0;
-let totalRowsWithWarnings = 0;
-let dataConfirmed = false;
-let insertResults: Array<{
-  rowNumber: number;
-  slug: string;
-  status: 'inserted' | 'duplicate' | 'error';
-  message: string;
-}> | null = null;
-
-// Restore normalizedData from cookie on page load
-if (authenticated && Astro.request.method !== 'POST') {
-  const storedData = Astro.cookies.get('parsed_data')?.value;
-  if (storedData) {
-    try {
-      const parsed = JSON.parse(storedData) as any[];
-      if (!normalizedData) {
-        normalizedData = parsed;
-        rowCount = parsed.length;
-        if (parsed && parsed.length > 0) {
-          const { validationResults: restoredValidation } = validateAllRows(parsed);
-          validationResults = restoredValidation;
-          unknownColumnsWarning = [];
-          const counts = calculateValidationCounts(validationResults);
-          totalRowsWithErrors = counts.totalRowsWithErrors;
-          totalRowsWithWarnings = counts.totalRowsWithWarnings;
-          uploadMessage = 'Data restored from previous session.';
-        }
-      }
-    } catch (e) {
-      if (!normalizedData) {
-        normalizedData = null;
-        validationResults = null;
-      }
-    }
-  }
-  const confirmedCookie = Astro.cookies.get('data_confirmed')?.value;
-  if (confirmedCookie === 'true') {
-    dataConfirmed = true;
-  }
-}
-
-// Handle POST request
+// Handle actions (delete, toggle featured, change plan, change priority)
 if (Astro.request.method === 'POST') {
-  const contentType = Astro.request.headers.get('content-type') || '';
+  const formData = await Astro.request.formData();
+  const action = formData.get('action')?.toString();
+  const vendorId = formData.get('vendor_id')?.toString();
   
-  if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
-    try {
-      const formData = await Astro.request.formData();
-      const submittedPassword = formData.get('password')?.toString();
-      const csvFile = formData.get('csv') as File | null;
+  if (action && vendorId) {
+    if (action === 'delete') {
+      const { error } = await supabase
+        .from('vendors')
+        .delete()
+        .eq('id', vendorId);
       
-      // Handle password authentication
-      if (submittedPassword !== null && csvFile === null && submittedPassword !== undefined) {
-        if (verifyPassword(submittedPassword)) {
-          setAuthCookie(Astro.cookies);
-          authenticated = true;
-          return Astro.redirect(Astro.url.pathname);
-        } else {
-          passwordError = true;
+      if (error) {
+        console.error('Error deleting vendor:', error);
+      }
+    } else if (action === 'toggle_featured') {
+      const { data: vendor } = await supabase
+        .from('vendors')
+        .select('featured')
+        .eq('id', vendorId)
+        .single();
+      
+      if (vendor) {
+        await supabase
+          .from('vendors')
+          .update({ 
+            featured: !vendor.featured,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', vendorId);
+      }
+    } else if (action === 'change_plan') {
+      const plan = formData.get('plan')?.toString();
+      if (plan && ['free', 'pro', 'featured'].includes(plan)) {
+        await supabase
+          .from('vendors')
+          .update({ 
+            plan: plan,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', vendorId);
+      }
+    } else if (action === 'change_priority') {
+      const priority = formData.get('priority')?.toString();
+      if (priority) {
+        const priorityNum = parseInt(priority);
+        if (priorityNum >= 1 && priorityNum <= 5) {
+          await supabase
+            .from('vendors')
+            .update({ 
+              priority: priorityNum,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', vendorId);
         }
       }
-      
-      // Handle CSV file upload and parsing
-      if (csvFile !== null && authenticated) {
-        try {
-          const csvText = await csvFile.text();
-          const parseResult = Papa.parse(csvText, { header: true });
-          const parsedData = parseResult.data as any[];
-          rowCount = parsedData.length;
-          
-          // Normalize all rows
-          normalizedData = [];
-          unknownColumnsWarning = [];
-          
-          for (const row of parsedData) {
-            const { normalized, unknownColumns } = normalizeRow(row);
-            normalizedData.push(normalized);
-            
-            for (const col of unknownColumns) {
-              if (!unknownColumnsWarning.includes(col)) {
-                unknownColumnsWarning.push(col);
-              }
-            }
-          }
-          
-          // Validate all rows
-          const { validationResults: validated } = validateAllRows(normalizedData);
-          validationResults = validated;
-          const counts = calculateValidationCounts(validationResults);
-          totalRowsWithErrors = counts.totalRowsWithErrors;
-          totalRowsWithWarnings = counts.totalRowsWithWarnings;
-          
-          uploadMessage = `CSV file parsed successfully!`;
-          insertResults = null;
-          dataConfirmed = false;
-          clearDataCookies(Astro.cookies);
-          
-          // Store normalized data in cookie
-          if (normalizedData && normalizedData.length > 0) {
-            const dataJson = JSON.stringify(normalizedData);
-            if (dataJson.length > 3000) {
-              uploadMessage = `CSV file parsed successfully! Warning: Data is large (${dataJson.length} bytes) and may not persist in cookies.`;
-            } else {
-              Astro.cookies.set('parsed_data', dataJson, {
-                path: '/',
-                httpOnly: true,
-                secure: false,
-                sameSite: 'lax',
-                maxAge: 60 * 60 * 24
-              });
-            }
-          }
-        } catch (error) {
-          uploadMessage = `Error parsing CSV: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          normalizedData = null;
-          validationResults = null;
-          rowCount = 0;
-          unknownColumnsWarning = [];
-          totalRowsWithErrors = 0;
-          totalRowsWithWarnings = 0;
-          insertResults = null;
-          dataConfirmed = false;
-          clearDataCookies(Astro.cookies);
-        }
-      }
-      
-      // Handle insert action
-      const insertPayload = formData.get('payload')?.toString();
-      const confirmData = formData.get('confirmData');
-      if (insertPayload && authenticated && confirmData === 'on') {
-        try {
-          let rowsToInsert: any[];
-          try {
-            rowsToInsert = JSON.parse(insertPayload) as any[];
-          } catch (parseError) {
-            const storedData = Astro.cookies.get('parsed_data')?.value;
-            if (storedData) {
-              rowsToInsert = JSON.parse(storedData) as any[];
-            } else {
-              throw new Error('Could not parse payload and no stored data available');
-            }
-          }
-          insertResults = [];
-          
-          // Process each row
-          for (let i = 0; i < rowsToInsert.length; i++) {
-            const row = rowsToInsert[i];
-            const rowNumber = i + 1;
-            const slug = row.slug || '';
-            
-            const missingRequired = REQUIRED_FIELDS.filter(field => !row[field] || row[field] === null);
-            
-            if (missingRequired.length > 0) {
-              insertResults.push({
-                rowNumber,
-                slug,
-                status: 'error',
-                message: `Missing required field${missingRequired.length > 1 ? 's' : ''}: ${missingRequired.join(', ')}`
-              });
-              continue;
-            }
-            
-            // Check slug uniqueness in database
-            const { data: existingVendor, error: checkError } = await supabase
-              .from('vendors')
-              .select('id')
-              .eq('slug', slug)
-              .maybeSingle();
-            
-            if (checkError) {
-              insertResults.push({
-                rowNumber,
-                slug,
-                status: 'error',
-                message: `Database error checking slug: ${checkError.message}`
-              });
-              continue;
-            }
-            
-            if (existingVendor) {
-              insertResults.push({
-                rowNumber,
-                slug,
-                status: 'duplicate',
-                message: 'Slug already exists in database'
-              });
-              continue;
-            }
-            
-            // Prepare insert object
-            const insertObject: any = {
-              name: row.name,
-              slug: row.slug,
-              country: row.country,
-              region: row.region,
-              address: row.address,
-              website: row.website,
-              email: row.email,
-              phone: row.phone,
-              category: row.category,
-              technologies: row.technologies,
-              languages: row.languages,
-              certifications: row.certifications,
-              tags: row.tags,
-              description: row.description,
-              logo_url: row.logo_url
-            };
-            
-            // Perform row-by-row insert
-            const { data, error } = await supabase
-              .from('vendors')
-              .insert([insertObject]);
-            
-            if (error) {
-              insertResults.push({
-                rowNumber,
-                slug,
-                status: 'error',
-                message: error.message
-              });
-            } else if (data) {
-              insertResults.push({
-                rowNumber,
-                slug,
-                status: 'inserted',
-                message: 'OK'
-              });
-            } else {
-              insertResults.push({
-                rowNumber,
-                slug,
-                status: 'error',
-                message: 'Insert completed but no data returned'
-              });
-            }
-          }
-          
-          uploadMessage = `Insert operation completed!`;
-          
-          // Store failed row numbers for CSV download
-          const failedRowNumbers = insertResults
-            .filter(r => r.status === 'error' || r.status === 'duplicate')
-            .map(r => r.rowNumber);
-          
-          if (failedRowNumbers.length > 0) {
-            Astro.cookies.set('failed_row_numbers', JSON.stringify(failedRowNumbers), {
-              path: '/',
-              httpOnly: true,
-              secure: false,
-              sameSite: 'lax',
-              maxAge: 60 * 60 * 24
-            });
-          } else {
-            Astro.cookies.delete('failed_row_numbers', { path: '/' });
-            Astro.cookies.delete('parsed_data', { path: '/' });
-          }
-          
-          Astro.cookies.delete('data_confirmed', { path: '/' });
-          dataConfirmed = false;
-        } catch (error) {
-          uploadMessage = `Error inserting data: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          insertResults = null;
-        }
-      }
-      
-      // Handle confirmation checkbox submission
-      if (formData.get('action') === 'confirm') {
-        const confirmChecked = formData.get('confirmData') === 'on';
-        if (confirmChecked) {
-          dataConfirmed = true;
-          Astro.cookies.set('data_confirmed', 'true', {
-            path: '/',
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24
-          });
-          
-          const payloadData = formData.get('payload')?.toString();
-          if (payloadData && !normalizedData) {
-            try {
-              const parsed = JSON.parse(payloadData) as any[];
-              normalizedData = parsed;
-              rowCount = parsed.length;
-              if (parsed && parsed.length > 0) {
-                const { validationResults: restoredValidation } = validateAllRows(parsed);
-                validationResults = restoredValidation;
-                unknownColumnsWarning = [];
-                const counts = calculateValidationCounts(validationResults);
-                totalRowsWithErrors = counts.totalRowsWithErrors;
-                totalRowsWithWarnings = counts.totalRowsWithWarnings;
-              }
-            } catch (e) {
-              uploadMessage = `Error restoring data: ${e instanceof Error ? e.message : 'Unknown error'}`;
-            }
-          }
-        }
-      }
-    } catch (error) {
-      passwordError = true;
     }
   }
+  
+  return Astro.redirect('/admin');
+}
+
+// Handle GET delete action (with confirmation)
+if (Astro.request.method === 'GET' && Astro.url.searchParams.get('action') === 'delete') {
+  const vendorId = Astro.url.searchParams.get('id');
+  if (vendorId) {
+    const { error } = await supabase
+      .from('vendors')
+      .delete()
+      .eq('id', vendorId);
+    
+    if (error) {
+      console.error('Error deleting vendor:', error);
+    }
+  }
+  return Astro.redirect('/admin');
+}
+
+// Fetch all vendors
+const { data: vendors, error } = await supabase
+  .from('vendors')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+if (error) {
+  console.error('Error fetching vendors:', error);
 }
 ---
 
-<BaseLayout 
-  title="Admin - Automation List"
-  description="Admin panel for Automation List"
-  lang="en"
-  navItems={engNavItems}
->
-  <section class="min-h-screen flex items-center justify-center bg-white py-16">
-    <div class={`container-px mx-auto ${normalizedData && normalizedData.length > 0 ? 'max-w-7xl' : 'max-w-md'}`}>
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">Admin Panel</h1>
-
-        {!authenticated ? (
-          <AuthForm passwordError={passwordError} />
-        ) : (
-          <>
-            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm flex items-center justify-between">
-              <span>✓ You are logged in as admin</span>
-              <a
-                href="?logout=true"
-                class="text-green-700 hover:text-green-800 underline text-sm font-medium"
-              >
-                Logout
-              </a>
-            </div>
-            <div class="mb-8 border-b border-gray-200"></div>
-            
-            {normalizedData && normalizedData.length > 0 && validationResults && (
-              <div class="mb-8 space-y-6">
-                {/* Success Message Section */}
-                <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                  <h2 class="text-3xl font-bold text-gray-900 mb-4">
-                    Parsed {rowCount} rows successfully
-                  </h2>
-                  
-                  {totalRowsWithWarnings > 0 && (
-                    <div class="mb-3 p-4 bg-yellow-50 border border-yellow-300 rounded-md">
-                      <div class="flex items-center gap-2 mb-2">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          Warning
-                        </span>
-                        <span class="font-semibold text-yellow-900">
-                          {totalRowsWithWarnings} row{totalRowsWithWarnings !== 1 ? 's' : ''} with warnings
-                        </span>
-                      </div>
-                      <p class="text-sm text-yellow-800">
-                        Some rows have invalid email addresses, website URLs, or duplicate slugs. These will still be inserted but may cause issues.
-                      </p>
-                    </div>
-                  )}
-                  
-                  {totalRowsWithErrors > 0 && (
-                    <div class="mb-3 p-4 bg-red-50 border border-red-300 rounded-md">
-                      <div class="flex items-center gap-2 mb-2">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Error
-                        </span>
-                        <span class="font-semibold text-red-900">
-                          {totalRowsWithErrors} row{totalRowsWithErrors !== 1 ? 's' : ''} with errors
-                        </span>
-                      </div>
-                      <p class="text-sm text-red-800">
-                        These rows are missing required fields and will be skipped during insertion.
-                      </p>
-                    </div>
-                  )}
-                  
-                  {uploadMessage && (
-                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm">
-                      {uploadMessage}
-                    </div>
-                  )}
-                </div>
-                
-                <Statistics 
-                  rowCount={rowCount}
-                  totalRowsWithErrors={totalRowsWithErrors}
-                  totalRowsWithWarnings={totalRowsWithWarnings}
-                  unknownColumnsWarning={unknownColumnsWarning}
-                />
-
-                <PreviewTable 
-                  normalizedData={normalizedData}
-                  validationResults={validationResults}
-                  rowCount={rowCount}
-                />
-
-                {/* Legend */}
-                <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                  <h3 class="text-lg font-semibold text-gray-900 mb-4">Color Coding</h3>
-                  <div class="flex flex-wrap gap-6">
-                    <div class="flex items-center gap-2">
-                      <div class="w-5 h-5 bg-red-100 border border-red-300 rounded"></div>
-                      <span class="text-sm text-gray-700">Missing required fields (errors)</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <div class="w-5 h-5 bg-yellow-100 border border-yellow-300 rounded"></div>
-                      <span class="text-sm text-gray-700">Warnings (invalid email/website, duplicate slug)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="border-b border-gray-200"></div>
-
-                {/* Confirmation Form */}
-                {!dataConfirmed && (
-                  <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Confirmation Required</h2>
-                    <form method="POST" enctype="application/x-www-form-urlencoded">
-                      <div class="p-4 bg-blue-50 border border-blue-300 rounded-md">
-                        <label class="flex items-start gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            id="confirmData"
-                            name="confirmData"
-                            class="mt-1 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-                          />
-                          <span class="text-sm font-medium text-gray-900 leading-relaxed">
-                            I confirm that all rows look correct and I want to insert them into the database.
-                          </span>
-                        </label>
-                        <input type="hidden" name="action" value="confirm" />
-                        {normalizedData && normalizedData.length > 0 && (
-                          <input type="hidden" name="payload" value={JSON.stringify(normalizedData)} />
-                        )}
-                        <button
-                          type="submit"
-                          class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
-                        >
-                          Confirm and Proceed to Insert
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                {/* Insert Form */}
-                {dataConfirmed && normalizedData && normalizedData.length > 0 && (
-                  <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Insert Vendors into Database</h2>
-                    <form method="POST" enctype="application/x-www-form-urlencoded">
-                      <div class="p-4 bg-green-50 border border-green-300 rounded-md">
-                        <p class="text-sm text-gray-700 mb-4">
-                          Ready to insert <strong>{normalizedData.length}</strong> row{normalizedData.length !== 1 ? 's' : ''} into the database.
-                        </p>
-                        <input type="hidden" name="payload" value={JSON.stringify(normalizedData)} />
-                        <input type="hidden" name="confirmData" value="on" />
-                        <button
-                          type="submit"
-                          class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
-                        >
-                          Insert All Vendors
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                {insertResults && insertResults.length > 0 && (
-                  <div class="border-b border-gray-200"></div>
-                )}
-
-                {/* Results Summary */}
-                {insertResults && insertResults.length > 0 && (
-                  <div class="space-y-6">
-                    <ResultsSummary insertResults={insertResults} />
-                    <ResultsTable insertResults={insertResults} />
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <div class="mb-8 border-b border-gray-200"></div>
-            
-            <UploadForm />
-          </>
-        )}
+<AdminLayout title="Vendor Management - Admin Panel" currentPath="/admin">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Vendor Management</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Manage all vendors in the Automation List directory
+        </p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-gray-600">
+          Total: {vendors?.length || 0} vendors
+        </div>
+        <a
+          href="/admin/new"
+          class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-900 transition-colors text-sm font-medium"
+        >
+          + Create New Vendor
+        </a>
       </div>
     </div>
-  </section>
-</BaseLayout>
+
+    <!-- SEARCH BAR -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <form method="GET" action="/admin" class="flex gap-4">
+        <input
+          type="text"
+          name="q"
+          value={searchQuery}
+          placeholder="Search by name, slug, technologies, category, or country..."
+          class="flex-1 border border-gray-300 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+        <button
+          type="submit"
+          class="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-900 transition-colors text-sm font-medium"
+        >
+          Search
+        </button>
+        {searchQuery && (
+          <a
+            href="/admin"
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
+          >
+            Clear
+          </a>
+        )}
+      </form>
+    </div>
+
+    <!-- VENDOR TABLE -->
+    <VendorTable vendors={vendors || []} searchQuery={searchQuery} />
+
+    <!-- QUICK ACTIONS INFO -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h3 class="text-sm font-semibold text-gray-900 mb-2">Quick Actions</h3>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• Click <strong>Edit</strong> to modify vendor details</li>
+        <li>• Click <strong>Delete</strong> to remove a vendor (this action cannot be undone)</li>
+        <li>• Use the search bar to filter vendors by name, slug, technologies, category, or country</li>
+      </ul>
+    </div>
+  </div>
+</AdminLayout>

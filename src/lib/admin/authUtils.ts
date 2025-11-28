@@ -1,12 +1,12 @@
 // Authentication utilities for admin panel
 
 export function checkAuth(cookies: any): boolean {
-  const authCookie = cookies.get('admin_authenticated');
-  return authCookie?.value === 'true';
+  const authCookie = cookies.get('adminSession');
+  return authCookie?.value === '1';
 }
 
 export function setAuthCookie(cookies: any): void {
-  cookies.set('admin_authenticated', 'true', {
+  cookies.set('adminSession', '1', {
     path: '/',
     httpOnly: true,
     secure: false, // Allow in development
@@ -16,21 +16,37 @@ export function setAuthCookie(cookies: any): void {
 }
 
 export function clearAuthCookie(cookies: any): void {
-  cookies.delete('admin_authenticated', { path: '/' });
-  cookies.delete('parsed_data', { path: '/' });
-  cookies.delete('data_confirmed', { path: '/' });
-  cookies.delete('failed_row_numbers', { path: '/' });
-}
-
-export function clearDataCookies(cookies: any): void {
-  cookies.delete('parsed_data', { path: '/' });
-  cookies.delete('data_confirmed', { path: '/' });
-  cookies.delete('failed_row_numbers', { path: '/' });
+  // Delete cookie by setting it to expire immediately
+  cookies.delete('adminSession', { 
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax'
+  });
+  // Also try to set it to empty/expired to ensure it's cleared
+  cookies.set('adminSession', '', {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 0 // Expire immediately
+  });
 }
 
 export function verifyPassword(submittedPassword: string): boolean {
   const correctPassword = import.meta.env.ADMIN_PASSWORD || '';
   return submittedPassword === correctPassword;
+}
+
+// Protect admin routes - redirect to login if not authenticated
+export async function protectAdminRoute(cookies: any): Promise<Response | null> {
+  if (!checkAuth(cookies)) {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': '/admin/login'
+      }
+    });
+  }
+  return null;
 }
 
 
