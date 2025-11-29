@@ -17,25 +17,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Check if request is FormData or JSON
     const contentType = request.headers.get('content-type') || '';
     let insertData: any;
-    let categoryIds: string[] = [];
-    let primaryCategoryId: string | null = null;
+    let categorySlugs: string[] = [];
     
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
       const form = await request.formData();
       
-      // Extract category IDs from form data
-      categoryIds = form.getAll("category_ids[]")
-        .map((id) => String(id).trim())
-        .filter((id) => id.length > 0);
+      // Extract category slugs from form data
+      categorySlugs = form.getAll("category_slugs")
+        .map((slug) => String(slug).trim())
+        .filter((slug) => slug.length > 0);
       
-      // Extract primary category from form data
-      const primaryCategory = form.get("primary_category")?.toString().trim();
-      if (primaryCategory && primaryCategory.length > 0) {
-        primaryCategoryId = primaryCategory;
-      }
-      
-      // Build insertData from form fields (exclude category_ids as it's not a vendor column)
+      // Build insertData from form fields
       insertData = {
         name: form.get('name')?.toString() || null,
         slug: form.get('slug')?.toString() || null,
@@ -52,13 +45,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         certifications: form.get('certifications')?.toString() || null,
         tags: form.get('tags')?.toString() || null,
         industries: form.get('industries')?.toString() || null,
-        year_founded: form.get('year_founded')?.toString() || null,
-        employee_count: form.get('employee_count')?.toString() || null,
-        hourly_rate: form.get('hourly_rate')?.toString() || null,
+        year_founded: form.get('year_founded')?.toString() ? Number(form.get('year_founded')!.toString()) : null,
+        employee_count: form.get('employee_count')?.toString() ? Number(form.get('employee_count')!.toString()) : null,
+        hourly_rate: form.get('hourly_rate')?.toString() ? Number(form.get('hourly_rate')!.toString()) : null,
         plan: form.get('plan')?.toString() || 'free',
-        priority: form.get('priority')?.toString() ? parseInt(form.get('priority')!.toString()) : null,
-        featured: form.get('featured') === 'on',
-        og_member: form.get('og_member') === 'on',
+        priority: form.get('priority')?.toString() ? Number(form.get('priority')!.toString()) || 5 : 5,
+        featured: form.get('featured') === 'on' || form.get('featured') === 'true' || form.get('featured') === '1',
+        og_member: form.get('og_member') === 'on' || form.get('og_member') === 'true' || form.get('og_member') === '1',
         featured_until: form.get('featured_until')?.toString() || null,
         meta_title: form.get('meta_title')?.toString() || null,
         meta_description: form.get('meta_description')?.toString() || null,
@@ -68,33 +61,40 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle JSON (backward compatibility)
       const body = await request.json();
-      const { categories, category_ids, category, ...rest } = body; // Exclude legacy categories[], category_ids, and category
+      const { category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
       insertData = { ...rest };
       
-      // Extract category IDs from JSON if present
-      if (category_ids && Array.isArray(category_ids)) {
-        categoryIds = category_ids
-          .map((id: any) => String(id).trim())
-          .filter((id: string) => id.length > 0);
-      } else if (category_ids) {
-        categoryIds = [String(category_ids).trim()].filter((id: string) => id.length > 0);
+      // Normalize types for JSON requests
+      if (insertData.year_founded !== null && insertData.year_founded !== undefined) {
+        insertData.year_founded = Number(insertData.year_founded) || null;
+      }
+      if (insertData.employee_count !== null && insertData.employee_count !== undefined) {
+        insertData.employee_count = Number(insertData.employee_count) || null;
+      }
+      if (insertData.hourly_rate !== null && insertData.hourly_rate !== undefined) {
+        insertData.hourly_rate = Number(insertData.hourly_rate) || null;
+      }
+      if (insertData.priority !== null && insertData.priority !== undefined) {
+        insertData.priority = Number(insertData.priority) || 5;
+      }
+      if (insertData.featured !== null && insertData.featured !== undefined) {
+        insertData.featured = !!insertData.featured;
+      }
+      if (insertData.og_member !== null && insertData.og_member !== undefined) {
+        insertData.og_member = !!insertData.og_member;
+      }
+      if (!insertData.plan) {
+        insertData.plan = 'free';
       }
       
-      // Extract primary category from JSON if present
-      if (body.primary_category) {
-        const primaryCategory = String(body.primary_category).trim();
-        if (primaryCategory.length > 0) {
-          primaryCategoryId = primaryCategory;
-        }
+      // Extract category slugs from JSON if present
+      if (body.category_slugs && Array.isArray(body.category_slugs)) {
+        categorySlugs = body.category_slugs
+          .map((slug: any) => String(slug).trim())
+          .filter((slug: string) => slug.length > 0);
+      } else if (body.category_slugs) {
+        categorySlugs = [String(body.category_slugs).trim()].filter((slug: string) => slug.length > 0);
       }
-    }
-
-    // Validate: require at least one category
-    if (categoryIds.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'At least one category is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
     }
 
     // Normalize website URL: add https:// if missing
@@ -109,11 +109,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     insertData.created_at = new Date().toISOString();
     insertData.updated_at = new Date().toISOString();
 
-    // Create vendor using admin client
-    const { data, error } = await supabaseAdmin
+    // Create vendor using admin client and retrieve new vendor ID
+    const { data: vendor, error } = await supabaseAdmin
       .from('vendors')
       .insert([insertData])
-      .select()
+      .select('id')
       .single();
 
     if (error) {
@@ -124,27 +124,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Insert vendor_categories entries if category IDs were provided
-    if (categoryIds.length > 0 && data?.id) {
-      const vendorCategoryEntries = categoryIds.map((categoryId) => ({
-        vendor_id: data.id,
-        category_id: categoryId,
-        is_primary: primaryCategoryId === categoryId,
-      }));
+    // Insert vendor_categories entries if category slugs were provided
+    if (categorySlugs.length > 0 && vendor?.id) {
+      for (const slug of categorySlugs) {
+        const { data: cat } = await supabaseAdmin
+          .from("categories")
+          .select("id")
+          .eq("slug", slug)
+          .single();
 
-      const { error: vendorCategoriesError } = await supabaseAdmin
-        .from('vendor_categories')
-        .insert(vendorCategoryEntries);
-
-      if (vendorCategoriesError) {
-        console.error('Error creating vendor_categories:', vendorCategoriesError);
-        // Note: We still return success for vendor creation, but log the error
-        // You may want to handle this differently based on your requirements
+        if (cat?.id) {
+          await supabaseAdmin
+            .from("vendor_categories")
+            .insert({
+              vendor_id: vendor.id,
+              category_id: cat.id
+            });
+        }
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, data }),
+      JSON.stringify({ success: true, data: vendor }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {

@@ -3,7 +3,6 @@ interface Vendor {
   name: string;
   slug: string;
   country?: string | null;
-  category?: string | null; // Legacy field, kept for backward compatibility
   technologies?: string | null;
   description?: string | null;
   logo_url?: string | null;
@@ -91,8 +90,8 @@ const {
                 <p class="text-sm text-gray-600 mb-2">{vendor.country}</p>
               )}
               
-              {/* Display primary category from vendor_categories, fallback to legacy category field */}
-              {(vendor.vendor_categories && vendor.vendor_categories.length > 0) ? (
+              {/* Display primary category from vendor_categories */}
+              {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
                 vendor.vendor_categories
                   .filter((vc: any) => vc.is_primary === true)
                   .map((vc: any) => {
@@ -103,11 +102,7 @@ const {
                       </span>
                     ) : null;
                   })
-              ) : vendor.category ? (
-                <span class="inline-block mb-2 px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
-                  {vendor.category}
-                </span>
-              ) : null}
+              )}
               
               {vendor.technologies && (
                 <p class="text-xs text-gray-500 mb-3">{formatTechnologies(vendor.technologies)}</p>

@@ -1,15 +1,17 @@
 ---
+import { isFeatured } from '../lib/isFeatured';
+
 interface Vendor {
   name: string;
   slug: string;
   country?: string | null;
   region?: string | null;
-  category?: string | null;
   technologies?: string | null;
   description?: string | null;
   logo_url?: string | null;
   priority?: number | null;
   featured?: boolean | null;
+  category_slugs?: string[];
   vendor_categories?: Array<{
     is_primary?: boolean | null;
     categories?: {
@@ -51,20 +53,79 @@ function formatTechnologies(technologies: string | null): string {
   return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
 }
 
+// Helper function to get country flag emoji from country name/slug
+function getCountryFlag(country: string | null | undefined): string {
+  if (!country) return '';
+  
+  const countryLower = country.toLowerCase().trim();
+  
+  // Map common country names/slugs to flag emojis
+  const countryFlags: Record<string, string> = {
+    'switzerland': '🇨🇭',
+    'swiss': '🇨🇭',
+    'ch': '🇨🇭',
+    'germany': '🇩🇪',
+    'deutschland': '🇩🇪',
+    'de': '🇩🇪',
+    'austria': '🇦🇹',
+    'österreich': '🇦🇹',
+    'at': '🇦🇹',
+    'france': '🇫🇷',
+    'fr': '🇫🇷',
+    'italy': '🇮🇹',
+    'italia': '🇮🇹',
+    'it': '🇮🇹',
+    'united states': '🇺🇸',
+    'usa': '🇺🇸',
+    'us': '🇺🇸',
+    'united kingdom': '🇬🇧',
+    'uk': '🇬🇧',
+    'gb': '🇬🇧',
+    'netherlands': '🇳🇱',
+    'nl': '🇳🇱',
+    'belgium': '🇧🇪',
+    'be': '🇧🇪',
+    'spain': '🇪🇸',
+    'es': '🇪🇸',
+    'portugal': '🇵🇹',
+    'pt': '🇵🇹',
+    'poland': '🇵🇱',
+    'pl': '🇵🇱',
+    'czech republic': '🇨🇿',
+    'czechia': '🇨🇿',
+    'cz': '🇨🇿',
+    'denmark': '🇩🇰',
+    'dk': '🇩🇰',
+    'sweden': '🇸🇪',
+    'se': '🇸🇪',
+    'norway': '🇳🇴',
+    'no': '🇳🇴',
+    'finland': '🇫🇮',
+    'fi': '🇫🇮',
+  };
+  
+  return countryFlags[countryLower] || '';
+}
+
 const vendorHref = `${hrefPrefix}/${vendor.slug}`;
-const isFeatured = vendor.featured === true;
+const vendorIsFeatured = isFeatured(vendor);
+
+// Derive category_slugs from vendor_categories if not provided
+const categorySlugs = vendor.category_slugs || 
+  (vendor.vendor_categories?.map((vc) => vc.categories?.slug).filter(Boolean) as string[]) || 
+  [];
 ---
 
 <a
   href={vendorHref}
-  class={`relative block rounded-xl shadow-sm hover:shadow-md transition p-6 flex flex-col items-center text-center ${
-    isFeatured
-      ? 'bg-yellow-50/30 border border-yellow-300 hover:border-yellow-400 shadow-lg'
-      : 'bg-white border border-gray-200 hover:border-gray-300'
+  class={`relative block bg-white rounded-lg border p-4 hover:shadow-md transition-shadow flex flex-col items-center text-center ${
+    vendorIsFeatured
+      ? 'bg-yellow-50/30 border-yellow-300'
+      : ''
   }`}
 >
   <!-- Featured Badge -->
-  {isFeatured && showFeaturedBadge && (
+  {vendorIsFeatured && showFeaturedBadge && (
     <span class="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">
       Featured
     </span>
@@ -84,6 +145,22 @@ const isFeatured = vendor.featured === true;
   <!-- Vendor Name -->
   <h3 class="text-lg font-semibold text-gray-900">{vendor.name}</h3>
 
+  <!-- Category Chips -->
+  {categorySlugs.length > 0 && (
+    <div class="flex flex-wrap gap-1 mt-2">
+      {categorySlugs.slice(0, 3).map(slug => (
+        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+          {slug.replace(/-/g, " ")}
+        </span>
+      ))}
+      {categorySlugs.length > 3 && (
+        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+          +{categorySlugs.length - 3}
+        </span>
+      )}
+    </div>
+  )}
+
   <!-- Short Description -->
   {vendor.description && (
     <p class="text-sm text-gray-600 text-center mt-2">
@@ -93,9 +170,9 @@ const isFeatured = vendor.featured === true;
 
   <!-- Country + Category Pills -->
   <div class="flex flex-wrap gap-2 justify-center mt-3">
-    {(vendor.country || vendor.region) && (
-      <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-        {[vendor.region, vendor.country].filter(Boolean).join(', ')}
+    {vendor.country && (
+      <span class="text-xs bg-gray-200 px-2 py-0.5 rounded">
+        {getCountryFlag(vendor.country)} {vendor.country}
       </span>
     )}
     {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (

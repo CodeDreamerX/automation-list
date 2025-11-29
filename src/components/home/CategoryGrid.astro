@@ -1,0 +1,52 @@
+---
+interface Category {
+  slug: string;
+  icon_name?: string;
+  name_en?: string;
+  name_de?: string;
+  description_en?: string;
+  description_de?: string;
+  count?: number;
+}
+
+interface Props {
+  title?: string;
+  categories: Category[];
+  lang?: string;
+}
+
+const {
+  title = "Browse by Category",
+  categories,
+  lang = "en",
+} = Astro.props;
+---
+
+<section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
+  <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {categories.map((cat, i) => {
+      const name = lang === "de" ? cat.name_de : cat.name_en;
+      const description = lang === "de" ? cat.description_de : cat.description_en;
+      const link = `/${lang}/vendors?category=${cat.slug}`;
+      
+      return (
+        <a
+          href={link}
+          class="fade-in-up relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition flex flex-col items-center text-center"
+          style={`animation-delay: ${i * 0.05}s`}
+        >
+          {cat.count !== undefined && cat.count > 0 && (
+            <span class="absolute top-3 right-3 bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">{cat.count}</span>
+          )}
+          <div class="flex justify-center mb-4">
+            <img src={`/src/icons/categories/${cat.icon_name}.svg`} class="w-8 h-8 mx-auto" alt={cat.name_en} />
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">{name}</h3>
+          <p class="text-sm text-gray-600 mt-2">{description}</p>
+        </a>
+      );
+    })}
+  </div>
+</section>
+

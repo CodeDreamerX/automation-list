@@ -1,5 +1,5 @@
 ---
-import { SCHEMA_FIELDS, REQUIRED_FIELDS, type ValidationResult } from '../../lib/admin/csvUtils';
+import { allowedFields, REQUIRED_FIELDS, type ValidationResult } from '../../lib/admin/csvUtils';
 
 interface Props {
   normalizedData: any[];
@@ -8,6 +8,33 @@ interface Props {
 }
 
 const { normalizedData, validationResults, rowCount } = Astro.props;
+
+// Define display fields in a logical order
+const displayFields = [
+  'name',
+  'slug',
+  'country',
+  'region',
+  'city',
+  'address',
+  'website',
+  'email',
+  'phone',
+  'description',
+  'category_slugs', // Will be displayed as _categorySlugs
+  'industries',
+  'technologies',
+  'languages',
+  'certifications',
+  'tags',
+  'year_founded',
+  'employee_count',
+  'hourly_rate',
+  'plan',
+  'featured',
+  'priority',
+  'og_member',
+];
 ---
 
 <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
@@ -18,12 +45,14 @@ const { normalizedData, validationResults, rowCount } = Astro.props;
     <table class="min-w-full border border-gray-300">
       <thead class="bg-gray-100">
         <tr>
-          {SCHEMA_FIELDS.map((key) => (
-            <th class="px-4 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-b border-gray-300">
-              {key}
-              {REQUIRED_FIELDS.includes(key) && (
-                <span class="text-red-600 ml-1">*</span>
-              )}
+          {displayFields.map((key) => (
+            <th class="px-3 py-2 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-b border-gray-300 max-w-xs">
+              <div class="truncate" title={key}>
+                {key === 'category_slugs' ? 'categories' : key}
+                {REQUIRED_FIELDS.includes(key) && (
+                  <span class="text-red-600 ml-1">*</span>
+                )}
+              </div>
             </th>
           ))}
         </tr>
@@ -44,13 +73,22 @@ const { normalizedData, validationResults, rowCount } = Astro.props;
           
           return (
             <tr class={`${rowClass} border-b border-gray-200`}>
-              {SCHEMA_FIELDS.map((field) => {
-                const value = row[field];
+              {displayFields.map((field) => {
+                // Handle category_slugs specially - use _categorySlugs array
+                let value;
+                if (field === 'category_slugs') {
+                  value = row._categorySlugs && row._categorySlugs.length > 0 
+                    ? row._categorySlugs.join(", ") 
+                    : null;
+                } else {
+                  value = row[field];
+                }
+                
                 const isRequired = REQUIRED_FIELDS.includes(field);
                 const isMissing = isRequired && (!value || value === null);
                 
                 // Determine cell background color
-                let cellClass = 'px-4 py-3 text-sm text-gray-900 text-left';
+                let cellClass = 'px-3 py-2 text-xs text-gray-900 text-left';
                 if (isMissing) {
                   cellClass += ' bg-red-200';
                 } else if (field === 'email' && validation.invalidEmail) {
@@ -61,16 +99,32 @@ const { normalizedData, validationResults, rowCount } = Astro.props;
                   cellClass += ' bg-yellow-200';
                 }
                 
-                // Limit width for description column
-                let cellStyle = '';
+                // Limit width for long text columns
+                let maxWidthClass = 'max-w-xs';
                 if (field === 'description') {
-                  cellStyle = 'max-w-md';
+                  maxWidthClass = 'max-w-md';
+                } else if (field === 'name' || field === 'address') {
+                  maxWidthClass = 'max-w-sm';
+                } else if (field === 'category_slugs' || field === 'technologies' || field === 'tags') {
+                  maxWidthClass = 'max-w-xs';
+                } else if (['email', 'website', 'phone'].includes(field)) {
+                  maxWidthClass = 'max-w-xs';
+                } else {
+                  maxWidthClass = 'max-w-32';
+                }
+                
+                // Format boolean values
+                let displayValue = value;
+                if (field === 'featured' || field === 'og_member') {
+                  displayValue = value === true || value === 'true' || value === '1' || value === 'yes' ? 'Yes' : 'No';
                 }
                 
                 return (
-                  <td class={cellClass} class:list={[cellStyle]}>
-                    <div class={field === 'description' ? 'truncate' : ''} title={field === 'description' ? value?.toString() : ''}>
-                      {value?.toString() || <span class="text-gray-400 italic">(empty)</span>}
+                  <td class={`${cellClass} ${maxWidthClass}`}>
+                    <div class="truncate" title={typeof displayValue === 'string' ? displayValue : displayValue?.toString()}>
+                      {displayValue !== null && displayValue !== undefined 
+                        ? displayValue.toString() 
+                        : <span class="text-gray-400 italic">(empty)</span>}
                     </div>
                   </td>
                 );

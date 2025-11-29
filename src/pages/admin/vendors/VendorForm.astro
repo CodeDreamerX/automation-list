@@ -1,14 +1,14 @@
 ---
 export const prerender = false;
 
-import { supabase } from '../../lib/supabaseClient';
-import { protectAdminRoute, getCookieHeader } from '../../lib/admin/authUtils';
-import AdminLayout from '../../components/admin/AdminLayout.astro';
-import VendorForm from '../../components/admin/VendorForm.astro';
+import { supabase } from '../../../lib/supabaseClient';
+import { protectAdminRoute, getCookieHeader } from '../../../lib/admin/authUtils';
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import VendorForm from '../../../components/admin/VendorForm.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
-  const { clearAuthCookie } = await import('../../lib/admin/authUtils');
+  const { clearAuthCookie } = await import('../../../lib/admin/authUtils');
   clearAuthCookie(Astro.cookies);
   return Astro.redirect('/admin/login?logout=true');
 }
@@ -22,10 +22,10 @@ if (redirectResponse) {
 
 // Fetch all categories from Supabase
 const { data: categories } = await supabase
-  .from('categories')
-  .select('id, slug, name_en, name_de')
-  .order('order_index', { ascending: true, nullsLast: true })
-  .order('name_en', { ascending: true });
+  .from("categories")
+  .select("*")
+  .eq("is_active", true)
+  .order("order_index", { ascending: true });
 
 // Handle form submission
 if (Astro.request.method === 'POST') {
@@ -43,7 +43,7 @@ if (Astro.request.method === 'POST') {
     if (existingVendor) {
       console.error('Error: Slug already exists');
       // Redirect back with error
-      return Astro.redirect('/admin/new?error=slug_exists');
+      return Astro.redirect('/admin/vendors/VendorForm?error=slug_exists');
     }
   }
 
@@ -65,7 +65,7 @@ if (Astro.request.method === 'POST') {
     const error = await response.json();
     console.error('Error creating vendor:', error);
     // Redirect back with error
-    return Astro.redirect('/admin/new?error=create_failed');
+    return Astro.redirect('/admin/vendors/VendorForm?error=create_failed');
   }
   
   const result = await response.json();
@@ -91,7 +91,7 @@ if (error === 'slug_exists') {
 }
 ---
 
-<AdminLayout title="Create New Vendor - Admin Panel" currentPath="/admin">
+<AdminLayout title="Create New Vendor - Admin Panel" currentPath="/admin/vendors">
   <div class="space-y-6">
     <!-- HEADER -->
     <div class="flex items-center justify-between">

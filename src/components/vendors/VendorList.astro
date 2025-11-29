@@ -60,25 +60,26 @@ query = query.order('priority', { ascending: false, nullsLast: true })
   .order('name', { ascending: true });
 
 // Execute query
-const { data: vendors, error } = await query;
+const { data: allVendors, error } = await query;
 
 if (error) {
   console.error('Error fetching vendors:', error);
 }
 
-// Initialize filtered vendors
-let filteredVendors = vendors || [];
+// Normalize category data shape
+const normalizedVendors = (allVendors || []).map(v => ({
+  ...v,
+  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+}));
 
-// Apply category filter in JavaScript (Supabase doesn't support filtering on nested relationships)
-if (activeCategory) {
-  filteredVendors = filteredVendors.filter(vendor => 
-    (vendor.vendor_categories || []).some((vc: any) => vc.categories?.slug === activeCategory)
-  );
-}
+// Perform M2M category filtering client-side
+const filteredVendors = normalizedVendors.filter(v =>
+  !activeCategory || v.category_slugs.includes(activeCategory)
+);
 
 // Extract unique lists for filter dropdowns from ALL vendors (not filtered) for dropdown options
 const uniqueCountryList = Array.from(
-  new Set((vendors || []).map(v => v.country).filter(Boolean))
+  new Set(normalizedVendors.map(v => v.country).filter(Boolean))
 ).sort();
 
 // Build category list with slugs from database categories
@@ -90,6 +91,33 @@ const categoryList = (dbCategories || []).map(cat => ({
 
 <div class="container-px mx-auto max-w-7xl px-4 py-10">
   <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+
+  <!-- Category Filter Badges -->
+  {categoryList.length > 0 && (
+    <div class="mb-6 flex flex-wrap gap-2">
+      {categoryList.map(cat => {
+        // Build URL preserving existing query params but updating category
+        const url = new URL(Astro.url);
+        if (cat.slug === activeCategory) {
+          // If clicking active category, remove it (clear filter)
+          url.searchParams.delete('category');
+        } else {
+          // Set new category
+          url.searchParams.set('category', cat.slug);
+        }
+        return (
+          <a
+            href={url.toString()}
+            class={`px-3 py-1 rounded-md text-sm cursor-pointer ${
+              cat.slug === activeCategory ? "bg-black text-white" : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            {cat.name}
+          </a>
+        );
+      })}
+    </div>
+  )}
 
   <!-- Search and Filter Form -->
   <div class="border border-gray-200 rounded-lg p-4 mb-8 bg-white shadow-sm">

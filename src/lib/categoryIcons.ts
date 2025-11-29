@@ -10,5 +10,7 @@ export const CATEGORY_ICONS = [
   "layout-dashboard",
   "binary-tree",
   "engine",
+  "vision-safety",
 ];
+
 

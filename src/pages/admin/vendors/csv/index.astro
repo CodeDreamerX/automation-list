@@ -1,0 +1,94 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+
+// Check authentication and redirect if not logged in
+const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+---
+
+<AdminLayout title="CSV Import - Admin Panel" currentPath="/admin/vendors/csv">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">CSV Import</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Import vendors from a CSV file
+        </p>
+      </div>
+    </div>
+
+    <!-- WORKFLOW EXPLANATION -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">CSV Import Workflow</h2>
+      
+      <div class="space-y-6">
+        <!-- Step 1: Upload -->
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-semibold text-sm">
+            1
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-gray-900 mb-1">Upload File</h3>
+            <p class="text-sm text-gray-600">
+              Select and upload your CSV file containing vendor data. The file will be validated to ensure it has the correct format and required columns.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2: Preview -->
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-semibold text-sm">
+            2
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-gray-900 mb-1">Preview</h3>
+            <p class="text-sm text-gray-600">
+              Review the parsed data from your CSV file. Check for any errors or missing information before proceeding with the import.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3: Import -->
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-semibold text-sm">
+            3
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-gray-900 mb-1">Import</h3>
+            <p class="text-sm text-gray-600">
+              Confirm and import the vendors into the database. You'll receive a summary of successful imports and any errors that occurred.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTON -->
+      <div class="mt-8 pt-6 border-t border-gray-200">
+        <a
+          href="/admin/vendors/csv/upload"
+          class="btn-primary"
+        >
+          Start CSV Import
+        </a>
+      </div>
+    </div>
+
+    <!-- ADDITIONAL INFO -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h3 class="text-sm font-semibold text-gray-900 mb-2">Important Notes</h3>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• Ensure your CSV file includes all required columns</li>
+        <li>• Review the preview carefully before confirming the import</li>
+        <li>• Duplicate vendors will be handled according to your import settings</li>
+        <li>• Large files may take several minutes to process</li>
+      </ul>
+    </div>
+  </div>
+</AdminLayout>
+

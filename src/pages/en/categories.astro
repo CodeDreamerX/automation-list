@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import { supabase } from "../../lib/supabaseClient";
@@ -26,6 +28,12 @@ const { data: vendors } = await supabase
     )
   `);
 
+// Normalize category data shape
+const normalizedVendors = (vendors || []).map(v => ({
+  ...v,
+  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+}));
+
 // Fetch active categories from database
 const { data: dbCategories } = await supabase
   .from("categories")
@@ -35,9 +43,9 @@ const { data: dbCategories } = await supabase
 
 // Helper function to count vendors by category slug
 function countByCategorySlug(categorySlug: string): number {
-  if (!vendors || !categorySlug) return 0;
-  return vendors.filter(v => 
-    (v.vendor_categories || []).some((vc: any) => vc.categories?.slug === categorySlug)
+  if (!normalizedVendors || !categorySlug) return 0;
+  return normalizedVendors.filter(v => 
+    v.category_slugs.includes(categorySlug)
   ).length;
 }
 

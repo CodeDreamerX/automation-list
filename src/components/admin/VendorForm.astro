@@ -11,20 +11,6 @@ interface Props {
 
 const { vendor, categories = [] } = Astro.props;
 const isNewVendor = !vendor || !vendor.id;
-
-// Extract selected category IDs from vendor_categories for edit mode
-const selectedCategoryIds = new Set<string>();
-let primaryCategoryId: string | null = null;
-if (!isNewVendor && vendor?.vendor_categories) {
-  vendor.vendor_categories.forEach((vc: any) => {
-    if (vc.categories?.id) {
-      selectedCategoryIds.add(vc.categories.id);
-      if (vc.is_primary === true) {
-        primaryCategoryId = vc.categories.id;
-      }
-    }
-  });
-}
 ---
 
 <form id="vendor-form" method="POST" class="space-y-8">
@@ -193,50 +179,17 @@ if (!isNewVendor && vendor?.vendor_categories) {
     </h2>
     
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Categories
-      </label>
-      <div class="space-y-2 border border-gray-300 rounded-md p-4 mb-4">
-        {categories.length === 0 ? (
-          <p class="text-sm text-gray-500">No categories available</p>
-        ) : (
-          categories.map((category) => (
+      <h2 class="text-lg font-semibold mb-2">Categories</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {categories.map(cat => {
+          const checked = vendor?.category_slugs?.includes(cat.slug);
+          return (
             <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="category_ids[]"
-                value={category.id}
-                checked={selectedCategoryIds.has(category.id)}
-                class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-              />
-              <span class="text-sm text-gray-700">{category.name_en || category.name_de || category.slug}</span>
+              <input type="checkbox" name="category_slugs" value={cat.slug} checked={checked} />
+              <span>{cat.name_en}</span>
             </label>
-          ))
-        )}
-      </div>
-    </div>
-    
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Primary Category
-      </label>
-      <div class="space-y-2 border border-gray-300 rounded-md p-4 mb-4">
-        {categories.length === 0 ? (
-          <p class="text-sm text-gray-500">No categories available</p>
-        ) : (
-          categories.map((category) => (
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="primary_category"
-                value={category.id}
-                checked={primaryCategoryId === category.id}
-                class="w-4 h-4 text-black border-gray-300 focus:ring-black"
-              />
-              <span class="text-sm text-gray-700">{category.name_en || category.name_de || category.slug}</span>
-            </label>
-          ))
-        )}
+          );
+        })}
       </div>
     </div>
     

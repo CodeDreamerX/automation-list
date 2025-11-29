@@ -37,7 +37,7 @@ if (Astro.request.method === 'POST') {
   // Forward cookies from the original request using helper function
   const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
   
-  // Send FormData directly to API endpoint (includes category_ids[] and primary_category)
+  // Send FormData directly to API endpoint (includes category_slugs)
   const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
     method: 'POST',
     headers: {

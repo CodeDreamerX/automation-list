@@ -18,8 +18,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const contentType = request.headers.get('content-type') || '';
     let updateData: any;
     let id: string;
-    let categoryIds: string[] = [];
-    let primaryCategoryId: string | null = null;
+    let categorySlugs: string[] = [];
     
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
@@ -34,18 +33,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         );
       }
       
-      // Extract category IDs from form data
-      categoryIds = form.getAll("category_ids[]")
-        .map((id) => String(id).trim())
-        .filter((id) => id.length > 0);
+      // Extract category slugs from form data
+      categorySlugs = form.getAll("category_slugs")
+        .map((slug) => String(slug).trim())
+        .filter((slug) => slug.length > 0);
       
-      // Extract primary category from form data
-      const primaryCategory = form.get("primary_category")?.toString().trim();
-      if (primaryCategory && primaryCategory.length > 0) {
-        primaryCategoryId = primaryCategory;
-      }
-      
-      // Build updateData from form fields (exclude category_ids as it's not a vendor column)
+      // Build updateData from form fields
       updateData = {
         name: form.get('name')?.toString() || null,
         slug: form.get('slug')?.toString() || null,
@@ -87,33 +80,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         );
       }
       
-      const { id: _, categories, category_ids, category, ...rest } = body; // Exclude legacy categories[], category_ids, and category
+      const { id: _, category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
       updateData = rest;
       
-      // Extract category IDs from JSON if present
-      if (category_ids && Array.isArray(category_ids)) {
-        categoryIds = category_ids
-          .map((id: any) => String(id).trim())
-          .filter((id: string) => id.length > 0);
-      } else if (category_ids) {
-        categoryIds = [String(category_ids).trim()].filter((id: string) => id.length > 0);
+      // Extract category slugs from JSON if present
+      if (body.category_slugs && Array.isArray(body.category_slugs)) {
+        categorySlugs = body.category_slugs
+          .map((slug: any) => String(slug).trim())
+          .filter((slug: string) => slug.length > 0);
+      } else if (body.category_slugs) {
+        categorySlugs = [String(body.category_slugs).trim()].filter((slug: string) => slug.length > 0);
       }
-      
-      // Extract primary category from JSON if present
-      if (body.primary_category) {
-        const primaryCategory = String(body.primary_category).trim();
-        if (primaryCategory.length > 0) {
-          primaryCategoryId = primaryCategory;
-        }
-      }
-    }
-
-    // Validate: require at least one category
-    if (categoryIds.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'At least one category is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
     }
 
     // Normalize website URL: add https:// if missing
@@ -143,33 +120,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Update vendor_categories: delete all existing entries and reinsert new ones
     // Delete all existing vendor_categories rows for this vendor
-    const { error: deleteError } = await supabaseAdmin
+    await supabaseAdmin
       .from('vendor_categories')
       .delete()
       .eq('vendor_id', id);
 
-    if (deleteError) {
-      console.error('Error deleting vendor_categories:', deleteError);
-      // Note: We still return success for vendor update, but log the error
-      // You may want to handle this differently based on your requirements
-    }
+    // Insert new vendor_categories entries if category slugs were provided
+    if (categorySlugs.length > 0) {
+      for (const slug of categorySlugs) {
+        const { data: cat } = await supabaseAdmin
+          .from("categories")
+          .select("id")
+          .eq("slug", slug)
+          .single();
 
-    // Insert new vendor_categories entries if category IDs were provided
-    if (categoryIds.length > 0) {
-      const vendorCategoryEntries = categoryIds.map((categoryId) => ({
-        vendor_id: id,
-        category_id: categoryId,
-        is_primary: primaryCategoryId === categoryId,
-      }));
-
-      const { error: vendorCategoriesError } = await supabaseAdmin
-        .from('vendor_categories')
-        .insert(vendorCategoryEntries);
-
-      if (vendorCategoriesError) {
-        console.error('Error creating vendor_categories:', vendorCategoriesError);
-        // Note: We still return success for vendor update, but log the error
-        // You may want to handle this differently based on your requirements
+        if (cat?.id) {
+          await supabaseAdmin
+            .from("vendor_categories")
+            .insert({
+              vendor_id: id,
+              category_id: cat.id
+            });
+        }
       }
     }
 

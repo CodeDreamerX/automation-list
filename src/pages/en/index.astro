@@ -1,7 +1,9 @@
 ---
+export const prerender = false;
+
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabaseClient";
-import { isFeatured } from "../../lib/vendors/isFeatured";
+import { isFeatured } from "../../lib/isFeatured";
 import HowItWorks from "../../components/HowItWorks.astro";
 import PageHero from "../../components/PageHero.astro";
 import WhyThisDirectory from "../../components/WhyThisDirectory.astro";
@@ -35,8 +37,14 @@ const { data: vendors } = await supabase
     )
   `);
 
+// Normalize category data shape
+const normalizedVendors = (vendors || []).map(v => ({
+  ...v,
+  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+}));
+
 // Filter featured vendors
-const featured = vendors ? vendors.filter(v => isFeatured(v)) : [];
+const featured = normalizedVendors.filter(v => isFeatured(v));
 
 // Sort featured vendors by priority ASC
 featured.sort((a, b) => (a.priority || 999) - (b.priority || 999));
@@ -45,8 +53,8 @@ featured.sort((a, b) => (a.priority || 999) - (b.priority || 999));
 let featuredVendors = featured.slice(0, 6);
 
 // Fallback logic: if no featured vendors, use 6 random vendors (but don't mark as featured)
-if (featuredVendors.length === 0 && vendors && vendors.length > 0) {
-  featuredVendors = [...vendors].sort(() => Math.random() - 0.5).slice(0, 6);
+if (featuredVendors.length === 0 && normalizedVendors.length > 0) {
+  featuredVendors = [...normalizedVendors].sort(() => Math.random() - 0.5).slice(0, 6);
 }
 
 // Helper function to format technologies for display (first 2 only)
@@ -72,9 +80,9 @@ const { data: dbCategories } = await supabase
 
 // Helper function to count vendors by category slug
 function countByCategorySlug(categorySlug: string): number {
-  if (!vendors) return 0;
-  return vendors.filter(v => 
-    (v.vendor_categories || []).some((vc: any) => vc.categories?.slug === categorySlug)
+  if (!normalizedVendors) return 0;
+  return normalizedVendors.filter(v => 
+    v.category_slugs.includes(categorySlug)
   ).length;
 }
 

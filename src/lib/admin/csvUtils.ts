@@ -1,12 +1,32 @@
 // CSV schema and validation utilities
 
-export const SCHEMA_FIELDS = [
-  'name', 'slug', 'country', 'region', 'address', 'website', 'email', 'phone',
-  'category', 'technologies', 'languages', 'certifications', 'tags',
-  'description', 'logo_url'
+export const allowedFields = [
+  "name",
+  "slug",
+  "country",
+  "region",
+  "city",
+  "address",
+  "website",
+  "email",
+  "phone",
+  "description",
+  "technologies",
+  "languages",
+  "certifications",
+  "tags",
+  "industries",
+  "year_founded",
+  "employee_count",
+  "hourly_rate",
+  "plan",
+  "featured",
+  "priority",
+  "og_member",
+  "category_slugs",
 ];
 
-export const REQUIRED_FIELDS = ['name', 'slug', 'country', 'category'];
+export const REQUIRED_FIELDS = ['name', 'slug', 'country', 'category_slugs'];
 
 // Normalize a single value
 export function normalizeValue(value: any): string | null {
@@ -37,20 +57,50 @@ export function normalizeRow(row: any): { normalized: any; unknownColumns: strin
     const trimmedKey = normalizedKey.trim().toLowerCase();
     
     // Check if this is a known schema field (case-insensitive)
-    const schemaField = SCHEMA_FIELDS.find(f => f.toLowerCase() === trimmedKey);
+    const schemaField = allowedFields.find(f => f.toLowerCase() === trimmedKey);
     
     if (schemaField) {
-      normalized[schemaField] = normalizeValue(row[key]);
+      const rawValue = row[key];
+      
+      // Convert boolean fields from "true"/"false" strings to boolean
+      if (schemaField === 'featured' || schemaField === 'og_member') {
+        const strValue = String(rawValue || '').trim().toLowerCase();
+        normalized[schemaField] = strValue === 'true' || strValue === '1' || strValue === 'yes';
+      }
+      // Convert number fields to numbers
+      else if (schemaField === 'priority' || schemaField === 'year_founded' || schemaField === 'employee_count') {
+        const numValue = Number(rawValue);
+        normalized[schemaField] = isNaN(numValue) ? null : numValue;
+      }
+      // Handle category_slugs with semicolon separator
+      else if (schemaField === 'category_slugs') {
+        const categoryValue = String(rawValue || '');
+        normalized[schemaField] = categoryValue; // Store as-is, will be processed separately
+      }
+      // All other fields: normalize as string
+      else {
+        normalized[schemaField] = normalizeValue(rawValue);
+      }
     } else {
       unknownColumns.push(key);
     }
   }
   
   // Ensure all schema fields exist (set to null if missing)
-  for (const field of SCHEMA_FIELDS) {
+  for (const field of allowedFields) {
     if (!(field in normalized)) {
       normalized[field] = null;
     }
+  }
+  
+  // Process category slugs: split by semicolon, lowercase, trim, filter empty
+  if (normalized.category_slugs) {
+    normalized._categorySlugs = String(normalized.category_slugs)
+      .split(';')
+      .map((s: string) => s.trim().toLowerCase())
+      .filter(Boolean);
+  } else {
+    normalized._categorySlugs = [];
   }
   
   return { normalized, unknownColumns };
@@ -105,7 +155,7 @@ export function validateRow(row: any, index: number, allSlugs: string[]): Valida
 }
 
 // Generate CSV from data
-export function generateCSV(data: any[], headers: string[] = SCHEMA_FIELDS): string {
+export function generateCSV(data: any[], headers: string[] = allowedFields): string {
   const csvRows = [headers.join(',')];
   
   for (const row of data) {
