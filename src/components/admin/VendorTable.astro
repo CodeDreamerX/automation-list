@@ -15,7 +15,12 @@ if (searchQuery) {
     const nameMatch = vendor.name?.toLowerCase().includes(query) ?? false;
     const slugMatch = vendor.slug?.toLowerCase().includes(query) ?? false;
     const technologiesMatch = vendor.technologies?.toLowerCase().includes(query) ?? false;
-    const categoryMatch = vendor.category?.toLowerCase().includes(query) ?? false;
+    // Search in vendor_categories
+    const categoryMatch = (vendor.vendor_categories || []).some((vc: any) => {
+      const catNameEn = vc.categories?.name_en?.toLowerCase() || '';
+      const catNameDe = vc.categories?.name_de?.toLowerCase() || '';
+      return catNameEn.includes(query) || catNameDe.includes(query);
+    });
     const countryMatch = vendor.country?.toLowerCase().includes(query) ?? false;
     return nameMatch || slugMatch || technologiesMatch || categoryMatch || countryMatch;
   });
@@ -70,7 +75,14 @@ if (searchQuery) {
                 <div class="text-sm text-gray-900">{vendor.country || '-'}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">{vendor.category || '-'}</div>
+                <div class="text-sm text-gray-900">
+                  {vendor.vendor_categories && vendor.vendor_categories.length > 0 ? (
+                    vendor.vendor_categories
+                      .map((vc: any) => vc.categories?.name_en || vc.categories?.name_de || '')
+                      .filter(Boolean)
+                      .join(', ') || '-'
+                  ) : '-'}
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <form method="POST" action="/admin" class="inline">

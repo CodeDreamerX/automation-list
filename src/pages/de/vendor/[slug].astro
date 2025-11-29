@@ -21,12 +21,23 @@ export async function getStaticPaths() {
   }));
 }
 
-// Fetch full vendor data by slug - ALL FIELDS
+// Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
 
 const { data: vendor, error } = await supabase
   .from('vendors')
-  .select('*')
+  .select(`
+    *,
+    vendor_categories (
+      is_primary,
+      categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    )
+  `)
   .eq('slug', slug)
   .maybeSingle();
 
@@ -40,7 +51,6 @@ if (!vendor) {
 
 const deNavItems = [
   { label: "Startseite", href: "/de/" },
-  { label: "Funktionen", href: "/de/features" },
   { label: "Kategorien", href: "/de/categories" },
   { label: "Anbieter", href: "/de/vendors" },
   { label: "Blog", href: "/de/blog" },
@@ -133,12 +143,20 @@ const location = getLocation();
         )}
       </div>
 
-      {vendor.category && (
-        <p class="text-sm text-gray-600 mb-2">
-          <span class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
-            {vendor.category}
-          </span>
-        </p>
+      {/* Display primary category from vendor_categories */}
+      {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
+        vendor.vendor_categories
+          .filter((vc: any) => vc.is_primary === true)
+          .map((vc: any) => {
+            const categoryName = vc.categories?.name_de || vc.categories?.name_en;
+            return categoryName ? (
+              <p class="text-sm text-gray-600 mb-2">
+                <span class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+                  {categoryName}
+                </span>
+              </p>
+            ) : null;
+          })
       )}
 
       {location && (
@@ -257,15 +275,18 @@ const location = getLocation();
       )}
 
       <!-- Categories - Pro only -->
-      {isPro && vendor.categories && (
+      {isPro && vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
         <div class="border border-gray-200 rounded-lg p-4">
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Kategorien</h3>
           <div class="flex flex-wrap gap-2">
-            {splitValue(vendor.categories).map((cat) => (
-              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                {cat}
-              </span>
-            ))}
+            {vendor.vendor_categories.map((vc) => {
+              const categoryName = vc.categories?.name_de || vc.categories?.name_en;
+              return categoryName ? (
+                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                  {categoryName}
+                </span>
+              ) : null;
+            })}
           </div>
         </div>
       )}

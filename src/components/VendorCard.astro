@@ -1,0 +1,122 @@
+---
+interface Vendor {
+  name: string;
+  slug: string;
+  country?: string | null;
+  region?: string | null;
+  category?: string | null;
+  technologies?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
+  priority?: number | null;
+  featured?: boolean | null;
+  vendor_categories?: Array<{
+    is_primary?: boolean | null;
+    categories?: {
+      id: string;
+      slug: string;
+      name_en?: string | null;
+      name_de?: string | null;
+    } | null;
+  }> | null;
+}
+
+interface Props {
+  vendor: Vendor;
+  hrefPrefix?: string;
+  showFeaturedBadge?: boolean;
+  compact?: boolean;
+  lang?: "en" | "de";
+}
+
+const {
+  vendor,
+  hrefPrefix = "/en/vendor",
+  showFeaturedBadge = true,
+  compact = false,
+  lang = "en",
+} = Astro.props;
+
+// Helper function to truncate description
+function truncateDescription(text: string | null | undefined, maxLength: number = 120): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + '…';
+}
+
+// Helper function to format technologies (first 2 only)
+function formatTechnologies(technologies: string | null): string {
+  if (!technologies) return '';
+  const techArray = technologies.split(',').map(t => t.trim());
+  return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
+}
+
+const vendorHref = `${hrefPrefix}/${vendor.slug}`;
+const isFeatured = vendor.featured === true;
+---
+
+<a
+  href={vendorHref}
+  class={`relative block rounded-xl shadow-sm hover:shadow-md transition p-6 flex flex-col items-center text-center ${
+    isFeatured
+      ? 'bg-yellow-50/30 border border-yellow-300 hover:border-yellow-400 shadow-lg'
+      : 'bg-white border border-gray-200 hover:border-gray-300'
+  }`}
+>
+  <!-- Featured Badge -->
+  {isFeatured && showFeaturedBadge && (
+    <span class="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">
+      Featured
+    </span>
+  )}
+
+  <!-- Vendor Logo -->
+  {vendor.logo_url && (
+    <div class="mb-4 flex items-center justify-center min-h-[48px]">
+      <img
+        src={vendor.logo_url}
+        alt={`${vendor.name} logo`}
+        class="max-h-12 object-contain"
+      />
+    </div>
+  )}
+
+  <!-- Vendor Name -->
+  <h3 class="text-lg font-semibold text-gray-900">{vendor.name}</h3>
+
+  <!-- Short Description -->
+  {vendor.description && (
+    <p class="text-sm text-gray-600 text-center mt-2">
+      {truncateDescription(vendor.description, compact ? 100 : 120)}
+    </p>
+  )}
+
+  <!-- Country + Category Pills -->
+  <div class="flex flex-wrap gap-2 justify-center mt-3">
+    {(vendor.country || vendor.region) && (
+      <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+        {[vendor.region, vendor.country].filter(Boolean).join(', ')}
+      </span>
+    )}
+    {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
+      vendor.vendor_categories.map((vc) => {
+        const categoryName = lang === "de" 
+          ? (vc.categories?.name_de || vc.categories?.name_en)
+          : (vc.categories?.name_en || vc.categories?.name_de);
+        return categoryName ? (
+          <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+            {categoryName}
+          </span>
+        ) : null;
+      })
+    )}
+  </div>
+
+  <!-- Technologies (first 2 only) -->
+  {vendor.technologies && (
+    <p class="text-xs text-gray-500 mt-2">
+      {formatTechnologies(vendor.technologies)}
+    </p>
+  )}
+</a>
+

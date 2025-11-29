@@ -14,17 +14,30 @@ import ExploreCTA from "../../components/ExploreCTA.astro";
 // German translations
 const deNavItems = [
   { label: "Startseite", href: "/de/" },
-  { label: "Funktionen", href: "/de/features" },
   { label: "Kategorien", href: "/de/categories" },
   { label: "Anbieter", href: "/de/vendors" },
   { label: "Blog", href: "/de/blog" },
   { label: "Kontakt", href: "/de/contact" },
 ];
 
-// Fetch featured vendors (3-6 random vendors)
+// Fetch featured vendors with vendor_categories
 const { data: allVendors } = await supabase
   .from('vendors')
-  .select('name, slug, country, category, technologies');
+  .select(`
+    name, 
+    slug, 
+    country, 
+    technologies,
+    vendor_categories (
+      is_primary,
+      categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    )
+  `);
 
 // Shuffle and select up to 6 vendors
 const featured = allVendors 
@@ -38,44 +51,31 @@ function formatTechnologies(technologies: string | null): string {
   return techArray.slice(0, 3).join(', ') + (techArray.length > 3 ? '...' : '');
 }
 
-// Category data for CategoryGrid (German)
-const categories = [
-  {
-    name: "Systemintegratoren",
-    description: "PLC, SCADA, MES, Antriebstechnik",
-    href: "/de/vendors?category=System+Integrator",
-  },
-  {
-    name: "Robotik-Integratoren",
-    description: "Robotiksystem-Integration und Automatisierung",
-    href: "/de/vendors?category=Robotics+Integrator",
-  },
-  {
-    name: "MES & SCADA Experten",
-    description: "Manufacturing Execution und Supervisory Control",
-    href: "/de/vendors?category=MES+SCADA+Expert",
-  },
-  {
-    name: "Maschinenbauer (OEM)",
-    description: "Originalausrüstungsherstellung und Konstruktion",
-    href: "/de/vendors?category=Machine+Builder+OEM",
-  },
-  {
-    name: "Industrielle IT & IoT",
-    description: "Industrielle Konnektivität und IoT-Lösungen",
-    href: "/de/vendors?category=Industrial+IT+IoT",
-  },
-  {
-    name: "Vision & Sicherheitssysteme",
-    description: "Bildverarbeitung und Sicherheitslösungen",
-    href: "/de/vendors?category=Vision+Safety+Systems",
-  },
-  {
-    name: "Schaltschrankbau & Elektrotechnik",
-    description: "Elektroschaltkästen und Steuerungssysteme",
-    href: "/de/vendors?category=Panel+Building+Electrical",
-  },
-];
+// Fetch active categories from database
+const { data: dbCategories } = await supabase
+  .from("categories")
+  .select("id, slug, name_en, name_de, description_en, description_de, icon_name")
+  .eq("is_active", true)
+  .order("order_index", { ascending: true });
+
+// Helper function to count vendors by category slug
+function countByCategorySlug(categorySlug: string): number {
+  if (!allVendors) return 0;
+  return allVendors.filter(v => 
+    (v.vendor_categories || []).some((vc: any) => vc.categories?.slug === categorySlug)
+  ).length;
+}
+
+// Map database categories with counts
+const categories = (dbCategories || []).map(cat => ({
+  slug: cat.slug || '',
+  icon_name: cat.icon_name || '',
+  name_en: cat.name_en || '',
+  name_de: cat.name_de || '',
+  description_en: cat.description_en || '',
+  description_de: cat.description_de || '',
+  count: countByCategorySlug(cat.slug || ''),
+})).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 ---
 
 <BaseLayout 
@@ -89,8 +89,6 @@ const categories = [
     description="Vergleichen Sie Systemintegratoren, OEMs, Robotikexperten, MES/SCADA-Spezialisten und industrielle IT-Anbieter — anbieterneutral und von Automatisierungsingenieuren erstellt."
     primaryButtonText="Verzeichnis durchsuchen →"
     primaryButtonHref="/de/vendors"
-    secondaryButtonText="Warteliste beitreten"
-    secondaryButtonHref="#waitlist"
   />
 
   <SearchForm 
@@ -103,6 +101,7 @@ const categories = [
   <CategoryGrid 
     title="Nach Kategorie durchsuchen"
     categories={categories}
+    lang="de"
   />
 
   <FeaturedVendors
@@ -173,8 +172,6 @@ const categories = [
     description="Finden Sie vertrauenswürdige Integratoren und Automatisierungspartner weltweit."
     primaryButtonText="Verzeichnis durchsuchen →"
     primaryButtonHref="/de/vendors"
-    secondaryButtonText="Warteliste beitreten"
-    secondaryButtonHref="#waitlist"
   />
 </BaseLayout>
 

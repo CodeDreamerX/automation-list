@@ -13,8 +13,8 @@ const {
   description = "Find trusted integrators and automation partners worldwide.",
   primaryButtonText = "Browse Directory →",
   primaryButtonHref = "/en/vendors",
-  secondaryButtonText = "Join Waitlist",
-  secondaryButtonHref = "#waitlist",
+  secondaryButtonText,
+  secondaryButtonHref,
 } = Astro.props;
 ---
 
@@ -25,9 +25,11 @@ const {
     <a href={primaryButtonHref} class="px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900">
       {primaryButtonText}
     </a>
-    <a href={secondaryButtonHref} class="px-6 py-3 border border-gray-300 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-50">
-      {secondaryButtonText}
-    </a>
+    {secondaryButtonText && secondaryButtonHref && (
+      <a href={secondaryButtonHref} class="px-6 py-3 border border-gray-300 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-50">
+        {secondaryButtonText}
+      </a>
+    )}
   </div>
 </section>
 

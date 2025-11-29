@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import { supabase } from '../../../lib/supabaseClient';
-import { protectAdminRoute } from '../../../lib/admin/authUtils';
+import { protectAdminRoute, getCookieHeader } from '../../../lib/admin/authUtils';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
 import VendorForm from '../../../components/admin/VendorForm.astro';
 
@@ -14,65 +14,41 @@ if (Astro.url.searchParams.get('logout') === 'true') {
 }
 
 // Check authentication and redirect if not logged in
-const redirectResponse = await protectAdminRoute(Astro.cookies);
+// Note: Middleware also handles this, but keeping as defensive check
+const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }
 
 const { id } = Astro.params;
 
+// Fetch all categories from Supabase
+const { data: categories } = await supabase
+  .from('categories')
+  .select('id, slug, name_en, name_de')
+  .order('order_index', { ascending: true, nullsLast: true })
+  .order('name_en', { ascending: true });
+
 // Handle form submission
 if (Astro.request.method === 'POST') {
   const formData = await Astro.request.formData();
+
+  // Update vendor via API endpoint
+  // Forward cookies from the original request using helper function
+  const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
   
-  // Prepare update object
-  const updateData: any = {
-    name: formData.get('name')?.toString() || null,
-    slug: formData.get('slug')?.toString() || null,
-    description: formData.get('description')?.toString() || null,
-    website: formData.get('website')?.toString() || null,
-    email: formData.get('email')?.toString() || null,
-    phone: formData.get('phone')?.toString() || null,
-    address: formData.get('address')?.toString() || null,
-    city: formData.get('city')?.toString() || null,
-    region: formData.get('region')?.toString() || null,
-    country: formData.get('country')?.toString() || null,
-    category: formData.get('category')?.toString() || null,
-    technologies: formData.get('technologies')?.toString() || null,
-    languages: formData.get('languages')?.toString() || null,
-    certifications: formData.get('certifications')?.toString() || null,
-    tags: formData.get('tags')?.toString() || null,
-    industries: formData.get('industries')?.toString() || null,
-    year_founded: formData.get('year_founded')?.toString() || null,
-    employee_count: formData.get('employee_count')?.toString() || null,
-    hourly_rate: formData.get('hourly_rate')?.toString() || null,
-    plan: formData.get('plan')?.toString() || 'free',
-    priority: formData.get('priority')?.toString() ? parseInt(formData.get('priority')!.toString()) : null,
-    featured: formData.get('featured') === 'on',
-    og_member: formData.get('og_member') === 'on',
-    featured_until: formData.get('featured_until')?.toString() || null,
-    meta_title: formData.get('meta_title')?.toString() || null,
-    meta_description: formData.get('meta_description')?.toString() || null,
-    canonical_url: formData.get('canonical_url')?.toString() || null,
-    logo_url: formData.get('logo_url')?.toString() || null,
-    updated_at: new Date().toISOString(),
-  };
+  // Send FormData directly to API endpoint (includes category_ids[] and primary_category)
+  const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
+    method: 'POST',
+    headers: {
+      'Cookie': cookieHeader,
+    },
+    credentials: 'include',
+    body: formData,
+  });
 
-  // Handle categories array
-  const categoriesInput = formData.get('categories')?.toString() || '';
-  if (categoriesInput) {
-    updateData.categories = categoriesInput.split(',').map(c => c.trim()).filter(Boolean);
-  } else {
-    updateData.categories = null;
-  }
-
-  // Update vendor in database
-  const { error } = await supabase
-    .from('vendors')
-    .update(updateData)
-    .eq('id', id);
-
-  if (error) {
+  if (!response.ok) {
+    const error = await response.json();
     console.error('Error updating vendor:', error);
     // In a real app, you'd want to show this error to the user
   } else {
@@ -81,10 +57,20 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-// Fetch vendor by ID
+// Fetch vendor by ID with vendor_categories
 const { data: vendor, error } = await supabase
   .from('vendors')
-  .select('*')
+  .select(`
+    *,
+    vendor_categories (
+      categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    )
+  `)
   .eq('id', id)
   .maybeSingle();
 
@@ -117,7 +103,7 @@ if (!vendor) {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={vendor} />
+      <VendorForm vendor={vendor} categories={categories || []} />
     </div>
   </div>
 </AdminLayout>

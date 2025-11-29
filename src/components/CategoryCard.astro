@@ -1,0 +1,65 @@
+---
+import { getIconUrl } from '../lib/iconUtils';
+
+interface Category {
+  slug: string;
+  icon_name?: string;
+  name_en?: string;
+  name_de?: string;
+  description_en?: string;
+  description_de?: string;
+  count?: number;
+}
+
+interface Props {
+  category: Category;
+  lang?: string;
+  index?: number;
+}
+
+const {
+  category,
+  lang = "en",
+  index = 0,
+} = Astro.props;
+
+// Get name and description based on language
+const name = lang === "de" ? category.name_de : category.name_en;
+
+const description = lang === "de" ? category.description_de : category.description_en;
+
+// Build link using slug
+const link = `/${lang}/vendors?category=${category.slug}`;
+
+// Get icon URL
+const iconUrl = getIconUrl(category.icon_name);
+---
+
+<a
+  href={link}
+  class="fade-in-up relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition flex flex-col items-center text-center"
+  style={`animation-delay: ${index * 0.05}s`}
+>
+  {category.count !== undefined && category.count > 0 && (
+    <span class="absolute top-3 right-3 bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">{category.count}</span>
+  )}
+  <div class="flex justify-center mb-4">
+    {iconUrl ? (
+      <img 
+        src={iconUrl} 
+        alt={name || 'Category icon'} 
+        class="w-8 h-8"
+        loading="lazy"
+      />
+    ) : (
+      <div class="w-8 h-8 flex items-center justify-center text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        </svg>
+      </div>
+    )}
+  </div>
+  <h3 class="text-lg font-semibold text-gray-900">{name}</h3>
+  <p class="text-sm text-gray-600 mt-2">{description}</p>
+</a>
+

@@ -14,17 +14,26 @@ import ExploreCTA from "../../components/ExploreCTA.astro";
 
 const engNavItems = [
   { label: "Home", href: "/en/" },
-  { label: "Features", href: "/en/features" },
   { label: "Categories", href: "/en/categories" },
   { label: "Vendors", href: "/en/vendors" },
   { label: "Blog", href: "/en/blog" },
   { label: "Contact", href: "/en/contact" },
 ];
 
-// Fetch ALL vendors
+// Fetch ALL vendors with vendor_categories
 const { data: vendors } = await supabase
   .from("vendors")
-  .select("*");
+  .select(`
+    *,
+    vendor_categories (
+      categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    )
+  `);
 
 // Filter featured vendors
 const featured = vendors ? vendors.filter(v => isFeatured(v)) : [];
@@ -54,49 +63,36 @@ function truncateDescription(text: string | null | undefined, maxLength: number 
   return text.substring(0, maxLength).trim() + '…';
 }
 
-// Category data for CategoryGrid
-const categories = [
-  {
-    name: "System Integrators",
-    description: "PLC, SCADA, MES, motion control",
-    href: "/en/vendors?category=System+Integrator",
-  },
-  {
-    name: "Robotics Integrators",
-    description: "Robotic systems integration and automation",
-    href: "/en/vendors?category=Robotics+Integrator",
-  },
-  {
-    name: "MES & SCADA Experts",
-    description: "Manufacturing execution and supervisory control",
-    href: "/en/vendors?category=MES+SCADA+Expert",
-  },
-  {
-    name: "Machine Builders (OEM)",
-    description: "Original equipment manufacturing and design",
-    href: "/en/vendors?category=Machine+Builder+OEM",
-  },
-  {
-    name: "Industrial IT & IoT",
-    description: "Industrial connectivity and IoT solutions",
-    href: "/en/vendors?category=Industrial+IT+IoT",
-  },
-  {
-    name: "Vision & Safety Systems",
-    description: "Machine vision and safety solutions",
-    href: "/en/vendors?category=Vision+Safety+Systems",
-  },
-  {
-    name: "Panel Building & Electrical",
-    description: "Electrical panels and control systems",
-    href: "/en/vendors?category=Panel+Building+Electrical",
-  },
-];
+// Fetch active categories from database
+const { data: dbCategories } = await supabase
+  .from("categories")
+  .select("id, slug, name_en, name_de, description_en, description_de, icon_name")
+  .eq("is_active", true)
+  .order("order_index", { ascending: true });
+
+// Helper function to count vendors by category slug
+function countByCategorySlug(categorySlug: string): number {
+  if (!vendors) return 0;
+  return vendors.filter(v => 
+    (v.vendor_categories || []).some((vc: any) => vc.categories?.slug === categorySlug)
+  ).length;
+}
+
+// Map database categories with counts
+const categories = (dbCategories || []).map(cat => ({
+  slug: cat.slug || '',
+  icon_name: cat.icon_name || '',
+  name_en: cat.name_en || '',
+  name_de: cat.name_de || '',
+  description_en: cat.description_en || '',
+  description_de: cat.description_de || '',
+  count: countByCategorySlug(cat.slug || ''),
+})).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 ---
 
 <BaseLayout 
   title="Automation List - Coming Soon"
-  description="Join our waitlist to be notified when Automation List launches. Discover the best automation tools and workflows for your productivity needs."
+  description="Discover the best automation tools and workflows for your productivity needs."
   lang="en"
   navItems={engNavItems}
 >
@@ -105,8 +101,6 @@ const categories = [
     description="Compare system integrators, OEMs, robotics experts, MES/SCADA specialists and industrial IT vendors — vendor-neutral and built by automation engineers."
     primaryButtonText="Browse Directory →"
     primaryButtonHref="/en/vendors"
-    secondaryButtonText="Join Waitlist"
-    secondaryButtonHref="#waitlist"
   />
 
   <SearchForm 
@@ -114,7 +108,7 @@ const categories = [
     placeholder="Search vendors, technologies or categories..."
   />
 
-  <CategoryGrid categories={categories} />
+  <CategoryGrid categories={categories} lang="en" />
 
   <FeaturedVendors
     vendors={featuredVendors}

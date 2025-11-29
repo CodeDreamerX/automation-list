@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import { supabase } from '../../lib/supabaseClient';
-import { checkAuth, protectAdminRoute } from '../../lib/admin/authUtils';
+import { checkAuth, protectAdminRoute, getCookieHeader } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import VendorTable from '../../components/admin/VendorTable.astro';
 
@@ -14,7 +14,8 @@ if (Astro.url.searchParams.get('logout') === 'true') {
 }
 
 // Check authentication and redirect if not logged in
-const redirectResponse = await protectAdminRoute(Astro.cookies);
+// Note: Middleware also handles this, but keeping as defensive check
+const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }
@@ -29,16 +30,26 @@ if (Astro.request.method === 'POST') {
   const vendorId = formData.get('vendor_id')?.toString();
   
   if (action && vendorId) {
+    // Forward cookies from the original request using helper function
+    const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
+    
     if (action === 'delete') {
-      const { error } = await supabase
-        .from('vendors')
-        .delete()
-        .eq('id', vendorId);
+      const response = await fetch(`${Astro.url.origin}/api/admin/delete-vendor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ id: vendorId }),
+      });
       
-      if (error) {
+      if (!response.ok) {
+        const error = await response.json();
         console.error('Error deleting vendor:', error);
       }
     } else if (action === 'toggle_featured') {
+      // First get current featured status
       const { data: vendor } = await supabase
         .from('vendors')
         .select('featured')
@@ -46,37 +57,70 @@ if (Astro.request.method === 'POST') {
         .single();
       
       if (vendor) {
-        await supabase
-          .from('vendors')
-          .update({ 
+        const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
+        const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieHeader,
+          },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            id: vendorId,
             featured: !vendor.featured,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', vendorId);
+          }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Error toggling featured:', error);
+        }
       }
     } else if (action === 'change_plan') {
       const plan = formData.get('plan')?.toString();
       if (plan && ['free', 'pro', 'featured'].includes(plan)) {
-        await supabase
-          .from('vendors')
-          .update({ 
+        const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
+        const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieHeader,
+          },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            id: vendorId,
             plan: plan,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', vendorId);
+          }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Error changing plan:', error);
+        }
       }
     } else if (action === 'change_priority') {
       const priority = formData.get('priority')?.toString();
       if (priority) {
         const priorityNum = parseInt(priority);
         if (priorityNum >= 1 && priorityNum <= 5) {
-          await supabase
-            .from('vendors')
-            .update({ 
+          const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
+          const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cookie': cookieHeader,
+            },
+            credentials: 'include',
+            body: JSON.stringify({ 
+              id: vendorId,
               priority: priorityNum,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', vendorId);
+            }),
+          });
+          
+          if (!response.ok) {
+            const error = await response.json();
+            console.error('Error changing priority:', error);
+          }
         }
       }
     }
@@ -89,22 +133,42 @@ if (Astro.request.method === 'POST') {
 if (Astro.request.method === 'GET' && Astro.url.searchParams.get('action') === 'delete') {
   const vendorId = Astro.url.searchParams.get('id');
   if (vendorId) {
-    const { error } = await supabase
-      .from('vendors')
-      .delete()
-      .eq('id', vendorId);
+    // Forward cookies from the original request using helper function
+    const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
     
-    if (error) {
+    const response = await fetch(`${Astro.url.origin}/api/admin/delete-vendor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': cookieHeader,
+      },
+      credentials: 'include',
+      body: JSON.stringify({ id: vendorId }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
       console.error('Error deleting vendor:', error);
     }
   }
   return Astro.redirect('/admin');
 }
 
-// Fetch all vendors
+// Fetch all vendors with vendor_categories
 const { data: vendors, error } = await supabase
   .from('vendors')
-  .select('*')
+  .select(`
+    *,
+    vendor_categories (
+      is_primary,
+      categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    )
+  `)
   .order('created_at', { ascending: false });
 
 if (error) {

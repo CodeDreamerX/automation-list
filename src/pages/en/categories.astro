@@ -1,23 +1,73 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import Categories from "../../components/Categories.astro";
+import CategoryGrid from "../../components/CategoryGrid.astro";
+import { supabase } from "../../lib/supabaseClient";
 
 const engNavItems = [
   { label: "Home", href: "/en/" },
-  { label: "Features", href: "/en/features" },
   { label: "Categories", href: "/en/categories" },
   { label: "Vendors", href: "/en/vendors" },
   { label: "Blog", href: "/en/blog" },
   { label: "Contact", href: "/en/contact" },
 ];
+
+// Fetch ALL vendors with vendor_categories to calculate counts
+const { data: vendors } = await supabase
+  .from("vendors")
+  .select(`
+    *,
+    vendor_categories (
+      categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    )
+  `);
+
+// Fetch active categories from database
+const { data: dbCategories } = await supabase
+  .from("categories")
+  .select("id, slug, name_en, name_de, description_en, description_de, icon_name")
+  .eq("is_active", true)
+  .order("order_index", { ascending: true });
+
+// Helper function to count vendors by category slug
+function countByCategorySlug(categorySlug: string): number {
+  if (!vendors || !categorySlug) return 0;
+  return vendors.filter(v => 
+    (v.vendor_categories || []).some((vc: any) => vc.categories?.slug === categorySlug)
+  ).length;
+}
+
+// Map database categories with counts
+const categories = (dbCategories || []).map(cat => ({
+  slug: cat.slug || '',
+  icon_name: cat.icon_name || '',
+  name_en: cat.name_en || '',
+  name_de: cat.name_de || '',
+  description_en: cat.description_en || '',
+  description_de: cat.description_de || '',
+  count: cat.slug ? countByCategorySlug(cat.slug) : 0,
+})).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
+
+// Generate dynamic description from actual categories
+const categoryNames = categories
+  .slice(0, 6) // Limit to first 6 categories
+  .map(cat => cat.name_en)
+  .filter(Boolean);
+const description = categoryNames.length > 0
+  ? `Browse industrial automation categories including ${categoryNames.join(', ')}${categoryNames.length < categories.length ? ', and more.' : '.'}`
+  : "Browse industrial automation categories and discover vendors in your area of expertise.";
 ---
 
 <BaseLayout 
   title="Categories - Automation List"
-  description="Browse industrial automation categories including PLCs, SCADA/HMI, Robotics, Sensors & IO, Motion & Drives, and System Integrators."
+  description={description}
   lang="en"
   navItems={engNavItems}
 >
-  <Categories />
+  <CategoryGrid title="Categories" categories={categories} lang="en" />
 </BaseLayout>
 
