@@ -105,6 +105,9 @@ function getLocation(): string {
 }
 
 const location = getLocation();
+
+// Determine canonical URL
+const canonicalUrl = normalizedVendor.canonical_url || `https://automation-list.com/en/vendor/${slug}`;
 ---
 
 <BaseLayout 
@@ -112,6 +115,7 @@ const location = getLocation();
   description={normalizedVendor.description ? truncateDescription(normalizedVendor.description, 160) : `Learn more about ${normalizedVendor.name}, a leading vendor in industrial automation.`}
   lang="en"
   navItems={engNavItems}
+  meta={{ canonical: canonicalUrl }}
 >
   <div class="container-px mx-auto max-w-4xl px-4 py-10">
     <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
