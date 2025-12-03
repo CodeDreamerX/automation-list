@@ -9,6 +9,9 @@ interface Vendor {
   technologies?: string | null;
   description?: string | null;
   logo_url?: string | null;
+  logo_width?: number | null;
+  logo_height?: number | null;
+  logo_alt?: string | null;
   priority?: number | null;
   featured?: boolean | null;
   category_slugs?: string[];
@@ -132,15 +135,22 @@ const categorySlugs = vendor.category_slugs ||
   )}
 
   <!-- Vendor Logo -->
-  {vendor.logo_url && (
-    <div class="mb-4 flex items-center justify-center min-h-[48px]">
+  <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mb-4">
+    {vendor.logo_url ? (
       <img
         src={vendor.logo_url}
-        alt={`${vendor.name} logo`}
-        class="max-h-12 object-contain"
+        alt={vendor.logo_alt || `${vendor.name} logo`}
+        width={vendor.logo_width || 200}
+        height={vendor.logo_height || 80}
+        loading="lazy"
+        class="max-w-full max-h-full object-contain"
       />
-    </div>
-  )}
+    ) : (
+      <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
+        <span class="text-xs text-gray-400">No Logo</span>
+      </div>
+    )}
+  </div>
 
   <!-- Vendor Name -->
   <h3 class="text-lg font-semibold text-gray-900">{vendor.name}</h3>

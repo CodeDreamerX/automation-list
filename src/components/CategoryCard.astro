@@ -27,7 +27,10 @@ const name = lang === "de" ? category.name_de : category.name_en;
 const description = lang === "de" ? category.description_de : category.description_en;
 
 // Build link using slug
-const link = `/${lang}/vendors?category=${category.slug}`;
+const link = `/${lang}/category/${category.slug}`;
+
+// Build icon path
+const iconPath = category.icon_name ? `/src/icons/categories/${category.icon_name}.svg` : null;
 ---
 
 <a
@@ -38,9 +41,11 @@ const link = `/${lang}/vendors?category=${category.slug}`;
   {category.count !== undefined && category.count > 0 && (
     <span class="absolute top-3 right-3 bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">{category.count}</span>
   )}
-  <div class="flex justify-center mb-4">
-    <img src={`/src/icons/categories/${category.icon_name}.svg`} class="w-7 h-7" alt={category.name_en} />
-  </div>
+  {iconPath && (
+    <div class="flex justify-center mb-4">
+      <img src={iconPath} class="w-7 h-7" alt={category.name_en || name || ""} />
+    </div>
+  )}
   <h3 class="text-lg font-semibold text-gray-900">{name}</h3>
   <p class="text-sm text-gray-600 mt-2">{description}</p>
 </a>

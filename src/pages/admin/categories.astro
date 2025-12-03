@@ -83,7 +83,12 @@ if (error) {
                   <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
                       {iconUrl ? (
-                        <img src={iconUrl} alt={displayName} class="w-8 h-8" />
+                        <img 
+                          src={iconUrl} 
+                          alt={displayName} 
+                          class="w-8 h-8"
+                          onerror="this.style.display='none'; this.nextElementSibling?.remove(); this.insertAdjacentHTML('afterend', '<div class=\\'flex items-center justify-center w-8 h-8 text-gray-400 text-xs\\'>—</div>');"
+                        />
                       ) : (
                         <div class="flex items-center justify-center w-8 h-8 text-gray-400 text-xs">—</div>
                       )}

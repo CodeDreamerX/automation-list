@@ -1,0 +1,12 @@
+# Cursor ignore file - folders/files to exclude from indexing and AI suggestions
+
+# Add folders you want Cursor to ignore here
+# Examples:
+# node_modules/
+# dist/
+# .astro/
+
+src/icons/categories/
+
+
+

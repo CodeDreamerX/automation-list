@@ -1,0 +1,220 @@
+---
+// Static Site Generation (SSG) - Base route (page 1) is pre-rendered at build time
+// Pagination pages (?page=2, etc.) are SSR'd on-demand
+// See STATIC_GENERATION_STRATEGY.md for details
+
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import VendorCard from "../../../components/VendorCard.astro";
+import Pagination from "../../../components/Pagination.astro";
+import { supabase } from "../../../lib/supabaseClient";
+import { getCached, setCached } from "../../../lib/cache";
+import { normalizeTech } from "../../../lib/normalizeTech";
+
+export async function getStaticPaths() {
+  // Fetch all vendors to extract unique technologies
+  const { data: vendors, error } = await supabase
+    .from('vendors')
+    .select('technologies')
+    .not('technologies', 'is', null);
+
+  if (error) {
+    console.error('Error fetching vendors for technologies:', error);
+    return [];
+  }
+
+  // Extract and normalize unique technologies
+  const technologySet = new Set<string>();
+  (vendors || []).forEach((vendor: any) => {
+    if (vendor.technologies && typeof vendor.technologies === 'string') {
+      const techs = vendor.technologies
+        .split(',')
+        .map((tech: string) => tech.trim())
+        .filter((tech: string) => tech.length > 0);
+      techs.forEach((tech: string) => {
+        technologySet.add(tech);
+      });
+    }
+  });
+
+  // Generate paths for each unique technology slug
+  return Array.from(technologySet).map((technology) => ({
+    params: { tech: normalizeTech(technology) },
+  }));
+}
+
+const engNavItems = [
+  { label: "Home", href: "/en/" },
+  { label: "Categories", href: "/en/categories" },
+  { label: "Vendors", href: "/en/vendors" },
+  { label: "Blog", href: "/en/blog" },
+  { label: "Contact", href: "/en/contact" },
+];
+
+// Get technology slug from URL param
+const techSlug = Astro.params.tech || '';
+
+// If no tech slug, redirect to vendors page
+if (!techSlug) {
+  return Astro.redirect('/en/vendors');
+}
+
+// Convert slug to search term (replace "-" with " ")
+const techQuery = techSlug.replace(/-/g, " ");
+
+// Get pagination params
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
+const pageSize = 20;
+
+// Build cache key
+const cacheKey = `vendors:technology:en:${techSlug}:${page}`;
+
+// Try to get cached result
+interface CachedTechnologyResult {
+  vendors: any[];
+  totalVendors: number | null;
+}
+
+let cachedResult = getCached<CachedTechnologyResult>(cacheKey);
+let vendors: any[] = [];
+let totalVendors: number | null = null;
+
+if (cachedResult) {
+  vendors = cachedResult.vendors || [];
+  totalVendors = cachedResult.totalVendors;
+} else {
+  // Build base query builder function
+  function buildTechnologyQuery() {
+    return supabase
+      .from('vendors')
+      .select('*, vendor_categories(*, categories(*))', { count: 'exact' })
+      // Case-insensitive technology filter - search within technologies field
+      .ilike('technologies', `%${techQuery}%`)
+      // Order by featured (descending), then priority (ascending), then name (ascending)
+      .order('featured', { ascending: false })
+      .order('priority', { ascending: true })
+      .order('name', { ascending: true });
+  }
+
+  // Get total count - use a separate query with head: true
+  const { count } = await supabase
+    .from('vendors')
+    .select('*', { count: 'exact', head: true })
+    .ilike('technologies', `%${techQuery}%`);
+  totalVendors = count;
+
+  // Build paginated query
+  const start = (page - 1) * pageSize;
+  const end = page * pageSize - 1;
+  const paginatedQuery = buildTechnologyQuery().range(start, end);
+
+  // Execute paginated query
+  const { data, error } = await paginatedQuery;
+
+  if (error) {
+    console.error('Error fetching vendors:', error);
+    vendors = [];
+  } else {
+    vendors = data || [];
+  }
+
+  // Cache the result
+  if (totalVendors !== null) {
+    setCached(cacheKey, { vendors, totalVendors }, 300);
+  }
+}
+
+// Normalize category data shape
+const normalizedVendors = (vendors || []).map(v => ({
+  ...v,
+  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+}));
+
+const totalPages = Math.ceil((totalVendors || 0) / pageSize);
+
+// Convert techQuery to readable name for display (title case)
+function techQueryToName(query: string): string {
+  return query
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+const techName = techQueryToName(techQuery);
+
+// SEO metadata
+const metaTitle = `Top ${techName} Automation Companies | Automation List`;
+const metaDescription = `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
+const origin = Astro.url.origin;
+const defaultOgImage = `${origin}/og/default.png`;
+const fullUrl = `https://automation-list.com/en/technology/${techSlug}`;
+
+---
+
+<BaseLayout 
+  title={metaTitle}
+  description={metaDescription}
+  canonical={fullUrl}
+  ogImage={defaultOgImage}
+  lang="en"
+  navItems={engNavItems}
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": `Automation Companies for ${techName}`,
+    "itemListElement": normalizedVendors.map((v, index) => ({
+      "@type": "Organization",
+      "position": index + 1,
+      "name": v.name,
+      "url": `https://automation-list.com/en/vendor/${v.slug}`,
+      "logo": v.logo_url,
+      "image": v.logo_url,
+      "address": v.country
+    }))
+  }, null, 2)} />
+  <div class="container-px mx-auto max-w-7xl px-4 py-10">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">
+      Automation Companies for {techName}
+    </h1>
+
+    <!-- Result Count -->
+    <div class="mb-4">
+      <p class="text-sm text-gray-600">
+        {totalVendors || 0} {totalVendors === 1 ? 'vendor' : 'vendors'} found
+        {totalPages > 1 && (
+          <span class="text-xs text-gray-500 ml-2">
+            (Page {page} of {totalPages})
+          </span>
+        )}
+      </p>
+    </div>
+
+    <!-- Vendor Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {normalizedVendors.length > 0 ? (
+        normalizedVendors.map(vendor => (
+          <VendorCard
+            vendor={vendor}
+            hrefPrefix="/en/vendor"
+            lang="en"
+          />
+        ))
+      ) : (
+        <div class="col-span-full text-center py-12">
+          <p class="text-gray-600">
+            No vendors for this technology yet.
+          </p>
+        </div>
+      )}
+    </div>
+
+    <!-- Pagination -->
+    <Pagination
+      currentPage={page}
+      totalPages={totalPages}
+      baseUrl={Astro.url}
+      lang="en"
+    />
+  </div>
+</BaseLayout>
+

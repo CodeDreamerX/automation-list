@@ -1,0 +1,178 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: URL;
+  lang?: "en" | "de";
+}
+
+const { currentPage, totalPages, baseUrl, lang = "en" } = Astro.props;
+
+// Generate page numbers for pagination
+function getPageNumbers(currentPage: number, total: number): number[] {
+  const maxPages = Math.min(7, total);
+  const pages: number[] = [];
+  
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      pages.push(i);
+    }
+  } else if (currentPage <= 4) {
+    for (let i = 1; i <= 7; i++) {
+      pages.push(i);
+    }
+  } else if (currentPage >= total - 3) {
+    for (let i = total - 6; i <= total; i++) {
+      pages.push(i);
+    }
+  } else {
+    for (let i = currentPage - 3; i <= currentPage + 3; i++) {
+      pages.push(i);
+    }
+  }
+  
+  return pages;
+}
+
+const pageNumbers = getPageNumbers(currentPage, totalPages);
+const showFirstLast = totalPages > 5;
+const isFirstPage = currentPage === 1;
+const isLastPage = currentPage === totalPages;
+
+// Helper function to build URL with page parameter
+function buildPageUrl(page: number): string {
+  const url = new URL(baseUrl);
+  url.searchParams.set('page', String(page));
+  return url.pathname + url.search;
+}
+
+// Translations
+const labels = {
+  en: {
+    first: "First",
+    previous: "Previous",
+    next: "Next",
+    last: "Last",
+    page: "Page",
+    of: "of",
+    goToPage: (n: number) => `Go to page ${n}`,
+  },
+  de: {
+    first: "Erste",
+    previous: "Zurück",
+    next: "Weiter",
+    last: "Letzte",
+    page: "Seite",
+    of: "von",
+    goToPage: (n: number) => `Gehe zu Seite ${n}`,
+  },
+};
+
+const t = labels[lang];
+---
+
+{totalPages > 1 && (
+  <nav aria-label={`${t.page} ${t.of} ${totalPages}`} class="flex items-center justify-center gap-2 my-8">
+    <!-- First Button -->
+    {showFirstLast && (
+      isFirstPage ? (
+        <span
+          aria-label={t.goToPage(1)}
+          aria-disabled="true"
+          class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
+        >
+          {t.first}
+        </span>
+      ) : (
+        <a
+          href={buildPageUrl(1)}
+          aria-label={t.goToPage(1)}
+          class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:underline hover:opacity-75 transition focus:outline-none focus:ring-2 focus:ring-black"
+        >
+          {t.first}
+        </a>
+      )
+    )}
+
+    <!-- Previous Button -->
+    {isFirstPage ? (
+      <span
+        aria-label={t.goToPage(currentPage - 1)}
+        aria-disabled="true"
+        class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
+      >
+        {t.previous}
+      </span>
+    ) : (
+      <a
+        href={buildPageUrl(currentPage - 1)}
+        aria-label={t.goToPage(currentPage - 1)}
+        class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:underline hover:opacity-75 transition focus:outline-none focus:ring-2 focus:ring-black"
+      >
+        {t.previous}
+      </a>
+    )}
+
+    <!-- Page Numbers -->
+    <div class="flex gap-1">
+      {pageNumbers.map((pageNum) => {
+        const isActive = pageNum === currentPage;
+        return (
+          <a
+            href={buildPageUrl(pageNum)}
+            aria-label={t.goToPage(pageNum)}
+            aria-current={isActive ? "page" : undefined}
+            class={`px-3 py-2 rounded text-sm transition focus:outline-none focus:ring-2 focus:ring-black ${
+              isActive
+                ? "bg-black text-white"
+                : "border border-gray-300 text-gray-700 hover:underline hover:opacity-75"
+            }`}
+          >
+            {pageNum}
+          </a>
+        );
+      })}
+    </div>
+
+    <!-- Next Button -->
+    {isLastPage ? (
+      <span
+        aria-label={t.goToPage(currentPage + 1)}
+        aria-disabled="true"
+        class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
+      >
+        {t.next}
+      </span>
+    ) : (
+      <a
+        href={buildPageUrl(currentPage + 1)}
+        aria-label={t.goToPage(currentPage + 1)}
+        class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:underline hover:opacity-75 transition focus:outline-none focus:ring-2 focus:ring-black"
+      >
+        {t.next}
+      </a>
+    )}
+
+    <!-- Last Button -->
+    {showFirstLast && (
+      isLastPage ? (
+        <span
+          aria-label={t.goToPage(totalPages)}
+          aria-disabled="true"
+          class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
+        >
+          {t.last}
+        </span>
+      ) : (
+        <a
+          href={buildPageUrl(totalPages)}
+          aria-label={t.goToPage(totalPages)}
+          class="px-3 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:underline hover:opacity-75 transition focus:outline-none focus:ring-2 focus:ring-black"
+        >
+          {t.last}
+        </a>
+      )
+    )}
+  </nav>
+)}
+

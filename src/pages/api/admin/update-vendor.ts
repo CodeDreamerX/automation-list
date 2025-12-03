@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
+import { normalizeTechForStorage } from '../../../lib/normalizeTech';
 
 export const prerender = false;
 
@@ -67,6 +68,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         meta_description: form.get('meta_description')?.toString() || null,
         canonical_url: form.get('canonical_url')?.toString() || null,
         logo_url: form.get('logo_url')?.toString() || null,
+        logo_width: form.get('logo_width')?.toString() ? Number(form.get('logo_width')!.toString()) : null,
+        logo_height: form.get('logo_height')?.toString() ? Number(form.get('logo_height')!.toString()) : null,
+        logo_format: form.get('logo_format')?.toString() || null,
+        logo_alt: form.get('logo_alt')?.toString() || null,
       };
     } else {
       // Handle JSON (backward compatibility)
@@ -82,6 +87,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       
       const { id: _, category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
       updateData = rest;
+      
+      // Normalize logo fields for JSON requests
+      updateData.logo_url = updateData.logo_url || null;
+      updateData.logo_width = updateData.logo_width ? Number(updateData.logo_width) : null;
+      updateData.logo_height = updateData.logo_height ? Number(updateData.logo_height) : null;
+      updateData.logo_format = updateData.logo_format || null;
+      updateData.logo_alt = updateData.logo_alt || null;
       
       // Extract category slugs from JSON if present
       if (body.category_slugs && Array.isArray(body.category_slugs)) {
@@ -99,6 +111,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (website && !website.match(/^https?:\/\//i)) {
         updateData.website = 'https://' + website;
       }
+    }
+
+    // Normalize technologies: split by comma, normalize each, remove duplicates, join back
+    if (updateData.technologies && typeof updateData.technologies === 'string') {
+      const techs = updateData.technologies
+        .split(',')
+        .map(tech => normalizeTechForStorage(tech))
+        .filter(tech => tech.length > 0);
+      
+      // Remove duplicates (case-insensitive)
+      const uniqueTechs = Array.from(
+        new Set(techs.map(t => t.toLowerCase()))
+      ).map(lower => techs.find(t => t.toLowerCase() === lower) || '')
+       .filter(Boolean);
+      
+      updateData.technologies = uniqueTechs.length > 0 ? uniqueTechs.join(', ') : null;
     }
 
     // Add updated_at timestamp

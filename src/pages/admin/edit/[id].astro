@@ -81,16 +81,23 @@ if (error) {
 if (!vendor) {
   return Astro.redirect('/admin');
 }
+
+// Normalize category data shape - extract category_slugs from vendor_categories M2M
+const normalizedVendor = {
+  ...vendor,
+  category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+};
+
 ---
 
-<AdminLayout title={`Edit Vendor: ${vendor.name} - Admin Panel`} currentPath="/admin">
+<AdminLayout title={`Edit Vendor: ${normalizedVendor.name} - Admin Panel`} currentPath="/admin">
   <div class="space-y-6">
     <!-- HEADER -->
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Edit Vendor</h1>
         <p class="mt-1 text-sm text-gray-600">
-          {vendor.name || 'Vendor'}
+          {normalizedVendor.name || 'Vendor'}
         </p>
       </div>
       <a
@@ -103,7 +110,7 @@ if (!vendor) {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={vendor} categories={categories || []} />
+      <VendorForm vendor={normalizedVendor} categories={categories || []} />
     </div>
   </div>
 </AdminLayout>

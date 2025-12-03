@@ -1,6 +1,8 @@
 ---
-export const prerender = false;
+// Static Site Generation (SSG) - This page is pre-rendered at build time
+// See STATIC_GENERATION_STRATEGY.md for details
 
+import { Fragment } from 'astro/jsx-runtime';
 import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 
@@ -108,15 +110,79 @@ const location = getLocation();
 
 // Determine canonical URL
 const canonicalUrl = normalizedVendor.canonical_url || `https://automation-list.com/en/vendor/${slug}`;
+
+// Build JSON-LD Organization schema
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: normalizedVendor.name,
+  ...(normalizedVendor.website && { url: normalizedVendor.website }),
+  ...(normalizedVendor.logo_url && { logo: normalizedVendor.logo_url }),
+  ...(normalizedVendor.description && { description: normalizedVendor.description }),
+  ...((normalizedVendor.city || normalizedVendor.country) && {
+    address: {
+      "@type": "PostalAddress",
+      ...(normalizedVendor.city && { addressLocality: normalizedVendor.city }),
+      ...(normalizedVendor.country && { addressCountry: normalizedVendor.country }),
+    },
+  }),
+  ...(normalizedVendor.website && { sameAs: [normalizedVendor.website] }),
+};
+
+const organizationSchemaJson = JSON.stringify(organizationSchema);
+
+// Build JSON-LD BreadcrumbList schema
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: `${Astro.url.origin}/en/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Vendors",
+      item: `${Astro.url.origin}/en/vendors`,
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: normalizedVendor.name,
+      item: `${Astro.url.origin}/en/vendor/${slug}`,
+    },
+  ],
+};
+
+const breadcrumbSchemaJson = JSON.stringify(breadcrumbSchema);
+
+// Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
+const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
+
+// Determine description: use meta_description if available, otherwise fallback to truncated vendor.description
+const pageDescription = normalizedVendor.meta_description || 
+  (normalizedVendor.description ? truncateDescription(normalizedVendor.description, 160) : `Learn more about ${normalizedVendor.name}, a leading vendor in industrial automation.`);
+
+// Determine OG image: use vendor.logo_url if available, otherwise fallback to default
+const origin = Astro.url.origin;
+const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
 ---
 
 <BaseLayout 
-  title={`${normalizedVendor.name} - Vendor Details - Automation List`}
-  description={normalizedVendor.description ? truncateDescription(normalizedVendor.description, 160) : `Learn more about ${normalizedVendor.name}, a leading vendor in industrial automation.`}
+  title={pageTitle}
+  description={pageDescription}
+  image={image}
   lang="en"
   navItems={engNavItems}
   meta={{ canonical: canonicalUrl }}
 >
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={organizationSchemaJson} />
+    <script type="application/ld+json" set:html={breadcrumbSchemaJson} />
+  </Fragment>
   <div class="container-px mx-auto max-w-4xl px-4 py-10">
     <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
       ← Back to Vendors
@@ -124,13 +190,22 @@ const canonicalUrl = normalizedVendor.canonical_url || `https://automation-list.
 
     <!-- SECTION 1 — HEADER -->
     <div class={`mb-8 text-center ${isFeatured ? 'border-2 border-orange-300 rounded-lg p-6 bg-orange-50/30' : ''}`}>
-      {normalizedVendor.logo_url && (
-        <img 
-          src={normalizedVendor.logo_url} 
-          alt={`${normalizedVendor.name} logo`}
-          class="mx-auto mb-4 max-h-24 max-w-48 object-contain"
-        />
-      )}
+      <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mx-auto mb-4">
+        {normalizedVendor.logo_url ? (
+          <img 
+            src={normalizedVendor.logo_url} 
+            alt={normalizedVendor.logo_alt || `${normalizedVendor.name} logo`}
+            width={normalizedVendor.logo_width || 200}
+            height={normalizedVendor.logo_height || 80}
+            loading="lazy"
+            class="max-w-full max-h-full object-contain"
+          />
+        ) : (
+          <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
+            <span class="text-xs text-gray-400">No Logo</span>
+          </div>
+        )}
+      </div>
       
       <h1 class="text-3xl font-bold text-gray-900 mb-3">{normalizedVendor.name}</h1>
       

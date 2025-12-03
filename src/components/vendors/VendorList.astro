@@ -1,6 +1,9 @@
 ---
 import { supabase } from '../../lib/supabaseClient';
+import { getCached, setCached } from '../../lib/cache';
 import VendorCard from '../VendorCard.astro';
+import Pagination from '../Pagination.astro';
+import { normalizeTech } from '../../lib/normalizeTech';
 
 interface Props {
   lang: "en" | "de";
@@ -22,71 +25,258 @@ function safeDecode(param: string | null): string {
 const searchQuery = safeDecode(Astro.url.searchParams.get('q'));
 const countryFilter = safeDecode(Astro.url.searchParams.get('country'));
 const activeCategory = safeDecode(Astro.url.searchParams.get('category'));
+const technologyFilter = safeDecode(Astro.url.searchParams.get('technology'));
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
+const pageSize = 24;
 
-// Fetch all categories from database for the dropdown
-const { data: dbCategories } = await supabase
-  .from('categories')
-  .select('id, slug, name_en, name_de')
-  .order('name_en', { ascending: true });
-
-// Build Supabase query with vendor_categories JOIN
-let query = supabase
-  .from('vendors')
-  .select(`
-    *,
-    vendor_categories (
-      is_primary,
-      categories:categories (
-        id,
-        slug,
-        name_en,
-        name_de
-      )
-    )
-  `);
-
-// Apply search filter if present (filter by vendor name)
-if (searchQuery) {
-  query = query.ilike('name', `%${searchQuery}%`);
+// Fetch all categories from database for the dropdown (cached)
+const categoriesCacheKey = 'categories:all';
+let dbCategories = getCached(categoriesCacheKey);
+if (!dbCategories) {
+  const { data } = await supabase
+    .from('categories')
+    .select('id, slug, name_en, name_de')
+    .order('name_en', { ascending: true });
+  dbCategories = data;
+  if (dbCategories) {
+    setCached(categoriesCacheKey, dbCategories, 300);
+  }
 }
 
-// Apply country filter if present
+// Get category ID if category filter is active
+let categoryId: number | null = null;
+if (activeCategory) {
+  const category = dbCategories?.find(cat => cat.slug === activeCategory);
+  categoryId = category?.id || null;
+}
+
+// Fetch unique countries from all vendors for dropdown (cached)
+const countriesCacheKey = 'vendors:countries:all';
+let uniqueCountryList = getCached<string[]>(countriesCacheKey);
+if (!uniqueCountryList) {
+  const { data: allVendorsForCountries } = await supabase
+    .from('vendors')
+    .select('country')
+    .not('country', 'is', null);
+  
+  uniqueCountryList = Array.from(
+    new Set((allVendorsForCountries || []).map(v => v.country).filter(Boolean))
+  ).sort();
+  
+  if (uniqueCountryList) {
+    setCached(countriesCacheKey, uniqueCountryList, 300);
+  }
+}
+
+// Fetch all vendors to extract unique technologies for dropdown (cached)
+const technologiesCacheKey = 'vendors:technologies:all';
+let uniqueTechnologyList = getCached<string[]>(technologiesCacheKey);
+if (!uniqueTechnologyList) {
+  const { data: allVendorsForTechnologies } = await supabase
+    .from('vendors')
+    .select('technologies')
+    .not('technologies', 'is', null);
+  
+  // Extract and normalize unique technologies
+  const technologySet = new Set<string>();
+  (allVendorsForTechnologies || []).forEach((vendor: any) => {
+    if (vendor.technologies && typeof vendor.technologies === 'string') {
+      const techs = vendor.technologies
+        .split(',')
+        .map((tech: string) => tech.trim())
+        .filter((tech: string) => tech.length > 0);
+      techs.forEach((tech: string) => {
+        technologySet.add(tech);
+      });
+    }
+  });
+  
+  uniqueTechnologyList = Array.from(technologySet).sort();
+  
+  if (uniqueTechnologyList) {
+    setCached(technologiesCacheKey, uniqueTechnologyList, 300);
+  }
+}
+
+// Helper function to convert country name to URL-friendly slug
+function countryToSlug(country: string): string {
+  return country
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/[^\w\-]/g, ''); // Remove special characters except hyphens
+}
+
+// Helper function to convert country slug back to country name
+function slugToCountryName(slug: string): string | null {
+  // Find the country in uniqueCountryList that matches this slug
+  const matchingCountry = uniqueCountryList.find(country => 
+    countryToSlug(country) === slug
+  );
+  return matchingCountry || null;
+}
+
+// Helper function to convert technology slug back to technology name
+function slugToTechnologyName(slug: string): string | null {
+  // Find the technology in uniqueTechnologyList that matches this slug
+  const matchingTechnology = uniqueTechnologyList.find(tech => 
+    normalizeTech(tech) === slug
+  );
+  return matchingTechnology || null;
+}
+
+// Normalize technology filter: convert slug to actual technology name
+let normalizedTechnologyFilter: string | null = null;
+if (technologyFilter) {
+  const technologyName = slugToTechnologyName(technologyFilter);
+  if (technologyName) {
+    normalizedTechnologyFilter = technologyName;
+  }
+}
+
+// Normalize country filter: convert slug to actual country name
+let normalizedCountryFilter: string | null = null;
 if (countryFilter) {
-  query = query.eq('country', countryFilter);
+  const countryName = slugToCountryName(countryFilter);
+  if (countryName) {
+    normalizedCountryFilter = countryName;
+  }
 }
 
-// Sort by priority (high priority first, nulls last), then by name ascending
-query = query.order('priority', { ascending: false, nullsLast: true })
-  .order('name', { ascending: true });
+// If category filter is active, first get vendor IDs that have this category (cached)
+let categoryVendorIds: number[] | null = null;
+if (categoryId) {
+  const categoryLinksCacheKey = `vendor_categories:category:${categoryId}`;
+  categoryVendorIds = getCached<number[]>(categoryLinksCacheKey);
+  
+  if (categoryVendorIds === null) {
+    const { data: vendorCategoryLinks, error: linkError } = await supabase
+      .from('vendor_categories')
+      .select('vendor_id')
+      .eq('category_id', categoryId);
 
-// Execute query
-const { data: allVendors, error } = await query;
+    if (linkError) {
+      console.error('Error fetching vendor-category links:', linkError);
+      categoryVendorIds = [];
+    } else {
+      categoryVendorIds = (vendorCategoryLinks || []).map(link => link.vendor_id);
+      // If no vendors found for this category, set empty array to return no results
+      if (categoryVendorIds.length === 0) {
+        categoryVendorIds = [];
+      }
+      setCached(categoryLinksCacheKey, categoryVendorIds, 300);
+    }
+  }
+}
 
-if (error) {
-  console.error('Error fetching vendors:', error);
+// Helper function to build base query with filters
+function buildBaseQuery() {
+  let query = supabase
+    .from('vendors')
+    .select(`
+      *,
+      vendor_categories (
+        is_primary,
+        categories:categories (
+          id,
+          slug,
+          name_en,
+          name_de
+        )
+      )
+    `, { count: 'exact' });
+
+  // Apply category filter using vendor IDs if present
+  if (categoryVendorIds !== null) {
+    if (categoryVendorIds.length === 0) {
+      // No vendors match this category, return empty result by filtering to non-existent ID
+      query = query.eq('id', -1);
+    } else {
+      query = query.in('id', categoryVendorIds);
+    }
+  }
+
+  // Apply search filter if present (filter by vendor name)
+  if (searchQuery) {
+    query = query.ilike('name', `%${searchQuery}%`);
+  }
+
+  // Apply country filter if present (use case-insensitive matching)
+  if (normalizedCountryFilter) {
+    query = query.ilike('country', normalizedCountryFilter);
+  }
+
+  // Apply technology filter if present (use case-insensitive matching)
+  if (normalizedTechnologyFilter) {
+    query = query.ilike('technologies', `%${normalizedTechnologyFilter}%`);
+  }
+
+  // Sort by priority (high priority first, nulls last), then by name ascending
+  query = query.order('priority', { ascending: false, nullsLast: true })
+    .order('name', { ascending: true });
+
+  return query;
+}
+
+// Build cache key for vendor listing query
+const cacheKey = `vendors:list:${lang}:${searchQuery || ''}:${activeCategory || ''}:${countryFilter || ''}:${technologyFilter || ''}:${page}`;
+
+// Try to get cached result
+interface CachedVendorResult {
+  vendors: any[];
+  totalVendors: number | null;
+}
+
+let cachedResult = getCached<CachedVendorResult>(cacheKey);
+let vendors: any[] = [];
+let totalVendors: number | null = null;
+
+if (cachedResult) {
+  vendors = cachedResult.vendors || [];
+  totalVendors = cachedResult.totalVendors;
+} else {
+  // Get total count
+  const countQuery = buildBaseQuery();
+  const { count } = await countQuery.select('*', { count: 'exact', head: true });
+  totalVendors = count;
+
+  // Build paginated query
+  let paginatedQuery = buildBaseQuery();
+  const start = (page - 1) * pageSize;
+  const end = page * pageSize - 1;
+  paginatedQuery = paginatedQuery.range(start, end);
+
+  // Execute paginated query
+  const { data, error } = await paginatedQuery;
+
+  if (error) {
+    console.error('Error fetching vendors:', error);
+    vendors = [];
+  } else {
+    vendors = data || [];
+  }
+
+  // Cache the result
+  if (totalVendors !== null) {
+    setCached(cacheKey, { vendors, totalVendors }, 300);
+  }
 }
 
 // Normalize category data shape
-const normalizedVendors = (allVendors || []).map(v => ({
+const normalizedVendors = (vendors || []).map(v => ({
   ...v,
   category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
 }));
 
-// Perform M2M category filtering client-side
-const filteredVendors = normalizedVendors.filter(v =>
-  !activeCategory || v.category_slugs.includes(activeCategory)
-);
-
-// Extract unique lists for filter dropdowns from ALL vendors (not filtered) for dropdown options
-const uniqueCountryList = Array.from(
-  new Set(normalizedVendors.map(v => v.country).filter(Boolean))
-).sort();
+const filteredVendors = normalizedVendors;
+const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // Build category list with slugs from database categories
 const categoryList = (dbCategories || []).map(cat => ({
   slug: cat.slug,
   name: lang === "de" ? (cat.name_de || cat.name_en) : (cat.name_en || cat.name_de)
 })).filter(cat => cat.slug && cat.name);
+
 ---
 
 <div class="container-px mx-auto max-w-7xl px-4 py-10">
@@ -105,6 +295,12 @@ const categoryList = (dbCategories || []).map(cat => ({
           // Set new category
           url.searchParams.set('category', cat.slug);
         }
+        // Preserve other filters (search, country, technology)
+        if (searchQuery) url.searchParams.set('q', searchQuery);
+        if (countryFilter) url.searchParams.set('country', countryFilter);
+        if (technologyFilter) url.searchParams.set('technology', technologyFilter);
+        // Reset to page 1 when filter changes
+        url.searchParams.set('page', '1');
         return (
           <a
             href={url.toString()}
@@ -122,7 +318,9 @@ const categoryList = (dbCategories || []).map(cat => ({
   <!-- Search and Filter Form -->
   <div class="border border-gray-200 rounded-lg p-4 mb-8 bg-white shadow-sm">
     <form method="GET" action={Astro.url.pathname}>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Reset to page 1 when filters change -->
+      <input type="hidden" name="page" value="1" />
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Search Bar -->
         <div>
           <input
@@ -141,11 +339,14 @@ const categoryList = (dbCategories || []).map(cat => ({
             class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
           >
             <option value="">{lang === "de" ? "Alle Länder" : "All Countries"}</option>
-            {uniqueCountryList.map(country => (
-              <option value={country} selected={country === countryFilter}>
-                {country}
-              </option>
-            ))}
+            {uniqueCountryList.map(country => {
+              const countrySlug = countryToSlug(country);
+              return (
+                <option value={countrySlug} selected={countryFilter === countrySlug}>
+                  {country}
+                </option>
+              );
+            })}
           </select>
         </div>
 
@@ -163,6 +364,24 @@ const categoryList = (dbCategories || []).map(cat => ({
             ))}
           </select>
         </div>
+
+        <!-- Technology Filter -->
+        <div>
+          <select
+            name="technology"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
+          >
+            <option value="">{lang === "de" ? "Alle Technologien" : "All Technologies"}</option>
+            {uniqueTechnologyList.map(tech => {
+              const techSlug = normalizeTech(tech);
+              return (
+                <option value={techSlug} selected={technologyFilter === techSlug}>
+                  {tech}
+                </option>
+              );
+            })}
+          </select>
+        </div>
       </div>
 
       <!-- Filter Buttons -->
@@ -173,7 +392,7 @@ const categoryList = (dbCategories || []).map(cat => ({
         >
           {lang === "de" ? "Filtern" : "Filter"}
         </button>
-        {(searchQuery || countryFilter || activeCategory) && (
+        {(searchQuery || countryFilter || activeCategory || technologyFilter) && (
           <a
             href={Astro.url.pathname}
             class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium"
@@ -188,28 +407,38 @@ const categoryList = (dbCategories || []).map(cat => ({
   <!-- Result Count -->
   <div class="mb-4">
     <p class="text-sm text-gray-600">
-      {filteredVendors.length} {lang === "de" ? "Anbieter gefunden" : "vendors found"}
-      {(searchQuery || countryFilter || activeCategory) && (
+      {totalVendors || 0} {lang === "de" ? "Anbieter gefunden" : "vendors found"}
+      {(searchQuery || countryFilter || activeCategory || technologyFilter) && (
         <span class="text-xs text-gray-500 ml-2">
           ({lang === "de" ? "gefiltert" : "filtered"})
         </span>
       )}
+      {totalPages > 1 && (
+        <span class="text-xs text-gray-500 ml-2">
+          ({lang === "de" ? "Seite" : "Page"} {page} {lang === "de" ? "von" : "of"} {totalPages})
+        </span>
+      )}
     </p>
-    {(searchQuery || countryFilter || activeCategory) && (
+    {(searchQuery || countryFilter || activeCategory || technologyFilter) && (
       <div class="mt-2 flex flex-wrap gap-2">
         {searchQuery && (
           <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
             {lang === "de" ? "Suche" : "Search"}: "{searchQuery}"
           </span>
         )}
-        {countryFilter && (
+        {countryFilter && normalizedCountryFilter && (
           <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800">
-            {lang === "de" ? "Land" : "Country"}: {countryFilter}
+            {lang === "de" ? "Land" : "Country"}: {normalizedCountryFilter}
           </span>
         )}
         {activeCategory && (
           <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
             {lang === "de" ? "Kategorie" : "Category"}: {activeCategory}
+          </span>
+        )}
+        {technologyFilter && normalizedTechnologyFilter && (
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800">
+            {lang === "de" ? "Technologie" : "Technology"}: {normalizedTechnologyFilter}
           </span>
         )}
       </div>
@@ -234,5 +463,13 @@ const categoryList = (dbCategories || []).map(cat => ({
       </div>
     )}
   </div>
+
+  <!-- Pagination -->
+  <Pagination
+    currentPage={page}
+    totalPages={totalPages}
+    baseUrl={Astro.url}
+    lang={lang}
+  />
 </div>
 

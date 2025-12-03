@@ -13,6 +13,7 @@ import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import ExploreCTA from "../../components/ExploreCTA.astro";
+import { normalizeTech } from "../../lib/normalizeTech";
 
 const engNavItems = [
   { label: "Home", href: "/en/" },
@@ -96,6 +97,29 @@ const categories = (dbCategories || []).map(cat => ({
   description_de: cat.description_de || '',
   count: countByCategorySlug(cat.slug || ''),
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
+
+// Extract and count technologies from vendors
+const technologyFrequency = new Map<string, number>();
+(normalizedVendors || []).forEach((vendor: any) => {
+  if (vendor.technologies && typeof vendor.technologies === 'string') {
+    const techs = vendor.technologies
+      .split(',')
+      .map((tech: string) => tech.trim())
+      .filter((tech: string) => tech.length > 0);
+    techs.forEach((tech: string) => {
+      const normalized = tech.toLowerCase().trim();
+      if (normalized) {
+        technologyFrequency.set(normalized, (technologyFrequency.get(normalized) || 0) + 1);
+      }
+    });
+  }
+});
+
+// Sort by frequency (descending) and get top 8
+const popularTechnologies = Array.from(technologyFrequency.entries())
+  .map(([name, count]) => ({ name, count, slug: normalizeTech(name) }))
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 8);
 ---
 
 <BaseLayout 
@@ -117,6 +141,23 @@ const categories = (dbCategories || []).map(cat => ({
   />
 
   <CategoryGrid categories={categories} lang="en" />
+
+  <!-- Popular Technologies Section -->
+  {popularTechnologies.length > 0 && (
+    <section class="container-px mx-auto max-w-7xl px-4 py-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Popular Technologies</h2>
+      <div class="flex flex-wrap justify-center gap-3">
+        {popularTechnologies.map((tech) => (
+          <a
+            href={`/en/technology/${tech.slug}`}
+            class="text-sm text-gray-700 hover:text-brand-600 hover:underline transition-colors px-3 py-1"
+          >
+            {tech.name} ({tech.count})
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
 
   <FeaturedVendors
     vendors={featuredVendors}

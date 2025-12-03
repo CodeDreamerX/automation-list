@@ -1,4 +1,11 @@
 ---
+// TODO: Server-Side Rendering (SSR) - This page is rendered on-demand at request time
+// This page uses SSR instead of SSG because:
+// 1. Complex pagination with dynamic query parameters (?page=2, etc.)
+// 2. Dynamic filtering by category, technology, country, and search terms
+// 3. Real-time vendor data that may change frequently
+// 4. Search functionality requires server-side processing
+// See STATIC_GENERATION_STRATEGY.md for details
 export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";

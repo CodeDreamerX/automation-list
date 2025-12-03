@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
+import { normalizeTechForStorage } from '../../../lib/normalizeTech';
 
 export const prerender = false;
 
@@ -57,6 +58,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         meta_description: form.get('meta_description')?.toString() || null,
         canonical_url: form.get('canonical_url')?.toString() || null,
         logo_url: form.get('logo_url')?.toString() || null,
+        logo_width: form.get('logo_width')?.toString() ? Number(form.get('logo_width')!.toString()) : null,
+        logo_height: form.get('logo_height')?.toString() ? Number(form.get('logo_height')!.toString()) : null,
+        logo_format: form.get('logo_format')?.toString() || null,
+        logo_alt: form.get('logo_alt')?.toString() || null,
       };
     } else {
       // Handle JSON (backward compatibility)
@@ -86,6 +91,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (!insertData.plan) {
         insertData.plan = 'free';
       }
+      // Normalize logo fields for JSON requests
+      insertData.logo_url = insertData.logo_url || null;
+      insertData.logo_width = insertData.logo_width ? Number(insertData.logo_width) : null;
+      insertData.logo_height = insertData.logo_height ? Number(insertData.logo_height) : null;
+      insertData.logo_format = insertData.logo_format || null;
+      insertData.logo_alt = insertData.logo_alt || null;
       
       // Extract category slugs from JSON if present
       if (body.category_slugs && Array.isArray(body.category_slugs)) {
@@ -103,6 +114,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (website && !website.match(/^https?:\/\//i)) {
         insertData.website = 'https://' + website;
       }
+    }
+
+    // Normalize technologies: split by comma, normalize each, remove duplicates, join back
+    if (insertData.technologies && typeof insertData.technologies === 'string') {
+      const techs = insertData.technologies
+        .split(',')
+        .map(tech => normalizeTechForStorage(tech))
+        .filter(tech => tech.length > 0);
+      
+      // Remove duplicates (case-insensitive)
+      const uniqueTechs = Array.from(
+        new Set(techs.map(t => t.toLowerCase()))
+      ).map(lower => techs.find(t => t.toLowerCase() === lower) || '')
+       .filter(Boolean);
+      
+      insertData.technologies = uniqueTechs.length > 0 ? uniqueTechs.join(', ') : null;
     }
 
     // Add timestamps

@@ -1,0 +1,244 @@
+---
+// Static Site Generation (SSG) - Base route (page 1) is pre-rendered at build time
+// Pagination pages (?page=2, etc.) are SSR'd on-demand
+// See STATIC_GENERATION_STRATEGY.md for details
+
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import VendorCard from "../../../components/VendorCard.astro";
+import Pagination from "../../../components/Pagination.astro";
+import { supabase } from "../../../lib/supabaseClient";
+import { getCached, setCached } from "../../../lib/cache";
+
+export async function getStaticPaths() {
+  // Fetch all active category slugs from Supabase
+  const { data: categories, error } = await supabase
+    .from('categories')
+    .select('slug')
+    .eq('is_active', true);
+
+  if (error) {
+    console.error('Error fetching category slugs:', error);
+    return [];
+  }
+
+  // Generate paths for each category slug (page 1 only)
+  return (categories || []).map((category) => ({
+    params: { slug: category.slug },
+  }));
+}
+
+const deNavItems = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Kategorien", href: "/de/categories" },
+  { label: "Anbieter", href: "/de/vendors" },
+  { label: "Blog", href: "/de/blog" },
+  { label: "Kontakt", href: "/de/contact" },
+];
+
+// Get category slug from URL param
+const categorySlug = Astro.params.slug || '';
+
+// If no category slug, redirect to vendors page
+if (!categorySlug) {
+  return Astro.redirect('/de/vendors');
+}
+
+// Fetch category from database
+const { data: category, error: categoryError } = await supabase
+  .from('categories')
+  .select('id, slug, name_en, name_de, description_en, description_de')
+  .eq('slug', categorySlug)
+  .eq('is_active', true)
+  .maybeSingle();
+
+if (categoryError) {
+  console.error('Error fetching category:', categoryError);
+}
+
+// If category not found, redirect to vendors page
+if (!category) {
+  return Astro.redirect('/de/vendors');
+}
+
+const categoryId = category.id;
+const categoryName = category.name_de || category.name_en || categorySlug;
+const categoryDescription = category.description_de || category.description_en || '';
+
+// Get pagination params
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
+const pageSize = 20;
+
+// Build cache key
+const cacheKey = `vendors:category:de:${categorySlug}:${page}`;
+
+// Try to get cached result
+interface CachedCategoryResult {
+  vendors: any[];
+  totalVendors: number;
+}
+
+let cachedResult = getCached<CachedCategoryResult>(cacheKey);
+let vendors: any[] = [];
+let totalVendors = 0;
+
+if (cachedResult) {
+  vendors = cachedResult.vendors;
+  totalVendors = cachedResult.totalVendors;
+} else {
+  // First, get vendor IDs that have this category
+  const categoryLinksCacheKey = `vendor_categories:category:${categoryId}`;
+  let vendorIds = getCached<number[]>(categoryLinksCacheKey);
+  
+  if (vendorIds === null) {
+    const { data: vendorCategoryLinks, error: linkError } = await supabase
+      .from('vendor_categories')
+      .select('vendor_id')
+      .eq('category_id', categoryId);
+
+    if (linkError) {
+      console.error('Error fetching vendor-category links:', linkError);
+      vendorIds = [];
+    } else {
+      vendorIds = (vendorCategoryLinks || []).map(link => link.vendor_id);
+      setCached(categoryLinksCacheKey, vendorIds, 300);
+    }
+  }
+
+  if (vendorIds.length > 0) {
+    // Build query for vendors filtered by IDs
+    function buildCategoryQuery() {
+      return supabase
+        .from('vendors')
+        .select(`
+          *,
+          vendor_categories (
+            is_primary,
+            categories:categories (
+              id,
+              slug,
+              name_en,
+              name_de
+            )
+          )
+        `, { count: 'exact' })
+        .in('id', vendorIds)
+        // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
+        .order('priority', { ascending: false, nullsLast: true })
+        .order('name', { ascending: true });
+    }
+
+    // Get total count
+    const countQuery = buildCategoryQuery();
+    const { count } = await countQuery.select('*', { count: 'exact', head: true });
+    totalVendors = count || 0;
+
+    // Build paginated query
+    const start = (page - 1) * pageSize;
+    const end = page * pageSize - 1;
+    const paginatedQuery = buildCategoryQuery().range(start, end);
+
+    // Execute paginated query
+    const { data: vendorsData, error } = await paginatedQuery;
+    
+    if (error) {
+      console.error('Error fetching vendors:', error);
+      vendors = [];
+    } else {
+      vendors = vendorsData || [];
+    }
+
+    // Cache the result
+    setCached(cacheKey, { vendors, totalVendors }, 300);
+  }
+}
+
+// Normalize category data shape
+const normalizedVendors = (vendors || []).map(v => ({
+  ...v,
+  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+}));
+
+const totalPages = Math.ceil((totalVendors || 0) / pageSize);
+
+// SEO metadata
+const metaTitle = `${categoryName} Automatisierungsanbieter | Automation List`;
+const metaDescription = categoryDescription || `Entdecken Sie führende ${categoryName} Automatisierungsanbieter, Integratoren und Lösungsanbieter.`;
+const origin = Astro.url.origin;
+const defaultOg = `${origin}/og/default.png`;
+const currentUrl = `https://automation-list.com/de/category/${categorySlug}`;
+
+---
+
+<BaseLayout 
+  title={metaTitle}
+  description={metaDescription}
+  canonical={currentUrl}
+  image={defaultOg}
+  lang="de"
+  navItems={deNavItems}
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": `${categoryName} Automatisierungsanbieter`,
+    "description": metaDescription,
+    "itemListElement": normalizedVendors.map((v, index) => ({
+      "@type": "Organization",
+      "position": index + 1,
+      "name": v.name,
+      "url": `https://automation-list.com/de/vendor/${v.slug}`,
+      "logo": v.logo_url,
+      "image": v.logo_url,
+      "address": v.country
+    }))
+  })} />
+  <div class="container-px mx-auto max-w-7xl px-4 py-10">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">
+      {categoryName} Automatisierungsanbieter
+    </h1>
+
+    {categoryDescription && (
+      <p class="text-gray-600 mb-6">{categoryDescription}</p>
+    )}
+
+    <!-- Result Count -->
+    <div class="mb-4">
+      <p class="text-sm text-gray-600">
+        {totalVendors || 0} {totalVendors === 1 ? 'Anbieter gefunden' : 'Anbieter gefunden'}
+        {totalPages > 1 && (
+          <span class="text-xs text-gray-500 ml-2">
+            (Seite {page} von {totalPages})
+          </span>
+        )}
+      </p>
+    </div>
+
+    <!-- Vendor Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {normalizedVendors.length > 0 ? (
+        normalizedVendors.map(vendor => (
+          <VendorCard
+            vendor={vendor}
+            hrefPrefix="/de/vendor"
+            lang="de"
+          />
+        ))
+      ) : (
+        <div class="col-span-full text-center py-12">
+          <p class="text-gray-600">
+            Keine Anbieter in dieser Kategorie gefunden.
+          </p>
+        </div>
+      )}
+    </div>
+
+    <!-- Pagination -->
+    <Pagination
+      currentPage={page}
+      totalPages={totalPages}
+      baseUrl={Astro.url}
+      lang="de"
+    />
+  </div>
+</BaseLayout>
+

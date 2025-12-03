@@ -6,6 +6,9 @@ interface Vendor {
   technologies?: string | null;
   description?: string | null;
   logo_url?: string | null;
+  logo_width?: number | null;
+  logo_height?: number | null;
+  logo_alt?: string | null;
   priority?: number | null;
   vendor_categories?: Array<{
     is_primary?: boolean;
@@ -73,16 +76,22 @@ const {
                 </span>
               )}
               
-              {vendor.logo_url && (
-                <div class="flex justify-center">
-                  <img 
-                    src={vendor.logo_url} 
-                    alt={`${vendor.name} logo`}
-                    class="max-h-12 object-contain mx-auto mb-4"
-                    onerror="this.style.display='none'"
+              <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mb-4 mx-auto">
+                {vendor.logo_url ? (
+                  <img
+                    src={vendor.logo_url}
+                    alt={vendor.logo_alt || `${vendor.name} automation logo`}
+                    width={vendor.logo_width}
+                    height={vendor.logo_height}
+                    loading="lazy"
+                    class="max-w-[80%] max-h-[80%] object-contain"
                   />
-                </div>
-              )}
+                ) : (
+                  <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
+                    <span class="text-xs text-gray-400">No Logo</span>
+                  </div>
+                )}
+              </div>
               
               <h3 class="text-lg font-semibold text-gray-900 mb-1">{vendor.name}</h3>
               

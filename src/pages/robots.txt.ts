@@ -1,22 +1,11 @@
-import type { APIRoute } from 'astro';
+export const prerender = true;
 
-export const GET: APIRoute = ({ request }) => {
-  const url = new URL(request.url);
-  const sitemapUrl = new URL('/sitemap.xml', url.origin).href;
-
-  const robotsTxt = `
-User-agent: *
+export function GET() {
+  return new Response(
+`User-agent: *
+Allow: /
 Disallow: /admin/
-Disallow: /
-Disallow: /index.astro
 
-Sitemap: ${sitemapUrl}
-`.trim();
-
-  return new Response(robotsTxt, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-    },
-  });
-};
-
+Sitemap: https://automation-list.com/sitemap.xml`
+  );
+}
