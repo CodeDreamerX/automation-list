@@ -1,17 +1,13 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
+import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const token = cookies.get("adminSession")?.value;
-  
-  if (!token || token !== '1') {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
+  // Protect admin API route: load session, get user, check user_roles
+  const authResponse = await protectAdminApiRoute(cookies);
+  if (authResponse) return authResponse;
 
   try {
     const body = await request.formData();

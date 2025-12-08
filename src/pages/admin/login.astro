@@ -1,96 +1,113 @@
 ---
 export const prerender = false;
 
-import { verifyPassword, setAuthCookie, clearAuthCookie } from '../../lib/admin/authUtils';
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../../lib/supabaseServer';
+import '../../styles/globals.css';
 
-let passwordError = false;
-let logoutSuccess = false;
+// Check if user is already authenticated as admin
+const supabase = createSupabaseServerClient(Astro.cookies);
+const { data: { user } } = await supabase.auth.getUser();
 
-// Handle logout first (before checking if already logged in)
-if (Astro.url.searchParams.get('logout') === 'true') {
-  clearAuthCookie(Astro.cookies);
-  logoutSuccess = true;
-  // Continue to show login form (don't redirect)
-}
-
-// Check if already logged in (but only if not logging out)
-if (Astro.url.searchParams.get('logout') !== 'true') {
-  const existingCookie = Astro.cookies.get('adminSession');
-  if (existingCookie?.value === '1') {
-    return Astro.redirect('/admin');
-  }
-}
-
-// Handle POST request
-if (Astro.request.method === 'POST') {
-  const formData = await Astro.request.formData();
-  const submittedPassword = formData.get('password')?.toString() || '';
+if (user) {
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
   
-  if (verifyPassword(submittedPassword)) {
-    setAuthCookie(Astro.cookies);
+  if (roleData?.role === 'admin') {
     return Astro.redirect('/admin');
-  } else {
-    passwordError = true;
   }
 }
 
-const engNavItems = [
-  { label: "Home", href: "/en/" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
+// Get error from URL params - only show if explicitly present
+const errorParam = Astro.url.searchParams.get('error');
+const errorMessage = errorParam ? decodeURIComponent(errorParam) : null;
 ---
 
-<BaseLayout 
-  title="Admin Login - Automation List"
-  description="Admin panel login"
-  lang="en"
-  navItems={engNavItems}
->
-  <section class="min-h-screen flex items-center justify-center bg-gray-50 py-16">
-    <div class="container-px mx-auto max-w-md">
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Admin Login</h1>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Admin login for Automation List" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Admin Login - Automation List</title>
+  </head>
+  <body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+          <h1 class="text-3xl font-bold text-gray-900">Admin Panel</h1>
+          <p class="mt-2 text-sm text-gray-600">Sign in to access the admin dashboard</p>
+        </div>
         
-        {logoutSuccess && (
-          <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
-            You have been successfully logged out.
-          </div>
-        )}
+        <div class="bg-white rounded-lg shadow-md p-8 border border-gray-200">
+          <form method="post" action="/api/admin/login" class="space-y-6">
+            {errorMessage && (
+              <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                {errorMessage}
+              </div>
+            )}
+            
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autocomplete="email"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                placeholder="admin@example.com"
+              />
+            </div>
+            
+            <div>
+              <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autocomplete="current-password"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                placeholder="••••••••"
+              />
+            </div>
+            
+            <div>
+              <button
+                type="submit"
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                Sign in
+              </button>
+            </div>
+          </form>
+        </div>
         
-        {passwordError && (
-          <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-            Invalid password. Please try again.
-          </div>
-        )}
-        
-        <form method="POST" class="space-y-4">
-          <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-              autofocus
-            />
-          </div>
-          
-          <button
-            type="submit"
-            class="w-full px-6 py-3 bg-black text-white rounded-md hover:bg-gray-900 transition-colors font-medium"
-          >
-            Login
-          </button>
-        </form>
+        <div class="text-center">
+          <a href="/en/" class="text-sm text-gray-600 hover:text-gray-900">
+            ← Back to website
+          </a>
+        </div>
       </div>
     </div>
-  </section>
-</BaseLayout>
-
+    
+    <script>
+      // Clean URL by removing error parameter after page load (if present)
+      if (window.location.search.includes('error=')) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('error');
+        window.history.replaceState({}, '', url);
+      }
+    </script>
+  </body>
+</html>

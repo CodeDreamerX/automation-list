@@ -1,27 +1,30 @@
 ---
 export const prerender = false;
 
-import { supabase } from '../../lib/supabaseClient';
-import { protectAdminRoute, getCookieHeader } from '../../lib/admin/authUtils';
+import { supabaseAdmin } from '../../lib/supabaseAdminClient';
+import { createSupabaseServerClient } from '../../lib/supabaseServer';
+import { normalizeTechForStorage } from '../../lib/normalizeTech';
+import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import VendorForm from '../../components/admin/VendorForm.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
-  const { clearAuthCookie } = await import('../../lib/admin/authUtils');
-  clearAuthCookie(Astro.cookies);
-  return Astro.redirect('/admin/login?logout=true');
+  return Astro.redirect('/api/admin/logout');
 }
 
 // Check authentication and redirect if not logged in
 // Note: Middleware also handles this, but keeping as defensive check
-const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
+const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }
 
+// Create Supabase server client for authenticated operations
+const supabase = createSupabaseServerClient(Astro.cookies);
+
 // Fetch all categories from Supabase
-const { data: categories } = await supabase
+const { data: categories } = await supabaseAdmin
   .from('categories')
   .select('id, slug, name_en, name_de')
   .order('order_index', { ascending: true, nullsLast: true })
@@ -29,12 +32,31 @@ const { data: categories } = await supabase
 
 // Handle form submission
 if (Astro.request.method === 'POST') {
+  // Verify authentication
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return Astro.redirect('/admin/login');
+  }
+
+  // Verify admin role
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (roleData?.role !== 'admin') {
+    return Astro.redirect('/admin/login');
+  }
+
   const formData = await Astro.request.formData();
   
-  // Check if slug already exists (read-only query, using anon client is OK)
+  // Check if slug already exists
   const slug = formData.get('slug')?.toString();
   if (slug) {
-    const { data: existingVendor } = await supabase
+    const { data: existingVendor } = await supabaseAdmin
       .from('vendors')
       .select('id')
       .eq('slug', slug)
@@ -42,38 +64,114 @@ if (Astro.request.method === 'POST') {
     
     if (existingVendor) {
       console.error('Error: Slug already exists');
-      // Redirect back with error
       return Astro.redirect('/admin/new?error=slug_exists');
     }
   }
 
-  // Create vendor via API endpoint
-  // Forward cookies from the original request using helper function
-  const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
+  // Extract category slugs from form data
+  const categorySlugs = formData.getAll("category_slugs")
+    .map((slug) => String(slug).trim())
+    .filter((slug) => slug.length > 0);
   
-  // Send FormData directly to API endpoint (includes category_slugs)
-  const response = await fetch(`${Astro.url.origin}/api/admin/create-vendor`, {
-    method: 'POST',
-    headers: {
-      'Cookie': cookieHeader,
-    },
-    credentials: 'include',
-    body: formData,
-  });
+  // Build insertData from form fields
+  const insertData: any = {
+    name: formData.get('name')?.toString() || null,
+    slug: formData.get('slug')?.toString() || null,
+    description: formData.get('description')?.toString() || null,
+    website: formData.get('website')?.toString() || null,
+    email: formData.get('email')?.toString() || null,
+    phone: formData.get('phone')?.toString() || null,
+    address: formData.get('address')?.toString() || null,
+    city: formData.get('city')?.toString() || null,
+    region: formData.get('region')?.toString() || null,
+    country: formData.get('country')?.toString() || null,
+    technologies: formData.get('technologies')?.toString() || null,
+    languages: formData.get('languages')?.toString() || null,
+    certifications: formData.get('certifications')?.toString() || null,
+    tags: formData.get('tags')?.toString() || null,
+    industries: formData.get('industries')?.toString() || null,
+    year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
+    employee_count: formData.get('employee_count')?.toString() || null,
+    hourly_rate: formData.get('hourly_rate')?.toString() || null,
+    plan: formData.get('plan')?.toString() || 'free',
+    priority: formData.get('priority')?.toString() ? parseInt(formData.get('priority')!.toString()) : null,
+    featured: formData.get('featured') === 'on',
+    og_member: formData.get('og_member') === 'on',
+    featured_until: formData.get('featured_until')?.toString() || null,
+    meta_title: formData.get('meta_title')?.toString() || null,
+    meta_description: formData.get('meta_description')?.toString() || null,
+    canonical_url: formData.get('canonical_url')?.toString() || null,
+    logo_url: formData.get('logo_url')?.toString() || null,
+    logo_width: formData.get('logo_width')?.toString() ? Number(formData.get('logo_width')!.toString()) : null,
+    logo_height: formData.get('logo_height')?.toString() ? Number(formData.get('logo_height')!.toString()) : null,
+    logo_format: formData.get('logo_format')?.toString() || null,
+    logo_alt: formData.get('logo_alt')?.toString() || null,
+  };
 
-  if (!response.ok) {
-    const error = await response.json();
-    console.error('Error creating vendor:', error);
-    // Redirect back with error
+  // Normalize website URL: add https:// if missing
+  if (insertData.website && typeof insertData.website === 'string') {
+    const website = insertData.website.trim();
+    if (website && !website.match(/^https?:\/\//i)) {
+      insertData.website = 'https://' + website;
+    }
+  }
+
+  // Normalize technologies: split by comma, normalize each, remove duplicates, join back
+  if (insertData.technologies && typeof insertData.technologies === 'string') {
+    const techs = insertData.technologies
+      .split(',')
+      .map((tech: string) => normalizeTechForStorage(tech))
+      .filter((tech: string) => tech.length > 0);
+    
+    // Remove duplicates (case-insensitive)
+    const uniqueTechs = Array.from<string>(
+      new Set(techs.map((t: string) => t.toLowerCase()))
+    ).map((lower: string) => techs.find((t: string) => t.toLowerCase() === lower) || '')
+     .filter(Boolean);
+    
+    insertData.technologies = uniqueTechs.length > 0 ? uniqueTechs.join(', ') : null;
+  }
+
+  // Add timestamps
+  insertData.created_at = new Date().toISOString();
+  insertData.updated_at = new Date().toISOString();
+
+  // Create vendor using admin client and retrieve new vendor ID
+  const { data: vendor, error: createError } = await supabaseAdmin
+    .from('vendors')
+    .insert([insertData])
+    .select('id')
+    .single();
+
+  if (createError) {
+    console.error('Error creating vendor:', createError);
     return Astro.redirect('/admin/new?error=create_failed');
   }
-  
-  const result = await response.json();
-  if (result.data && result.data.id) {
-    // Redirect to edit page of the newly created vendor
-    return Astro.redirect(`/admin/edit/${result.data.id}`);
+
+  // Insert vendor_categories entries if category slugs were provided
+  if (categorySlugs.length > 0 && vendor?.id) {
+    for (const slug of categorySlugs) {
+      const { data: cat } = await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (cat?.id) {
+        await supabaseAdmin
+          .from("vendor_categories")
+          .insert({
+            vendor_id: vendor.id,
+            category_id: cat.id
+          });
+      }
+    }
+  }
+
+  // Redirect to edit page of the newly created vendor
+  if (vendor?.id) {
+    return Astro.redirect(`/admin/edit/${vendor.id}`);
   } else {
-    // Redirect back to admin panel if creation failed
     return Astro.redirect('/admin');
   }
 }

@@ -1,24 +1,26 @@
 ---
 export const prerender = false;
 
-import { supabase } from '../../lib/supabaseClient';
-import { checkAuth, protectAdminRoute, getCookieHeader } from '../../lib/admin/authUtils';
+import { supabaseAdmin } from '../../lib/supabaseAdminClient';
+import { createSupabaseServerClient } from '../../lib/supabaseServer';
+import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import VendorTable from '../../components/admin/VendorTable.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
-  const { clearAuthCookie } = await import('../../lib/admin/authUtils');
-  clearAuthCookie(Astro.cookies);
-  return Astro.redirect('/admin/login?logout=true');
+  return Astro.redirect('/api/admin/logout');
 }
 
 // Check authentication and redirect if not logged in
 // Note: Middleware also handles this, but keeping as defensive check
-const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
+const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }
+
+// Create Supabase server client for authenticated operations
+const supabase = createSupabaseServerClient(Astro.cookies);
 
 // Get search query from URL
 const searchQuery = Astro.url.searchParams.get('q') || '';
@@ -32,76 +34,66 @@ const importWarningsCount = parseInt(Astro.url.searchParams.get('warnings') || '
 
 // Handle actions (delete, toggle featured, change plan, change priority)
 if (Astro.request.method === 'POST') {
+  // Verify authentication
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return Astro.redirect('/admin/login');
+  }
+
+  // Verify admin role
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (roleData?.role !== 'admin') {
+    return Astro.redirect('/admin/login');
+  }
+
   const formData = await Astro.request.formData();
   const action = formData.get('action')?.toString();
   const vendorId = formData.get('vendor_id')?.toString();
   
   if (action && vendorId) {
-    // Forward cookies from the original request using helper function
-    const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
-    
     if (action === 'delete') {
-      const response = await fetch(`${Astro.url.origin}/api/admin/delete-vendor`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': cookieHeader,
-        },
-        credentials: 'include',
-        body: JSON.stringify({ id: vendorId }),
-      });
+      const { error } = await supabaseAdmin
+        .from('vendors')
+        .delete()
+        .eq('id', vendorId);
       
-      if (!response.ok) {
-        const error = await response.json();
+      if (error) {
         console.error('Error deleting vendor:', error);
       }
     } else if (action === 'toggle_featured') {
       // First get current featured status
-      const { data: vendor } = await supabase
+      const { data: vendor } = await supabaseAdmin
         .from('vendors')
         .select('featured')
         .eq('id', vendorId)
         .single();
       
       if (vendor) {
-        const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
-        const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieHeader,
-          },
-          credentials: 'include',
-          body: JSON.stringify({ 
-            id: vendorId,
-            featured: !vendor.featured,
-          }),
-        });
+        const { error } = await supabaseAdmin
+          .from('vendors')
+          .update({ featured: !vendor.featured, updated_at: new Date().toISOString() })
+          .eq('id', vendorId);
         
-        if (!response.ok) {
-          const error = await response.json();
+        if (error) {
           console.error('Error toggling featured:', error);
         }
       }
     } else if (action === 'change_plan') {
       const plan = formData.get('plan')?.toString();
       if (plan && ['free', 'pro', 'featured'].includes(plan)) {
-        const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
-        const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieHeader,
-          },
-          credentials: 'include',
-          body: JSON.stringify({ 
-            id: vendorId,
-            plan: plan,
-          }),
-        });
+        const { error } = await supabaseAdmin
+          .from('vendors')
+          .update({ plan: plan, updated_at: new Date().toISOString() })
+          .eq('id', vendorId);
         
-        if (!response.ok) {
-          const error = await response.json();
+        if (error) {
           console.error('Error changing plan:', error);
         }
       }
@@ -110,22 +102,12 @@ if (Astro.request.method === 'POST') {
       if (priority) {
         const priorityNum = parseInt(priority);
         if (priorityNum >= 1 && priorityNum <= 5) {
-          const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
-          const response = await fetch(`${Astro.url.origin}/api/admin/update-vendor`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cookie': cookieHeader,
-            },
-            credentials: 'include',
-            body: JSON.stringify({ 
-              id: vendorId,
-              priority: priorityNum,
-            }),
-          });
+          const { error } = await supabaseAdmin
+            .from('vendors')
+            .update({ priority: priorityNum, updated_at: new Date().toISOString() })
+            .eq('id', vendorId);
           
-          if (!response.ok) {
-            const error = await response.json();
+          if (error) {
             console.error('Error changing priority:', error);
           }
         }
@@ -138,23 +120,33 @@ if (Astro.request.method === 'POST') {
 
 // Handle GET delete action (with confirmation)
 if (Astro.request.method === 'GET' && Astro.url.searchParams.get('action') === 'delete') {
+  // Verify authentication
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return Astro.redirect('/admin/login');
+  }
+
+  // Verify admin role
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (roleData?.role !== 'admin') {
+    return Astro.redirect('/admin/login');
+  }
+
   const vendorId = Astro.url.searchParams.get('id');
   if (vendorId) {
-    // Forward cookies from the original request using helper function
-    const cookieHeader = getCookieHeader(Astro.cookies, Astro.request);
+    const { error } = await supabaseAdmin
+      .from('vendors')
+      .delete()
+      .eq('id', vendorId);
     
-    const response = await fetch(`${Astro.url.origin}/api/admin/delete-vendor`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
-      },
-      credentials: 'include',
-      body: JSON.stringify({ id: vendorId }),
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
+    if (error) {
       console.error('Error deleting vendor:', error);
     }
   }
@@ -162,7 +154,7 @@ if (Astro.request.method === 'GET' && Astro.url.searchParams.get('action') === '
 }
 
 // Fetch all vendors with vendor_categories
-const { data: vendors, error } = await supabase
+const { data: vendors, error } = await supabaseAdmin
   .from('vendors')
   .select(`
     *,

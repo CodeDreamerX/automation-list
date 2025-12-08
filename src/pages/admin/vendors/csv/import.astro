@@ -10,7 +10,7 @@ import { join } from 'path';
 import Papa from 'papaparse';
 
 // Check authentication and redirect if not logged in
-const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
+const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }

@@ -1,4 +1,6 @@
 ---
+import { getIconUrl } from '../lib/iconUtils';
+
 interface Category {
   slug: string;
   icon_name?: string;
@@ -30,7 +32,7 @@ const description = lang === "de" ? category.description_de : category.descripti
 const link = `/${lang}/category/${category.slug}`;
 
 // Build icon path
-const iconPath = category.icon_name ? `/src/icons/categories/${category.icon_name}.svg` : null;
+const iconPath = getIconUrl(category.icon_name);
 ---
 
 <a

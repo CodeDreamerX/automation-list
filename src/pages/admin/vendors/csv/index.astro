@@ -5,7 +5,7 @@ import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
 
 // Check authentication and redirect if not logged in
-const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
+const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }

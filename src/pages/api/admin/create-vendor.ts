@@ -1,18 +1,14 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { normalizeTechForStorage } from '../../../lib/normalizeTech';
+import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const token = cookies.get("adminSession")?.value;
-  
-  if (!token || token !== '1') {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
+  // Protect admin API route: load session, get user, check user_roles
+  const authResponse = await protectAdminApiRoute(cookies);
+  if (authResponse) return authResponse;
 
   try {
     // Check if request is FormData or JSON
@@ -120,13 +116,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (insertData.technologies && typeof insertData.technologies === 'string') {
       const techs = insertData.technologies
         .split(',')
-        .map(tech => normalizeTechForStorage(tech))
-        .filter(tech => tech.length > 0);
+        .map((tech: string) => normalizeTechForStorage(tech))
+        .filter((tech: string) => tech.length > 0);
       
       // Remove duplicates (case-insensitive)
-      const uniqueTechs = Array.from(
-        new Set(techs.map(t => t.toLowerCase()))
-      ).map(lower => techs.find(t => t.toLowerCase() === lower) || '')
+      const uniqueTechs = Array.from<string>(
+        new Set(techs.map((t: string) => t.toLowerCase()))
+      ).map((lower: string) => techs.find((t: string) => t.toLowerCase() === lower) || '')
        .filter(Boolean);
       
       insertData.technologies = uniqueTechs.length > 0 ? uniqueTechs.join(', ') : null;

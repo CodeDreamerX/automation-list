@@ -1,5 +1,6 @@
 ---
 import { CATEGORY_ICONS } from '../../lib/categoryIcons';
+import { getIconUrl } from '../../lib/iconUtils';
 
 interface Props {
   category: any | null;
@@ -121,7 +122,7 @@ const formAction = isNewCategory
                 checked={isSelected} 
                 class="sr-only icon-radio" 
               />
-              <img src={`/src/icons/categories/${iconName}.svg`} alt={iconName.replace(/-/g, " ")} class="w-6 h-6 mx-auto" />
+              <img src={getIconUrl(iconName)} alt={iconName.replace(/-/g, " ")} class="w-6 h-6 mx-auto" />
               <span class="text-xs text-gray-600 block text-center mt-1">{iconName.replace(/-/g, " ")}</span>
             </label>
           );

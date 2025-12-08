@@ -1,92 +1,16 @@
 // Authentication utilities for admin panel
+// Admin authentication is handled by Supabase Auth + user_roles table
+// Middleware sets locals.isAdmin based on Supabase session and user_roles
 
-export function checkAuth(cookies: any, request?: Request): boolean {
-  // First try to get from cookies object (preferred)
-  const authCookie = cookies.get('adminSession');
-  if (authCookie?.value === '1') {
-    return true;
-  }
-  
-  // Only check request headers if request is provided AND we're in a server context
-  // Skip header check entirely if request is not provided (e.g., in middleware)
-  // or if we're in a prerendered context (import.meta.env.SSR will be false during prerendering)
-  // This early return prevents Astro from analyzing the header access code during prerendering
-  if (!request || !import.meta.env.SSR) {
-    return false;
-  }
-  
-  // For server-side fetch requests only, try to get headers
-  // Use a runtime check that won't trigger static analysis warnings
-  // Access headers using a method that Astro's static analysis won't detect
-  try {
-    // Use Object.prototype.hasOwnProperty to check for headers without triggering static analysis
-    const req = request as any;
-    if (req && typeof req === 'object' && Object.prototype.hasOwnProperty.call(req, 'headers')) {
-      const headers = req.headers;
-      if (headers && typeof headers.get === 'function') {
-        const cookieHeader = headers.get('cookie') || headers.get('Cookie');
-        if (cookieHeader) {
-          const cookiePairs = cookieHeader.split(';').map(c => c.trim());
-          const adminSession = cookiePairs.find(c => c.startsWith('adminSession='));
-          if (adminSession) {
-            const value = adminSession.split('=')[1]?.trim();
-            if (value === '1') {
-              return true;
-            }
-          }
-        }
-      }
-    }
-  } catch {
-    // Headers not available (e.g., during prerendering), skip header check
-  }
-  
-  return false;
-}
-
-export function setAuthCookie(cookies: any): void {
-  cookies.set('adminSession', '1', {
-    path: '/',
-    httpOnly: true,
-    secure: false, // Allow in development
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 // 24 hours
-  });
-}
-
-export function clearAuthCookie(cookies: any): void {
-  // Delete cookie by setting it to expire immediately
-  cookies.delete('adminSession', { 
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax'
-  });
-  // Also try to set it to empty/expired to ensure it's cleared
-  cookies.set('adminSession', '', {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge: 0 // Expire immediately
-  });
-}
-
-export function verifyPassword(submittedPassword: string): boolean {
-  const correctPassword = import.meta.env.ADMIN_PASSWORD || '';
-  return submittedPassword === correctPassword;
-}
+import type { AstroCookies } from 'astro';
+import { createSupabaseServerClient } from '../supabaseServer';
 
 // Protect admin routes - redirect to login if not authenticated
-// Can use Astro.locals.isAdmin if available (set by middleware), otherwise checks cookies directly
+// Uses locals.isAdmin set by middleware (which checks Supabase Auth + user_roles)
 export async function protectAdminRoute(
-  cookies: any, 
   locals?: { isAdmin?: boolean }
 ): Promise<Response | null> {
-  // Prefer locals.isAdmin if available (set by middleware)
-  const isAuthenticated = locals?.isAdmin !== undefined 
-    ? locals.isAdmin 
-    : checkAuth(cookies);
-  
-  if (!isAuthenticated) {
+  if (!locals?.isAdmin) {
     return new Response(null, {
       status: 302,
       headers: {
@@ -97,48 +21,62 @@ export async function protectAdminRoute(
   return null;
 }
 
-// Helper to get cookie header string for server-side fetch requests
-export function getCookieHeader(cookies: any, request?: Request): string {
-  // First, try to get the adminSession cookie from Astro cookies
-  const adminSession = cookies.get('adminSession');
-  if (adminSession?.value) {
-    return `adminSession=${adminSession.value}`;
-  }
+/**
+ * Protect admin API routes with explicit authentication check.
+ * 
+ * Defense-in-depth: Even though middleware protects these routes,
+ * this explicit check ensures API endpoints are secure if middleware is bypassed.
+ * 
+ * Steps:
+ * 1. Load session (create Supabase client from cookies)
+ * 2. Get user from session
+ * 3. Check user_roles table for admin role
+ * 4. If not admin → return 401 JSON response
+ * 
+ * @param cookies - Astro cookies for session management
+ * @returns Response with 401 status if unauthorized, null if authorized
+ */
+export async function protectAdminApiRoute(
+  cookies: AstroCookies
+): Promise<Response | null> {
+  // 1. Load session
+  const supabase = createSupabaseServerClient(cookies);
   
-  // Only check request headers if request is provided AND we're in a server context
-  // Skip header check if we're in a prerendered context (import.meta.env.SSR will be false during prerendering)
-  // This early return prevents Astro from analyzing the header access code during prerendering
-  if (!request || !import.meta.env.SSR) {
-    return '';
-  }
+  // 2. Get user
+  const { data: { user } } = await supabase.auth.getUser();
   
-  // For server-side fetch requests only, try to get headers
-  // Use a runtime check that won't trigger static analysis warnings
-  // Access headers using a method that Astro's static analysis won't detect
-  try {
-    // Use Object.prototype.hasOwnProperty to check for headers without triggering static analysis
-    const req = request as any;
-    if (req && typeof req === 'object' && Object.prototype.hasOwnProperty.call(req, 'headers')) {
-      const headers = req.headers;
-      if (headers && typeof headers.get === 'function') {
-        const cookieHeader = headers.get('cookie') || headers.get('Cookie');
-        if (cookieHeader) {
-          // Extract adminSession from the cookie header
-          const cookiePairs = cookieHeader.split(';').map(c => c.trim());
-          const adminSessionCookie = cookiePairs.find(c => c.startsWith('adminSession='));
-          if (adminSessionCookie) {
-            return adminSessionCookie;
-          }
-          // If adminSession not found but header exists, return the full header
-          return cookieHeader;
-        }
+  // If no user, return 401
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { 
+        status: 401, 
+        headers: { 'Content-Type': 'application/json' } 
       }
-    }
-  } catch {
-    // Headers not available (e.g., during prerendering), skip header check
+    );
   }
   
-  return '';
+  // 3. Check user_roles table
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  
+  // 4. If not admin → return 401
+  if (roleData?.role !== 'admin') {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { 
+        status: 401, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+  
+  // Authorized
+  return null;
 }
 
 

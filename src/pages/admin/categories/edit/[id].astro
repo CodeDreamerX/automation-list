@@ -8,13 +8,11 @@ import CategoryForm from '../../../../components/admin/CategoryForm.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
-  const { clearAuthCookie } = await import('../../../../lib/admin/authUtils');
-  clearAuthCookie(Astro.cookies);
-  return Astro.redirect('/admin/login?logout=true');
+  return Astro.redirect('/api/admin/logout');
 }
 
 // Check authentication and redirect if not logged in
-const redirectResponse = await protectAdminRoute(Astro.cookies, Astro.locals);
+const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }
