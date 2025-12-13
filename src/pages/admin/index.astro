@@ -87,7 +87,7 @@ if (Astro.request.method === 'POST') {
       }
     } else if (action === 'change_plan') {
       const plan = formData.get('plan')?.toString();
-      if (plan && ['free', 'pro', 'featured'].includes(plan)) {
+      if (plan && ['free', 'pro', 'featured', 'deactivated'].includes(plan)) {
         const { error } = await supabaseAdmin
           .from('vendors')
           .update({ plan: plan, updated_at: new Date().toISOString() })
@@ -195,6 +195,13 @@ const normalizedVendors = (vendors || []).map(v => ({
         <div class="text-sm text-gray-600">
           Total: {normalizedVendors.length} vendors
         </div>
+        <button
+          type="button"
+          id="refresh-vendor-counts-btn"
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
+          Refresh vendor counts
+        </button>
         <a
           href="/admin/vendors/csv"
           class="btn-secondary"
@@ -279,4 +286,38 @@ const normalizedVendors = (vendors || []).map(v => ({
       </ul>
     </div>
   </div>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      const refreshBtn = document.getElementById('refresh-vendor-counts-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', async function() {
+          // Ask for confirmation
+          if (!confirm('Are you sure you want to refresh vendor counts? This will update the materialized views.')) {
+            return;
+          }
+
+          try {
+            const response = await fetch('/api/admin/refresh-counts', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              alert('Vendor counts refreshed successfully!');
+            } else {
+              alert('Error: ' + (data.error || 'Failed to refresh vendor counts'));
+            }
+          } catch (error) {
+            alert('Error: Failed to refresh vendor counts. Please try again.');
+            console.error('Error refreshing vendor counts:', error);
+          }
+        });
+      }
+    });
+  </script>
 </AdminLayout>

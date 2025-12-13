@@ -1,7 +1,8 @@
 ---
-// Static Site Generation (SSG) - Base route (page 1) is pre-rendered at build time
-// Pagination pages (?page=2, etc.) are SSR'd on-demand
+// Server-Side Rendering (SSR) - This page is rendered on-demand
 // See STATIC_GENERATION_STRATEGY.md for details
+
+export const prerender = false;
 
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import VendorCard from "../../../components/VendorCard.astro";
@@ -9,31 +10,6 @@ import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 
-export async function getStaticPaths() {
-  // Fetch all active category slugs from Supabase
-  const { data: categories, error } = await supabase
-    .from('categories')
-    .select('slug')
-    .eq('is_active', true);
-
-  if (error) {
-    console.error('Error fetching category slugs:', error);
-    return [];
-  }
-
-  // Generate paths for each category slug (page 1 only)
-  return (categories || []).map((category) => ({
-    params: { slug: category.slug },
-  }));
-}
-
-const deNavItems = [
-  { label: "Startseite", href: "/de/" },
-  { label: "Kategorien", href: "/de/categories" },
-  { label: "Anbieter", href: "/de/vendors" },
-  { label: "Blog", href: "/de/blog" },
-  { label: "Kontakt", href: "/de/contact" },
-];
 
 // Get category slug from URL param
 const categorySlug = Astro.params.slug || '';
@@ -122,6 +98,7 @@ if (cachedResult) {
           )
         `, { count: 'exact' })
         .in('id', vendorIds)
+        .neq('plan', 'deactivated')
         // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
         .order('priority', { ascending: false, nullsLast: true })
         .order('name', { ascending: true });
@@ -175,7 +152,6 @@ const currentUrl = `https://automation-list.com/de/category/${categorySlug}`;
   canonical={currentUrl}
   image={defaultOg}
   lang="de"
-  navItems={deNavItems}
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",

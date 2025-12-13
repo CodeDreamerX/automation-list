@@ -1,0 +1,57 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import TechnologyGrid from "../../components/TechnologyGrid.astro";
+import { supabase } from "../../lib/supabaseClient";
+
+
+// Fetch active technologies from database
+const { data: dbTechnologies } = await supabase
+  .from("technologies")
+  .select("id, slug, name_en, name_de, description_en, description_de, icon_name")
+  .eq("is_active", true)
+  .order("order_index", { ascending: true });
+
+// Fetch vendor counts from materialized view
+const { data: technologyVendorCounts } = await supabase
+  .from("technology_vendor_counts")
+  .select("technology_id, vendor_count");
+
+// Create a map of technology ID to vendor count
+const countMap = new Map<string, number>();
+(technologyVendorCounts || []).forEach((item: any) => {
+  if (item.technology_id) {
+    countMap.set(item.technology_id, item.vendor_count || 0);
+  }
+});
+
+// Map database technologies with counts from materialized view
+const technologies = (dbTechnologies || []).map(tech => ({
+  slug: tech.slug || '',
+  icon_name: tech.icon_name || '',
+  name_en: tech.name_en || '',
+  name_de: tech.name_de || '',
+  description_en: tech.description_en || '',
+  description_de: tech.description_de || '',
+  count: tech.id ? (countMap.get(tech.id) || 0) : 0,
+})).filter(tech => tech.slug && (tech.name_en || tech.name_de)); // Filter out technologies without slug or names
+
+// Generate dynamic description from actual technologies
+const technologyNames = technologies
+  .slice(0, 6) // Limit to first 6 technologies
+  .map(tech => tech.name_en)
+  .filter(Boolean);
+const description = technologyNames.length > 0
+  ? `Browse industrial automation technologies including ${technologyNames.join(', ')}${technologyNames.length < technologies.length ? ', and more.' : '.'}`
+  : "Browse industrial automation technologies and discover vendors specializing in your area of expertise.";
+---
+
+<BaseLayout 
+  title="Technologies - Automation List"
+  description={description}
+  lang="en"
+>
+  <TechnologyGrid title="Technologies" technologies={technologies} lang="en" />
+</BaseLayout>
+

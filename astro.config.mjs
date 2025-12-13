@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import tailwind from '@tailwindcss/vite';
 
+// SSR configuration required for Docker + Koyeb deployment
 // https://astro.build/config
 export default defineConfig({
   output: 'server',

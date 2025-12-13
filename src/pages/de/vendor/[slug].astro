@@ -1,27 +1,12 @@
 ---
-// Static Site Generation (SSG) - This page is pre-rendered at build time
+// Server-Side Rendering (SSR) - This page is rendered on-demand
 // See STATIC_GENERATION_STRATEGY.md for details
+
+export const prerender = false;
 
 import { Fragment } from 'astro/jsx-runtime';
 import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-
-export async function getStaticPaths() {
-  // Fetch all vendor slugs from Supabase
-  const { data: vendors, error } = await supabase
-    .from('vendors')
-    .select('slug');
-
-  if (error) {
-    console.error('Error fetching vendor slugs:', error);
-    return [];
-  }
-
-  // Generate paths for each slug
-  return (vendors || []).map((vendor) => ({
-    params: { slug: vendor.slug },
-  }));
-}
 
 // Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
@@ -51,19 +36,17 @@ if (!vendor) {
   return Astro.redirect('/de/vendors');
 }
 
+// Redirect if vendor is deactivated
+if (vendor.plan === 'deactivated') {
+  return Astro.redirect('/de/vendors');
+}
+
 // Normalize category data shape
 const normalizedVendor = {
   ...vendor,
   category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
 };
 
-const deNavItems = [
-  { label: "Startseite", href: "/de/" },
-  { label: "Kategorien", href: "/de/categories" },
-  { label: "Anbieter", href: "/de/vendors" },
-  { label: "Blog", href: "/de/blog" },
-  { label: "Kontakt", href: "/de/contact" },
-];
 
 const backUrl = "/de/vendors";
 
@@ -176,7 +159,6 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
   description={pageDescription}
   image={image}
   lang="de"
-  navItems={deNavItems}
   meta={{ canonical: canonicalUrl }}
 >
   <Fragment slot="head">

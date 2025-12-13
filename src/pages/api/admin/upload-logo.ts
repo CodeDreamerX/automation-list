@@ -33,6 +33,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Sanitize vendorSlug to prevent path traversal attacks
+    // Only allow alphanumeric, hyphens, and underscores
+    const sanitizedVendorSlug = vendorSlug.trim().replace(/[^a-zA-Z0-9-_]/g, '');
+    if (!sanitizedVendorSlug || sanitizedVendorSlug !== vendorSlug.trim()) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid vendorSlug format. Only alphanumeric characters, hyphens, and underscores are allowed.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!vendorName) {
       return new Response(
         JSON.stringify({ error: 'vendorName is required' }),
@@ -91,7 +101,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // SVG: upload as-is, no processing
       processedBuffer = buffer;
       format = 'svg';
-      filePath = `optimized/${vendorSlug}-logo.svg`;
+      filePath = `optimized/${sanitizedVendorSlug}-logo.svg`;
       
       // For SVG, we can't easily get dimensions without parsing
       // Set default dimensions or try to extract from SVG if needed
@@ -135,7 +145,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       width = resizedMetadata.width || 0;
       height = resizedMetadata.height || 0;
       format = 'webp';
-      filePath = `optimized/${vendorSlug}-logo.webp`;
+      filePath = `optimized/${sanitizedVendorSlug}-logo.webp`;
     }
 
     // Upload to Supabase Storage

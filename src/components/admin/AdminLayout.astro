@@ -14,6 +14,7 @@ const isAuthenticated = Astro.locals.isAdmin === true;
 const navItems = [
   { label: "Vendor Management", href: "/admin", active: currentPath === "/admin" },
   { label: "Category Management", href: "/admin/categories", active: currentPath === "/admin/categories" },
+  { label: "Technology Management", href: "/admin/technologies", active: currentPath === "/admin/technologies" },
 ];
 
 // Import section - only show if authenticated
@@ -100,7 +101,7 @@ const importItems = isAuthenticated ? [
         <header class="bg-white border-b border-gray-200 px-6 py-4">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold text-gray-900">
-              {currentPath === "/admin/categories" ? "Category Management" : "Vendor Management"}
+              {currentPath === "/admin/categories" ? "Category Management" : currentPath === "/admin/technologies" ? "Technology Management" : "Vendor Management"}
             </h2>
             <div class="flex items-center gap-4">
               <span class="text-sm text-gray-600">Admin</span>

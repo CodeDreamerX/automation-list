@@ -5,34 +5,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import { supabase } from "../../lib/supabaseClient";
 
-const engNavItems = [
-  { label: "Home", href: "/en/" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
-
-// Fetch ALL vendors with vendor_categories to calculate counts
-const { data: vendors } = await supabase
-  .from("vendors")
-  .select(`
-    *,
-    vendor_categories (
-      categories:categories (
-        id,
-        slug,
-        name_en,
-        name_de
-      )
-    )
-  `);
-
-// Normalize category data shape
-const normalizedVendors = (vendors || []).map(v => ({
-  ...v,
-  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
-}));
 
 // Fetch active categories from database
 const { data: dbCategories } = await supabase
@@ -41,15 +13,20 @@ const { data: dbCategories } = await supabase
   .eq("is_active", true)
   .order("order_index", { ascending: true });
 
-// Helper function to count vendors by category slug
-function countByCategorySlug(categorySlug: string): number {
-  if (!normalizedVendors || !categorySlug) return 0;
-  return normalizedVendors.filter(v => 
-    v.category_slugs.includes(categorySlug)
-  ).length;
-}
+// Fetch vendor counts from materialized view
+const { data: categoryVendorCounts } = await supabase
+  .from("category_vendor_counts")
+  .select("category_id, vendor_count");
 
-// Map database categories with counts
+// Create a map of category ID to vendor count
+const countMap = new Map<string, number>();
+(categoryVendorCounts || []).forEach((item: any) => {
+  if (item.category_id) {
+    countMap.set(item.category_id, item.vendor_count || 0);
+  }
+});
+
+// Map database categories with counts from materialized view
 const categories = (dbCategories || []).map(cat => ({
   slug: cat.slug || '',
   icon_name: cat.icon_name || '',
@@ -57,7 +34,7 @@ const categories = (dbCategories || []).map(cat => ({
   name_de: cat.name_de || '',
   description_en: cat.description_en || '',
   description_de: cat.description_de || '',
-  count: cat.slug ? countByCategorySlug(cat.slug) : 0,
+  count: cat.id ? (countMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
 // Generate dynamic description from actual categories
@@ -74,7 +51,6 @@ const description = categoryNames.length > 0
   title="Categories - Automation List"
   description={description}
   lang="en"
-  navItems={engNavItems}
 >
   <CategoryGrid title="Categories" categories={categories} lang="en" />
 </BaseLayout>

@@ -11,27 +11,14 @@ import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import ExploreCTA from "../../components/ExploreCTA.astro";
-import { normalizeTech } from "../../lib/normalizeTech";
 
-// German translations
-const deNavItems = [
-  { label: "Startseite", href: "/de/" },
-  { label: "Kategorien", href: "/de/categories" },
-  { label: "Anbieter", href: "/de/vendors" },
-  { label: "Blog", href: "/de/blog" },
-  { label: "Kontakt", href: "/de/contact" },
-];
 
-// Fetch featured vendors with vendor_categories
+// Fetch ALL vendors with vendor_categories (exclude deactivated)
 const { data: allVendors } = await supabase
   .from('vendors')
   .select(`
-    name, 
-    slug, 
-    country, 
-    technologies,
+    *,
     vendor_categories (
-      is_primary,
       categories:categories (
         id,
         slug,
@@ -39,7 +26,8 @@ const { data: allVendors } = await supabase
         name_de
       )
     )
-  `);
+  `)
+  .neq('plan', 'deactivated');
 
 // Normalize category data shape
 const normalizedVendors = (allVendors || []).map(v => ({
@@ -61,11 +49,18 @@ if (featuredVendors.length === 0 && normalizedVendors.length > 0) {
   featuredVendors = [...normalizedVendors].sort(() => Math.random() - 0.5).slice(0, 6);
 }
 
-// Helper function to format technologies for display
+// Helper function to format technologies for display (first 2 only)
 function formatTechnologies(technologies: string | null): string {
   if (!technologies) return '';
   const techArray = technologies.split(',').map(t => t.trim());
-  return techArray.slice(0, 3).join(', ') + (techArray.length > 3 ? '...' : '');
+  return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
+}
+
+// Helper function to truncate description
+function truncateDescription(text: string | null | undefined, maxLength: number = 120): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + '…';
 }
 
 // Fetch active categories from database
@@ -75,15 +70,20 @@ const { data: dbCategories } = await supabase
   .eq("is_active", true)
   .order("order_index", { ascending: true });
 
-// Helper function to count vendors by category slug
-function countByCategorySlug(categorySlug: string): number {
-  if (!normalizedVendors) return 0;
-  return normalizedVendors.filter(v => 
-    v.category_slugs.includes(categorySlug)
-  ).length;
-}
+// Fetch vendor counts from materialized view
+const { data: categoryVendorCounts } = await supabase
+  .from("category_vendor_counts")
+  .select("category_id, vendor_count");
 
-// Map database categories with counts
+// Create a map of category ID to vendor count
+const categoryCountMap = new Map<string, number>();
+(categoryVendorCounts || []).forEach((item: any) => {
+  if (item.category_id) {
+    categoryCountMap.set(item.category_id, item.vendor_count || 0);
+  }
+});
+
+// Map database categories with counts from materialized view
 const categories = (dbCategories || []).map(cat => ({
   slug: cat.slug || '',
   icon_name: cat.icon_name || '',
@@ -91,44 +91,24 @@ const categories = (dbCategories || []).map(cat => ({
   name_de: cat.name_de || '',
   description_en: cat.description_en || '',
   description_de: cat.description_de || '',
-  count: countByCategorySlug(cat.slug || ''),
+  count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
-// Extract and count technologies from vendors
-const technologyFrequency = new Map<string, number>();
-(normalizedVendors || []).forEach((vendor: any) => {
-  if (vendor.technologies && typeof vendor.technologies === 'string') {
-    const techs = vendor.technologies
-      .split(',')
-      .map((tech: string) => tech.trim())
-      .filter((tech: string) => tech.length > 0);
-    techs.forEach((tech: string) => {
-      const normalized = tech.toLowerCase().trim();
-      if (normalized) {
-        technologyFrequency.set(normalized, (technologyFrequency.get(normalized) || 0) + 1);
-      }
-    });
-  }
-});
-
-// Sort by frequency (descending) and get top 8
-const popularTechnologies = Array.from(technologyFrequency.entries())
-  .map(([name, count]) => ({ name, count, slug: normalizeTech(name) }))
-  .sort((a, b) => b.count - a.count)
-  .slice(0, 8);
 ---
 
 <BaseLayout 
-  title="Automation List - Demnächst verfügbar"
+  title="Automation List"
   description="Entdecken Sie die besten Automatisierungstools und Workflows für Ihre Produktivitätsbedürfnisse."
   lang="de"
-  navItems={deNavItems}
 >
   <PageHero
     title="Finden Sie die besten Industrieautomatisierungsanbieter weltweit"
     description="Vergleichen Sie Systemintegratoren, OEMs, Robotikexperten, MES/SCADA-Spezialisten und industrielle IT-Anbieter — anbieterneutral und von Automatisierungsingenieuren erstellt."
     primaryButtonText="Verzeichnis durchsuchen →"
     primaryButtonHref="/de/vendors"
+    secondaryButtonText="Unternehmen kostenlos eintragen →"
+    secondaryButtonHref="/de/contact"
+    secondaryMicroCopy="Kostenlos während der MVP-Phase"
   />
 
   <SearchForm 
@@ -144,23 +124,6 @@ const popularTechnologies = Array.from(technologyFrequency.entries())
     lang="de"
   />
 
-  <!-- Popular Technologies Section -->
-  {popularTechnologies.length > 0 && (
-    <section class="container-px mx-auto max-w-7xl px-4 py-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Beliebte Technologien</h2>
-      <div class="flex flex-wrap justify-center gap-3">
-        {popularTechnologies.map((tech) => (
-          <a
-            href={`/de/technology/${tech.slug}`}
-            class="text-sm text-gray-700 hover:text-brand-600 hover:underline transition-colors px-3 py-1"
-          >
-            {tech.name} ({tech.count})
-          </a>
-        ))}
-      </div>
-    </section>
-  )}
-
   <FeaturedVendors
     title="Ausgewählte Anbieter"
     vendors={featuredVendors}
@@ -169,6 +132,7 @@ const popularTechnologies = Array.from(technologyFrequency.entries())
     vendorHrefPrefix="/de/vendor"
     vendorLinkText="Profil anzeigen →"
     formatTechnologies={formatTechnologies}
+    truncateDescription={truncateDescription}
     isFeatured={isFeatured}
   />
 
@@ -221,8 +185,9 @@ const popularTechnologies = Array.from(technologyFrequency.entries())
       "Hersteller und Integratoren erreichen",
       "Optionale Premium-Platzierungen (demnächst)",
     ]}
-    ctaText="Ihr Unternehmen hinzufügen →"
+    ctaText="Ihr Unternehmen kostenlos eintragen →"
     ctaHref="/de/contact"
+    microCopy="Kostenlos während der MVP-Phase"
   />
 
   <ExploreCTA 

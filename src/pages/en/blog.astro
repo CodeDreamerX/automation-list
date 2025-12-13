@@ -3,20 +3,12 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
-const engNavItems = [
-  { label: "Home", href: "/en/" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
 ---
 
 <BaseLayout 
   title="Blog - Automation List"
   description="Latest articles and insights about industrial automation, technology trends, and industry news."
   lang="en"
-  navItems={engNavItems}
 >
   <section class="py-16 md:py-24 bg-white">
     <div class="container-px mx-auto max-w-7xl">

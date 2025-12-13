@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
-import { normalizeTechForStorage } from '../../../lib/normalizeTech';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 
 export const prerender = false;
@@ -16,6 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let updateData: any;
     let id: string;
     let categorySlugs: string[] = [];
+    let technologySlugs: string[] = [];
     
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
@@ -35,6 +35,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .map((slug) => String(slug).trim())
         .filter((slug) => slug.length > 0);
       
+      // Extract technology slugs from form data
+      technologySlugs = form.getAll("technology_slugs")
+        .map((slug) => String(slug).trim())
+        .filter((slug) => slug.length > 0);
+      
       // Build updateData from form fields
       updateData = {
         name: form.get('name')?.toString() || null,
@@ -47,7 +52,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         city: form.get('city')?.toString() || null,
         region: form.get('region')?.toString() || null,
         country: form.get('country')?.toString() || null,
-        technologies: form.get('technologies')?.toString() || null,
         languages: form.get('languages')?.toString() || null,
         certifications: form.get('certifications')?.toString() || null,
         tags: form.get('tags')?.toString() || null,
@@ -81,7 +85,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         );
       }
       
-      const { id: _, category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
+      const { id: _, category_slugs, technology_slugs, ...rest } = body; // Extract category_slugs and technology_slugs separately, use rest for vendor data
       updateData = rest;
       
       // Normalize logo fields for JSON requests
@@ -99,6 +103,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       } else if (body.category_slugs) {
         categorySlugs = [String(body.category_slugs).trim()].filter((slug: string) => slug.length > 0);
       }
+      
+      // Extract technology slugs from JSON if present
+      if (body.technology_slugs && Array.isArray(body.technology_slugs)) {
+        technologySlugs = body.technology_slugs
+          .map((slug: any) => String(slug).trim())
+          .filter((slug: string) => slug.length > 0);
+      } else if (body.technology_slugs) {
+        technologySlugs = [String(body.technology_slugs).trim()].filter((slug: string) => slug.length > 0);
+      }
     }
 
     // Normalize website URL: add https:// if missing
@@ -109,21 +122,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Normalize technologies: split by comma, normalize each, remove duplicates, join back
-    if (updateData.technologies && typeof updateData.technologies === 'string') {
-      const techs = updateData.technologies
-        .split(',')
-        .map(tech => normalizeTechForStorage(tech))
-        .filter(tech => tech.length > 0);
-      
-      // Remove duplicates (case-insensitive)
-      const uniqueTechs = Array.from(
-        new Set(techs.map(t => t.toLowerCase()))
-      ).map(lower => techs.find(t => t.toLowerCase() === lower) || '')
-       .filter(Boolean);
-      
-      updateData.technologies = uniqueTechs.length > 0 ? uniqueTechs.join(', ') : null;
-    }
 
     // Add updated_at timestamp
     updateData.updated_at = new Date().toISOString();
@@ -164,6 +162,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             .insert({
               vendor_id: id,
               category_id: cat.id
+            });
+        }
+      }
+    }
+
+    // Update vendor_technologies: delete all existing entries and reinsert new ones
+    // Delete all existing vendor_technologies rows for this vendor
+    await supabaseAdmin
+      .from('vendor_technologies')
+      .delete()
+      .eq('vendor_id', id);
+
+    // Insert new vendor_technologies entries if technology slugs were provided
+    if (technologySlugs && technologySlugs.length > 0) {
+      for (const slug of technologySlugs) {
+        const { data: tech } = await supabaseAdmin
+          .from("technologies")
+          .select("id")
+          .eq("slug", slug)
+          .single();
+
+        if (tech?.id) {
+          await supabaseAdmin
+            .from("vendor_technologies")
+            .insert({
+              vendor_id: id,
+              technology_id: tech.id
             });
         }
       }

@@ -1,54 +1,16 @@
 ---
-// Static Site Generation (SSG) - Base route (page 1) is pre-rendered at build time
-// Pagination pages (?page=2, etc.) are SSR'd on-demand
+// Server-Side Rendering (SSR) - This page is rendered on-demand
 // See STATIC_GENERATION_STRATEGY.md for details
+
+export const prerender = false;
 
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
-import { normalizeTech } from "../../../lib/normalizeTech";
+import { getTechnologyIconUrl } from "../../../lib/iconUtils";
 
-export async function getStaticPaths() {
-  // Fetch all vendors to extract unique technologies
-  const { data: vendors, error } = await supabase
-    .from('vendors')
-    .select('technologies')
-    .not('technologies', 'is', null);
-
-  if (error) {
-    console.error('Error fetching vendors for technologies:', error);
-    return [];
-  }
-
-  // Extract and normalize unique technologies
-  const technologySet = new Set<string>();
-  (vendors || []).forEach((vendor: any) => {
-    if (vendor.technologies && typeof vendor.technologies === 'string') {
-      const techs = vendor.technologies
-        .split(',')
-        .map((tech: string) => tech.trim())
-        .filter((tech: string) => tech.length > 0);
-      techs.forEach((tech: string) => {
-        technologySet.add(tech);
-      });
-    }
-  });
-
-  // Generate paths for each unique technology slug
-  return Array.from(technologySet).map((technology) => ({
-    params: { tech: normalizeTech(technology) },
-  }));
-}
-
-const deNavItems = [
-  { label: "Startseite", href: "/de/" },
-  { label: "Kategorien", href: "/de/categories" },
-  { label: "Anbieter", href: "/de/vendors" },
-  { label: "Blog", href: "/de/blog" },
-  { label: "Kontakt", href: "/de/contact" },
-];
 
 // Get technology slug from URL param
 const techSlug = Astro.params.tech || '';
@@ -58,8 +20,39 @@ if (!techSlug) {
   return Astro.redirect('/de/vendors');
 }
 
-// Convert slug to search term (replace "-" with " ")
-const techQuery = techSlug.replace(/-/g, " ");
+// Fetch technology from database
+const { data: technology, error: techError } = await supabase
+  .from('technologies')
+  .select('id, slug, name_en, name_de, description_en, description_de, icon_name')
+  .eq('slug', techSlug)
+  .eq('is_active', true)
+  .maybeSingle();
+
+if (techError) {
+  console.error('Error fetching technology:', techError);
+}
+
+// If technology not found in database, use fallback: convert slug to search term
+// This allows pages to work even if technologies aren't in the technologies table yet
+let techName: string;
+let techDescription: string;
+let techIconUrl: string;
+
+if (technology) {
+  // Technology found in database - use its data
+  techName = technology.name_de || technology.name_en || techSlug;
+  techDescription = technology.description_de || technology.description_en || '';
+  techIconUrl = getTechnologyIconUrl(technology.icon_name);
+} else {
+  // Fallback: convert slug to readable name (replace hyphens with spaces, title case)
+  techName = techSlug
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  techDescription = '';
+  techIconUrl = '';
+}
 
 // Get pagination params
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
@@ -83,21 +76,68 @@ if (cachedResult) {
   totalVendors = cachedResult.totalVendors;
 } else {
   // Build query for vendors filtered by technology (case-insensitive using ILIKE)
+  // Search for vendors that have this technology name in their technologies field
   function buildTechnologyQuery() {
-    return supabase
+    let query = supabase
       .from('vendors')
-      .select('*, vendor_categories(*, categories(*))', { count: 'exact' })
-      // Case-insensitive technology filter - search within technologies field
-      .ilike('technologies', `%${techQuery}%`)
-      // Order by featured (descending), then priority (ascending), then name (ascending)
-      .order('featured', { ascending: false })
-      .order('priority', { ascending: true })
+      .select(`
+        *,
+        vendor_categories (
+          is_primary,
+          categories:categories (
+            id,
+            slug,
+            name_en,
+            name_de
+          )
+        )
+      `, { count: 'exact' })
+      .neq('plan', 'deactivated');
+    
+    // Case-insensitive technology filter - search within technologies field
+    // Try both German and English names to catch all vendors
+    if (technology) {
+      // Technology found in database - use its names
+      if (technology.name_de && technology.name_en) {
+        query = query.or(`technologies.ilike.%${technology.name_de}%,technologies.ilike.%${technology.name_en}%`);
+      } else if (technology.name_de) {
+        query = query.ilike('technologies', `%${technology.name_de}%`);
+      } else if (technology.name_en) {
+        query = query.ilike('technologies', `%${technology.name_en}%`);
+      }
+    } else {
+      // Fallback: search by techName (converted from slug)
+      query = query.ilike('technologies', `%${techName}%`);
+    }
+    
+    // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
+    return query
+      .order('priority', { ascending: false, nullsLast: true })
       .order('name', { ascending: true });
   }
 
-  // Get total count
-  const countQuery = buildTechnologyQuery();
-  const { count } = await countQuery.select('*', { count: 'exact', head: true });
+  // Get total count - build a separate count query without joins
+  let countQuery = supabase
+    .from('vendors')
+    .select('*', { count: 'exact', head: true })
+    .neq('plan', 'deactivated');
+  
+  // Apply the same technology filter
+  if (technology) {
+    // Technology found in database - use its names
+    if (technology.name_de && technology.name_en) {
+      countQuery = countQuery.or(`technologies.ilike.%${technology.name_de}%,technologies.ilike.%${technology.name_en}%`);
+    } else if (technology.name_de) {
+      countQuery = countQuery.ilike('technologies', `%${technology.name_de}%`);
+    } else if (technology.name_en) {
+      countQuery = countQuery.ilike('technologies', `%${technology.name_en}%`);
+    }
+  } else {
+    // Fallback: search by techName (converted from slug)
+    countQuery = countQuery.ilike('technologies', `%${techName}%`);
+  }
+  
+  const { count } = await countQuery;
   totalVendors = count;
 
   // Build paginated query
@@ -129,19 +169,9 @@ const normalizedVendors = (vendors || []).map(v => ({
 
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
-// Convert techQuery to readable name for display (title case)
-function techQueryToName(query: string): string {
-  return query
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-}
-
-const techName = techQueryToName(techQuery);
-
 // SEO metadata
 const metaTitle = `Top ${techName} Automatisierungsunternehmen | Automation List`;
-const metaDescription = `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${techName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
+const metaDescription = techDescription || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${techName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
 const origin = Astro.url.origin;
 const defaultOgImage = `${origin}/og/default.png`;
 const fullUrl = `https://automation-list.com/de/technology/${techSlug}`;
@@ -154,7 +184,6 @@ const fullUrl = `https://automation-list.com/de/technology/${techSlug}`;
   canonical={fullUrl}
   ogImage={defaultOgImage}
   lang="de"
-  navItems={deNavItems}
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
@@ -171,9 +200,28 @@ const fullUrl = `https://automation-list.com/de/technology/${techSlug}`;
     }))
   }, null, 2)} />
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      Automatisierungsunternehmen für {techName}
-    </h1>
+    <!-- Technology Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-4 mb-4">
+        {techIconUrl && (
+          <img 
+            src={techIconUrl} 
+            alt={techName}
+            class="w-16 h-16"
+          />
+        )}
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            {techName}
+          </h1>
+          {techDescription && (
+            <p class="text-gray-600 text-base">
+              {techDescription}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
 
     <!-- Result Count -->
     <div class="mb-4">

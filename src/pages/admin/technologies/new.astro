@@ -1,0 +1,50 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../lib/admin/authUtils';
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import TechnologyForm from '../../../components/admin/TechnologyForm.astro';
+
+// Handle logout first (before auth check)
+if (Astro.url.searchParams.get('logout') === 'true') {
+  return Astro.redirect('/api/admin/logout');
+}
+
+// Check authentication and redirect if not logged in
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+---
+
+<AdminLayout title="New Technology - Admin Panel" currentPath="/admin/technologies">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">New Technology</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Create a new technology for the Automation List directory
+        </p>
+      </div>
+      <a
+        href="/admin/technologies"
+        class="text-sm text-gray-600 hover:text-gray-900"
+      >
+        ← Back to Technologies
+      </a>
+    </div>
+
+    <!-- TECHNOLOGY FORM -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <TechnologyForm technology={null} />
+    </div>
+  </div>
+</AdminLayout>
+
+
+
+
+
+

@@ -6,10 +6,11 @@ export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const origin = url.origin;
 
-  // Fetch vendors with slug, updated_at for lastmod, country for country pages, and technologies for technology pages
+  // Fetch vendors with slug, updated_at for lastmod, country for country pages, and technologies for technology pages (exclude deactivated)
   const { data: vendors, error: vendorsError } = await supabase
     .from('vendors')
     .select('slug, updated_at, country, technologies')
+    .neq('plan', 'deactivated')
     .order('slug', { ascending: true });
 
   if (vendorsError) {

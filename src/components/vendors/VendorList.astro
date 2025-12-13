@@ -57,7 +57,8 @@ if (!uniqueCountryList) {
   const { data: allVendorsForCountries } = await supabase
     .from('vendors')
     .select('country')
-    .not('country', 'is', null);
+    .not('country', 'is', null)
+    .neq('plan', 'deactivated');
   
   uniqueCountryList = Array.from(
     new Set((allVendorsForCountries || []).map(v => v.country).filter(Boolean))
@@ -75,7 +76,8 @@ if (!uniqueTechnologyList) {
   const { data: allVendorsForTechnologies } = await supabase
     .from('vendors')
     .select('technologies')
-    .not('technologies', 'is', null);
+    .not('technologies', 'is', null)
+    .neq('plan', 'deactivated');
   
   // Extract and normalize unique technologies
   const technologySet = new Set<string>();
@@ -184,7 +186,8 @@ function buildBaseQuery() {
           name_de
         )
       )
-    `, { count: 'exact' });
+    `, { count: 'exact' })
+    .neq('plan', 'deactivated');
 
   // Apply category filter using vendor IDs if present
   if (categoryVendorIds !== null) {

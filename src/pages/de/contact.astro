@@ -1,20 +1,12 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
-const deNavItems = [
-  { label: "Startseite", href: "/de/" },
-  { label: "Kategorien", href: "/de/categories" },
-  { label: "Anbieter", href: "/de/vendors" },
-  { label: "Blog", href: "/de/blog" },
-  { label: "Kontakt", href: "/de/contact" },
-];
 ---
 
 <BaseLayout 
   title="Kontakt - Automation List"
   description="Kontaktieren Sie Automation List für Fragen, Einreichungen oder Partnerschaftsanfragen."
   lang="de"
-  navItems={deNavItems}
 >
   <section class="py-16 md:py-24 bg-white">
     <div class="container-px mx-auto max-w-3xl">
@@ -29,14 +21,40 @@ Haben Sie Fragen oder möchten Sie Ihr Unternehmen einreichen? Wir würden gerne
       
       <div class="card">
         <h2 class="text-2xl font-semibold text-gray-900 mb-4">
-Kontakt aufnehmen
+          Kontakt aufnehmen
         </h2>
         <p class="text-gray-600 mb-6">
-Für allgemeine Anfragen, Unternehmenseinreichungen oder Partnerschaftsmöglichkeiten kontaktieren Sie uns bitte.
+          Für allgemeine Anfragen, Unternehmenseinreichungen oder Partnerschaftsmöglichkeiten kontaktieren Sie uns bitte per E-Mail.
         </p>
-        <p class="text-gray-600">
-Kontaktformular kommt bald.
-        </p>
+        <div class="space-y-4">
+          <div>
+            <p class="text-sm text-gray-500 uppercase tracking-wide mb-2">E-Mail</p>
+            <a href="mailto:contact@automation-list.com" class="text-lg text-brand-600 hover:text-brand-700 hover:underline font-medium">
+              contact@automation-list.com
+            </a>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Womit können wir Ihnen helfen?</h3>
+            <ul class="space-y-2 text-gray-600">
+              <li class="flex items-start">
+                <span class="text-brand-600 mr-2">•</span>
+                <span>Unternehmenseinreichungen und Verzeichniseinträge</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-brand-600 mr-2">•</span>
+                <span>Partnerschafts- und Kooperationsmöglichkeiten</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-brand-600 mr-2">•</span>
+                <span>Allgemeine Fragen und Feedback</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-brand-600 mr-2">•</span>
+                <span>Datenkorrektur- oder Löschungsanfragen</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </section>

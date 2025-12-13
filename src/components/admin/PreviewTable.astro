@@ -22,6 +22,7 @@ const displayFields = [
   'phone',
   'description',
   'category_slugs', // Will be displayed as _categorySlugs
+  'technology_slugs', // Will be displayed as _technologySlugs
   'industries',
   'technologies',
   'languages',
@@ -48,7 +49,7 @@ const displayFields = [
           {displayFields.map((key) => (
             <th class="px-3 py-2 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-b border-gray-300 max-w-xs">
               <div class="truncate" title={key}>
-                {key === 'category_slugs' ? 'categories' : key}
+                {key === 'category_slugs' ? 'categories' : key === 'technology_slugs' ? 'technologies' : key}
                 {REQUIRED_FIELDS.includes(key) && (
                   <span class="text-red-600 ml-1">*</span>
                 )}
@@ -74,11 +75,15 @@ const displayFields = [
           return (
             <tr class={`${rowClass} border-b border-gray-200`}>
               {displayFields.map((field) => {
-                // Handle category_slugs specially - use _categorySlugs array
+                // Handle category_slugs and technology_slugs specially - use arrays
                 let value;
                 if (field === 'category_slugs') {
                   value = row._categorySlugs && row._categorySlugs.length > 0 
                     ? row._categorySlugs.join(", ") 
+                    : null;
+                } else if (field === 'technology_slugs') {
+                  value = row._technologySlugs && row._technologySlugs.length > 0 
+                    ? row._technologySlugs.join(", ") 
                     : null;
                 } else {
                   value = row[field];
@@ -105,7 +110,7 @@ const displayFields = [
                   maxWidthClass = 'max-w-md';
                 } else if (field === 'name' || field === 'address') {
                   maxWidthClass = 'max-w-sm';
-                } else if (field === 'category_slugs' || field === 'technologies' || field === 'tags') {
+                } else if (field === 'category_slugs' || field === 'technology_slugs' || field === 'technologies' || field === 'tags') {
                   maxWidthClass = 'max-w-xs';
                 } else if (['email', 'website', 'phone'].includes(field)) {
                   maxWidthClass = 'max-w-xs';

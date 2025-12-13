@@ -44,6 +44,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateData.order_index = null;
     }
     updateData.is_active = is_active;
+    
+    // Set updated_at timestamp
+    updateData.updated_at = new Date().toISOString();
 
     // Update category using admin client
     const { error } = await supabaseAdmin

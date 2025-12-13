@@ -1,0 +1,40 @@
+---
+import TechnologyCard from "./TechnologyCard.astro";
+
+interface Technology {
+  slug: string;
+  icon_name?: string;
+  name_en?: string;
+  name_de?: string;
+  description_en?: string;
+  description_de?: string;
+  count?: number;
+}
+
+interface Props {
+  title?: string;
+  technologies: Technology[];
+  lang?: string;
+}
+
+const {
+  title = "Browse by Technology",
+  technologies,
+  lang = "en",
+} = Astro.props;
+---
+
+<section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
+  <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {technologies.map((technology, i) => (
+      <TechnologyCard technology={technology} lang={lang} index={i} />
+    ))}
+  </div>
+</section>
+
+
+
+
+
+

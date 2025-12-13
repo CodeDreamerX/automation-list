@@ -3,7 +3,6 @@ export const prerender = false;
 
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { createSupabaseServerClient } from '../../../lib/supabaseServer';
-import { normalizeTechForStorage } from '../../../lib/normalizeTech';
 import { protectAdminRoute } from '../../../lib/admin/authUtils';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
 import VendorForm from '../../../components/admin/VendorForm.astro';
@@ -68,6 +67,11 @@ if (Astro.request.method === 'POST') {
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
   
+  // Extract technology slugs from form data
+  const technologySlugs = formData.getAll("technology_slugs")
+    .map((slug) => String(slug).trim())
+    .filter((slug) => slug.length > 0);
+  
   // Build updateData from form fields
   const updateData: any = {
     name: formData.get('name')?.toString() || null,
@@ -80,7 +84,6 @@ if (Astro.request.method === 'POST') {
     city: formData.get('city')?.toString() || null,
     region: formData.get('region')?.toString() || null,
     country: formData.get('country')?.toString() || null,
-    technologies: formData.get('technologies')?.toString() || null,
     languages: formData.get('languages')?.toString() || null,
     certifications: formData.get('certifications')?.toString() || null,
     tags: formData.get('tags')?.toString() || null,
@@ -109,22 +112,6 @@ if (Astro.request.method === 'POST') {
     if (website && !website.match(/^https?:\/\//i)) {
       updateData.website = 'https://' + website;
     }
-  }
-
-  // Normalize technologies: split by comma, normalize each, remove duplicates, join back
-  if (updateData.technologies && typeof updateData.technologies === 'string') {
-    const techs = updateData.technologies
-      .split(',')
-      .map((tech: string) => normalizeTechForStorage(tech))
-      .filter((tech: string) => tech.length > 0);
-    
-    // Remove duplicates (case-insensitive)
-    const uniqueTechs = Array.from<string>(
-      new Set(techs.map((t: string) => t.toLowerCase()))
-    ).map((lower: string) => techs.find((t: string) => t.toLowerCase() === lower) || '')
-     .filter(Boolean);
-    
-    updateData.technologies = uniqueTechs.length > 0 ? uniqueTechs.join(', ') : null;
   }
 
   // Add updated_at timestamp
@@ -167,17 +154,51 @@ if (Astro.request.method === 'POST') {
     }
   }
 
+  // Update vendor_technologies: delete all existing entries and reinsert new ones
+  await supabaseAdmin
+    .from('vendor_technologies')
+    .delete()
+    .eq('vendor_id', vendorId);
+
+  // Insert new vendor_technologies entries if technology slugs were provided
+  if (technologySlugs.length > 0) {
+    for (const slug of technologySlugs) {
+      const { data: tech } = await supabaseAdmin
+        .from("technologies")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (tech?.id) {
+        await supabaseAdmin
+          .from("vendor_technologies")
+          .insert({
+            vendor_id: vendorId,
+            technology_id: tech.id
+          });
+      }
+    }
+  }
+
   // Redirect back to admin panel after successful update
   return Astro.redirect('/admin');
 }
 
-// Fetch vendor by ID with vendor_categories
+// Fetch vendor by ID with vendor_categories and vendor_technologies
 const { data: vendor, error } = await supabaseAdmin
   .from('vendors')
   .select(`
     *,
     vendor_categories (
       categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    ),
+    vendor_technologies (
+      technologies:technologies (
         id,
         slug,
         name_en,
@@ -196,10 +217,20 @@ if (!vendor) {
   return Astro.redirect('/admin');
 }
 
+// Fetch all technologies from Supabase
+const { data: technologies } = await supabaseAdmin
+  .from('technologies')
+  .select('id, slug, name_en, name_de')
+  .eq('is_active', true)
+  .order('order_index', { ascending: true, nullsLast: true })
+  .order('name_en', { ascending: true });
+
 // Normalize category data shape - extract category_slugs from vendor_categories M2M
+// Normalize technology data shape - extract technology_slugs from vendor_technologies M2M
 const normalizedVendor = {
   ...vendor,
-  category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+  category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
+  technology_slugs: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.slug).filter(Boolean) || []
 };
 
 ---
@@ -224,7 +255,7 @@ const normalizedVendor = {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={normalizedVendor} categories={categories || []} />
+      <VendorForm vendor={normalizedVendor} categories={categories || []} technologies={technologies || []} />
     </div>
   </div>
 </AdminLayout>

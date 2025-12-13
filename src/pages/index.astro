@@ -1,37 +1,300 @@
 ---
 export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { supabase } from "../lib/supabaseClient";
+import { isFeatured } from "../lib/isFeatured";
+import HowItWorks from "../components/HowItWorks.astro";
+import PageHero from "../components/PageHero.astro";
+import WhyThisDirectory from "../components/WhyThisDirectory.astro";
+import UserBenefits from "../components/UserBenefits.astro";
+import VendorBenefits from "../components/VendorBenefits.astro";
+import SearchForm from "../components/SearchForm.astro";
+import CategoryGrid from "../components/CategoryGrid.astro";
+import FeaturedVendors from "../components/FeaturedVendors.astro";
+import ExploreCTA from "../components/ExploreCTA.astro";
+
+// Language detection from Accept-Language header
+const acceptLanguage = Astro.request.headers.get("accept-language") || "";
+
+// Parse Accept-Language header to find preferred language
+function detectLanguageFromHeader(header: string): string {
+  if (!header) return "en";
+  
+  // Parse Accept-Language header (e.g., "en-US,en;q=0.9,de;q=0.8")
+  const languages = header
+    .split(",")
+    .map(lang => {
+      const [code, q = "1"] = lang.trim().split(";q=");
+      return { code: code.split("-")[0].toLowerCase(), quality: parseFloat(q) };
+    })
+    .sort((a, b) => b.quality - a.quality);
+
+  // Check if German is preferred (check first language or any with quality > 0.5)
+  const prefersGerman = languages.length > 0 && languages[0].code === "de";
+  
+  return prefersGerman ? "de" : "en";
+}
+
+// Determine language (default to "en")
+const lang = detectLanguageFromHeader(acceptLanguage);
+
+// Fetch ALL vendors with vendor_categories (exclude deactivated)
+const { data: vendors } = await supabase
+  .from("vendors")
+  .select(`
+    *,
+    vendor_categories (
+      categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    )
+  `)
+  .neq('plan', 'deactivated');
+
+// Normalize category data shape
+const normalizedVendors = (vendors || []).map(v => ({
+  ...v,
+  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+}));
+
+// Filter featured vendors
+const featured = normalizedVendors.filter(v => isFeatured(v));
+
+// Sort featured vendors by priority ASC
+featured.sort((a, b) => (a.priority || 999) - (b.priority || 999));
+
+// Limit to 6 vendors
+let featuredVendors = featured.slice(0, 6);
+
+// Fallback logic: if no featured vendors, use 6 random vendors (but don't mark as featured)
+if (featuredVendors.length === 0 && normalizedVendors.length > 0) {
+  featuredVendors = [...normalizedVendors].sort(() => Math.random() - 0.5).slice(0, 6);
+}
+
+// Helper function to format technologies for display (first 2 only)
+function formatTechnologies(technologies: string | null): string {
+  if (!technologies) return '';
+  const techArray = technologies.split(',').map(t => t.trim());
+  return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
+}
+
+// Helper function to truncate description
+function truncateDescription(text: string | null | undefined, maxLength: number = 120): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + '…';
+}
+
+// Fetch active categories from database
+const { data: dbCategories } = await supabase
+  .from("categories")
+  .select("id, slug, name_en, name_de, description_en, description_de, icon_name")
+  .eq("is_active", true)
+  .order("order_index", { ascending: true });
+
+// Fetch vendor counts from materialized view
+const { data: categoryVendorCounts } = await supabase
+  .from("category_vendor_counts")
+  .select("category_id, vendor_count");
+
+// Create a map of category ID to vendor count
+const categoryCountMap = new Map<string, number>();
+(categoryVendorCounts || []).forEach((item: any) => {
+  if (item.category_id) {
+    categoryCountMap.set(item.category_id, item.vendor_count || 0);
+  }
+});
+
+// Map database categories with counts from materialized view
+const categories = (dbCategories || []).map(cat => ({
+  slug: cat.slug || '',
+  icon_name: cat.icon_name || '',
+  name_en: cat.name_en || '',
+  name_de: cat.name_de || '',
+  description_en: cat.description_en || '',
+  description_de: cat.description_de || '',
+  count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
+})).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
+
+// Language-specific content
+const langPrefix = `/${lang}`;
+const isGerman = lang === "de";
+
+const title = isGerman 
+  ? "Automation List" 
+  : "Automation List";
+
+const description = isGerman
+  ? "Entdecken Sie die besten Automatisierungstools und Workflows für Ihre Produktivitätsbedürfnisse."
+  : "Discover the best automation tools and workflows for your productivity needs.";
+
+const heroTitle = isGerman
+  ? "Finden Sie die besten Industrieautomatisierungsanbieter weltweit"
+  : "Find the Best Industrial Automation Vendors Worldwide";
+
+const heroDescription = isGerman
+  ? "Vergleichen Sie Systemintegratoren, OEMs, Robotikexperten, MES/SCADA-Spezialisten und industrielle IT-Anbieter — anbieterneutral und von Automatisierungsingenieuren erstellt."
+  : "Compare system integrators, OEMs, robotics experts, MES/SCADA specialists and industrial IT vendors — vendor-neutral and built by automation engineers.";
+
+const primaryButtonText = isGerman
+  ? "Verzeichnis durchsuchen →"
+  : "Browse Directory →";
+
+const secondaryButtonText = isGerman
+  ? "Unternehmen kostenlos eintragen →"
+  : "Add Your Company for Free →";
+
+const secondaryMicroCopy = isGerman
+  ? "Kostenlos während der MVP-Phase"
+  : "Free during MVP phase";
+
+const searchPlaceholder = isGerman
+  ? "Anbieter, Technologien oder Kategorien suchen..."
+  : "Search vendors, technologies or categories...";
+
+const searchButtonText = isGerman ? "Suchen" : undefined;
+const searchTitle = isGerman ? "Verzeichnis durchsuchen" : undefined;
+
+const categoryGridTitle = isGerman ? "Nach Kategorie durchsuchen" : undefined;
+
+const featuredVendorsTitle = isGerman ? "Ausgewählte Anbieter" : undefined;
+const featuredVendorsViewAll = isGerman ? "Alle Anbieter anzeigen →" : undefined;
+const featuredVendorsLinkText = isGerman ? "Profil anzeigen →" : undefined;
+
+const exploreCTATitle = isGerman
+  ? "Bereit, Automatisierungsanbieter zu erkunden?"
+  : undefined;
+
+const exploreCTADescription = isGerman
+  ? "Finden Sie vertrauenswürdige Integratoren und Automatisierungspartner weltweit."
+  : undefined;
+
+const exploreCTAPrimaryButton = isGerman
+  ? "Verzeichnis durchsuchen →"
+  : undefined;
 ---
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Redirecting…</title>
-    <meta name="robots" content="noindex" />
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        background: #fff;
-      }
-    </style>
-    <script>
-      (function () {
-        try {
-          const host = window.location.hostname;
-          const redirectToGerman = /\.ch$/.test(host);
-          const target = redirectToGerman ? '/de/' : '/en/';
-          if (window.location.pathname !== target) {
-            window.location.replace(target);
-          }
-        } catch (err) {
-          window.location.replace('/en/');
-        }
-      })();
-    </script>
-    <noscript>
-      <meta http-equiv="refresh" content="0; url=/en/" />
-    </noscript>
-  </head>
-  <body></body>
-</html>
+
+<BaseLayout 
+  title={title}
+  description={description}
+  lang={lang}
+>
+  <PageHero
+    title={heroTitle}
+    description={heroDescription}
+    primaryButtonText={primaryButtonText}
+    primaryButtonHref={`${langPrefix}/vendors`}
+    secondaryButtonText={secondaryButtonText}
+    secondaryButtonHref={`${langPrefix}/contact`}
+    secondaryMicroCopy={secondaryMicroCopy}
+  />
+
+  <SearchForm 
+    action={`${langPrefix}/vendors`}
+    placeholder={searchPlaceholder}
+    title={searchTitle}
+    buttonText={searchButtonText}
+  />
+
+  <CategoryGrid 
+    categories={categories} 
+    lang={lang}
+    title={categoryGridTitle}
+  />
+
+  <FeaturedVendors
+    vendors={featuredVendors}
+    viewAllHref={`${langPrefix}/vendors`}
+    vendorHrefPrefix={`${langPrefix}/vendor`}
+    formatTechnologies={formatTechnologies}
+    truncateDescription={truncateDescription}
+    isFeatured={isFeatured}
+    title={featuredVendorsTitle}
+    viewAllText={featuredVendorsViewAll}
+    vendorLinkText={featuredVendorsLinkText}
+  />
+
+  {isGerman ? (
+    <>
+      <WhyThisDirectory
+        title="Warum dieses Verzeichnis?"
+        description="Automation-List ist ein anbieterneutrales Verzeichnis, das von Automatisierungsingenieuren erstellt wurde. Keine gesponserten Rankings, keine Agenturen, die Ergebnisse manipulieren — nur saubere, strukturierte Daten."
+        benefits={[
+          "Anbieterneutral und unvoreingenommen",
+          "Erstellt von Automatisierungsfachleuten",
+          "Klare Kategorien und Technologiezuordnung",
+          "Globale Abdeckung",
+          "Ständige Weiterentwicklung",
+        ]}
+      />
+
+      <HowItWorks 
+        title="So funktioniert's"
+        steps={[
+          {
+            title: "1. Suchen",
+            description: "Finden Sie Anbieter nach Kategorie, Technologie oder Land.",
+          },
+          {
+            title: "2. Vergleichen",
+            description: "Prüfen Sie Profile, Fähigkeiten und Technologien.",
+          },
+          {
+            title: "3. Kontaktieren",
+            description: "Kontaktieren Sie direkt — ohne Zwischenhändler.",
+          },
+        ]}
+      />
+
+      <UserBenefits 
+        title="Vorteile für Nutzer"
+        benefits={[
+          "Vertrauenswürdige Integratoren schneller finden",
+          "Transparente Anbieterprofile",
+          "Nach Technologien und Standort filtern",
+          "Verifizierte Geschäftsdaten",
+        ]}
+      />
+
+      <VendorBenefits 
+        title="Vorteile für Anbieter"
+        benefits={[
+          "Sichtbarkeit erhöhen",
+          "SEO-optimiertes Profil",
+          "Neutrale Plattform (keine bezahlten Rankings)",
+          "Hersteller und Integratoren erreichen",
+          "Optionale Premium-Platzierungen (demnächst)",
+        ]}
+        ctaText="Ihr Unternehmen kostenlos eintragen →"
+        ctaHref={`${langPrefix}/contact`}
+        microCopy={secondaryMicroCopy}
+      />
+
+      <ExploreCTA 
+        title={exploreCTATitle}
+        description={exploreCTADescription}
+        primaryButtonText={exploreCTAPrimaryButton}
+        primaryButtonHref={`${langPrefix}/vendors`}
+      />
+    </>
+  ) : (
+    <>
+      <WhyThisDirectory />
+
+      <HowItWorks />
+
+      <UserBenefits />
+
+      <VendorBenefits 
+        ctaText={secondaryButtonText}
+        microCopy={secondaryMicroCopy}
+      />
+
+      <ExploreCTA />
+    </>
+  )}
+</BaseLayout>

@@ -1,6 +1,7 @@
 ---
 import "../styles/globals.css";
 import { supabase } from "../lib/supabaseClient";
+import CookieBanner from "../components/CookieBanner.astro";
 
 interface Props {
   title?: string;
@@ -71,48 +72,42 @@ const { data: dbCategories } = await supabase
   .from("categories")
   .select("id, slug, name_en, name_de")
   .eq("is_active", true)
-  .order("order_index", { ascending: true, nullsLast: true })
+  .order("order_index", { ascending: true, nullsFirst: false })
   .order("name_en", { ascending: true });
 
-// Fetch vendors to get top countries by vendor count
-const { data: vendors } = await supabase
-  .from("vendors")
-  .select("country")
-  .not("country", "is", null);
+  // Fetch vendor counts by country from materialized view
+  const { data: countryVendorCounts } = await supabase
+    .from("country_vendor_counts")
+    .select("country, vendor_count")
+    .order("vendor_count", { ascending: false })
+    .limit(8);
 
-// Count vendors by country
-const countryCounts: Record<string, number> = {};
-(vendors || []).forEach((vendor: any) => {
-  if (vendor.country && typeof vendor.country === "string") {
-    const country = vendor.country.trim();
-    if (country.length > 0) {
-      countryCounts[country] = (countryCounts[country] || 0) + 1;
-    }
-  }
-});
-
-// Get top 8 countries by vendor count
-const popularCountries = Object.entries(countryCounts)
-  .sort(([, a], [, b]) => b - a)
-  .slice(0, 8)
-  .map(([country]) => country);
+// Get top 8 countries by vendor count from materialized view
+const popularCountries = (countryVendorCounts || [])
+  .filter((item: any) => item.country && typeof item.country === "string" && item.country.trim().length > 0)
+  .map((item: any) => item.country.trim());
 
 // Helper function to convert country name to URL slug (matching country page format)
 function countryToSlug(country: string): string {
   return encodeURIComponent(country.toLowerCase().trim());
 }
 
-const navItems = navItemsProp || [
-  { label: "Home", href: "/en/" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
-
 // Language switching logic
 const isGerman = currentPath.startsWith("/de/");
 const isEnglish = currentPath.startsWith("/en/");
+
+// Generate navItems based on language if not provided
+const navItems = navItemsProp || (isGerman ? [
+  { label: "Kategorien", href: "/de/categories" },
+  { label: "Anbieter", href: "/de/vendors" },
+  { label: "Technologien", href: "/de/technologies" },
+  { label: "Kontakt", href: "/de/contact" },
+] : [
+  { label: "Categories", href: "/en/categories" },
+  { label: "Vendors", href: "/en/vendors" },
+  { label: "Technologies", href: "/en/technologies" },
+  { label: "Contact", href: "/en/contact" },
+]);
 
 // Determine the target language and URL
 let languageToggleUrl: string;
@@ -182,6 +177,16 @@ if (isGerman) {
       window.ml && window.ml("account", "1905335");
     </script>
     <!-- End MailerLite Universal -->
+
+    <!-- Cookie Consent - Auto-load GA if consent exists -->
+    <script>
+      import { hasConsent, loadGoogleAnalytics } from "../lib/cookieConsent";
+      
+      if (typeof window !== "undefined" && hasConsent()) {
+        loadGoogleAnalytics();
+      }
+    </script>
+
     <slot name="head" />
   </head>
   <body>
@@ -297,10 +302,10 @@ if (isGerman) {
                 {isGerman ? "Kategorien" : "Categories"}
               </a>
               <a 
-                href={isGerman ? "/de/blog" : "/en/blog"}
+                href={isGerman ? "/de/technologies" : "/en/technologies"}
                 class="text-sm text-[#6B7280] hover:underline"
               >
-                {isGerman ? "Blog" : "Blog"}
+                {isGerman ? "Technologien" : "Technologies"}
               </a>
             </nav>
           </div>
@@ -338,10 +343,21 @@ if (isGerman) {
           <div class="text-center text-sm text-[#6B7280] space-y-1">
             <p>© 2025 Automation List. All rights reserved.</p>
             <p>Made in Switzerland.</p>
+            <p class="pt-2 space-x-4">
+              <a href={isGerman ? "/de/impressum" : "/en/impressum"} class="hover:underline">
+                {isGerman ? "Impressum" : "Impressum / Legal Notice"}
+              </a>
+              <a href={isGerman ? "/de/privacy" : "/en/privacy"} class="hover:underline">
+                {isGerman ? "Datenschutz" : "Privacy Policy"}
+              </a>
+            </p>
           </div>
         </div>
       </div>
     </footer>
+
+    <!-- COOKIE CONSENT BANNER -->
+    <CookieBanner />
 
     <!-- MOBILE MENU SCRIPT -->
     <script>

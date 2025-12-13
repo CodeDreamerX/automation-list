@@ -7,9 +7,15 @@ interface Props {
     name_en: string;
     name_de: string;
   }>;
+  technologies?: Array<{
+    id: string;
+    slug: string;
+    name_en: string;
+    name_de: string;
+  }>;
 }
 
-const { vendor, categories = [] } = Astro.props;
+const { vendor, categories = [], technologies = [] } = Astro.props;
 const isNewVendor = !vendor || !vendor.id;
 ---
 
@@ -194,40 +200,18 @@ const isNewVendor = !vendor || !vendor.id;
     </div>
     
     <div>
-      <label for="technologies-input" class="block text-sm font-medium text-gray-700 mb-1">
-        Technologies
-      </label>
-      <!-- Hidden input for form submission (comma-separated string) -->
-      <input
-        type="hidden"
-        id="technologies"
-        name="technologies"
-        value={vendor?.technologies || ''}
-      />
-      
-      <!-- Tag Input Container -->
-      <div id="technologies-tag-container" class="relative border border-gray-300 rounded-md px-3 py-2 min-h-[42px] w-full text-sm mb-4 focus-within:outline-none focus-within:ring-2 focus-within:ring-black focus-within:border-transparent bg-white">
-        <!-- Tags Display -->
-        <div id="technologies-tags" class="flex flex-wrap gap-2 mb-2">
-          <!-- Tags will be dynamically inserted here -->
-        </div>
-        
-        <!-- Input Field -->
-        <input
-          type="text"
-          id="technologies-input"
-          placeholder="Type technology and press Enter or comma"
-          class="border-none outline-none w-full text-sm bg-transparent"
-          autocomplete="off"
-        />
-        
-        <!-- Autocomplete Suggestions -->
-        <div id="technologies-suggestions" class="hidden absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          <!-- Suggestions will be dynamically inserted here -->
-        </div>
+      <h2 class="text-lg font-semibold mb-2">Technologies</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {technologies.map(tech => {
+          const checked = vendor?.technology_slugs?.includes(tech.slug);
+          return (
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="technology_slugs" value={tech.slug} checked={checked} />
+              <span>{tech.name_en}</span>
+            </label>
+          );
+        })}
       </div>
-      
-      <p class="text-xs text-gray-500 mt-1">Add technologies one at a time. Press Enter or comma to add.</p>
     </div>
     
     <div>
@@ -358,6 +342,7 @@ const isNewVendor = !vendor || !vendor.id;
           <option value="free" selected={vendor?.plan === 'free' || !vendor?.plan}>Free</option>
           <option value="pro" selected={vendor?.plan === 'pro'}>Pro</option>
           <option value="featured" selected={vendor?.plan === 'featured'}>Featured</option>
+          <option value="deactivated" selected={vendor?.plan === 'deactivated'}>Deactivated</option>
         </select>
       </div>
       
@@ -784,251 +769,5 @@ const isNewVendor = !vendor || !vendor.id;
       });
     }
     
-    // Technologies Tag Input Handler
-    const technologiesHiddenInput = document.getElementById('technologies') as HTMLInputElement;
-    const technologiesInput = document.getElementById('technologies-input') as HTMLInputElement;
-    const technologiesTagsContainer = document.getElementById('technologies-tags');
-    const technologiesContainer = document.getElementById('technologies-tag-container');
-    const technologiesSuggestions = document.getElementById('technologies-suggestions');
-    
-    if (technologiesHiddenInput && technologiesInput && technologiesTagsContainer && technologiesContainer) {
-      // Common automation technologies for autocomplete suggestions
-      const commonTechnologies = [
-        'Siemens', 'Rockwell Automation', 'Allen-Bradley', 'Schneider Electric', 'ABB',
-        'Beckhoff', 'B&R Automation', 'Phoenix Contact', 'Wago', 'Omron',
-        'Mitsubishi Electric', 'Yokogawa', 'Emerson', 'Honeywell', 'GE Automation',
-        'Siemens TIA Portal', 'Studio 5000', 'Codesys', 'IEC 61131-3', 'PLC',
-        'SCADA', 'HMI', 'DCS', 'MES', 'IIoT', 'Industry 4.0', 'OPC UA',
-        'Modbus', 'Ethernet/IP', 'Profinet', 'EtherCAT', 'CANopen', 'DeviceNet',
-        'WinCC', 'FactoryTalk View', 'Ignition', 'Wonderware', 'iFIX', 'Citect',
-        'Python', 'C++', 'C#', '.NET', 'Java', 'JavaScript', 'Node.js',
-        'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis',
-        'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP',
-        'REST API', 'GraphQL', 'MQTT', 'Kafka', 'RabbitMQ',
-        'React', 'Vue.js', 'Angular', 'TypeScript', 'HTML5', 'CSS3',
-        'Linux', 'Windows Server', 'Ubuntu', 'CentOS', 'Red Hat',
-        'Git', 'GitLab', 'GitHub', 'CI/CD', 'Jenkins', 'GitLab CI',
-        'Machine Learning', 'AI', 'Deep Learning', 'TensorFlow', 'PyTorch',
-        'Robotics', 'ROS', 'Robot Operating System', 'KUKA', 'ABB Robotics',
-        'Vision Systems', 'Cognex', 'Keyence', 'Basler', 'FLIR',
-        'Safety Systems', 'Safety PLC', 'SIL', 'Functional Safety',
-        'Motion Control', 'Servo Drives', 'VFD', 'Variable Frequency Drive',
-        'Industrial Networks', 'Ethernet', 'Wireless', '5G', 'Wi-Fi 6',
-        'Cybersecurity', 'OT Security', 'Network Security', 'Firewall',
-        'Digital Twin', 'Simulation', 'Virtual Commissioning', 'AR/VR',
-        'Edge Computing', 'Fog Computing', 'Cloud Computing',
-        'Data Analytics', 'Big Data', 'Time Series', 'Historian',
-        'Maintenance', 'Predictive Maintenance', 'CMMS', 'Asset Management'
-      ];
-      
-      let technologies: string[] = [];
-      let selectedSuggestionIndex = -1;
-      
-      // Normalize technology name for storage (matches normalizeTechForStorage from src/lib/normalizeTech.ts)
-      // Steps: lowercase, trim, replace multiple spaces with single space
-      function normalizeTechName(tech: string): string {
-        if (!tech || typeof tech !== 'string') {
-          return '';
-        }
-        return tech
-          .toLowerCase()                    // Step 1: lowercase
-          .trim()                          // Step 2: trim
-          .replace(/\s+/g, ' ');           // Step 3: replace multiple spaces with single space
-      }
-      
-      // Parse initial technologies from hidden input
-      function parseTechnologies() {
-        const value = technologiesHiddenInput.value || '';
-        technologies = value
-          .split(',')
-          .map(t => normalizeTechName(t))
-          .filter(t => t.length > 0);
-        // Remove duplicates
-        technologies = Array.from(new Set(technologies.map(t => t.toLowerCase())))
-          .map(lower => technologies.find(t => t.toLowerCase() === lower) || '')
-          .filter(Boolean);
-        renderTags();
-      }
-      
-      // Render tags
-      function renderTags() {
-        if (!technologiesTagsContainer) return;
-        
-        technologiesTagsContainer.innerHTML = '';
-        
-        technologies.forEach((tech) => {
-          const tag = document.createElement('span');
-          tag.className = 'inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 rounded-md text-xs font-medium';
-          
-          const textSpan = document.createElement('span');
-          textSpan.textContent = tech;
-          
-          const removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.className = 'text-gray-500 hover:text-gray-700 focus:outline-none';
-          removeBtn.innerHTML = `
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          `;
-          
-          removeBtn.addEventListener('click', () => {
-            const index = technologies.indexOf(tech);
-            if (index > -1) {
-              technologies.splice(index, 1);
-              renderTags();
-              updateHiddenInput();
-            }
-          });
-          
-          tag.appendChild(textSpan);
-          tag.appendChild(removeBtn);
-          technologiesTagsContainer.appendChild(tag);
-        });
-      }
-      
-      // Update hidden input with comma-separated string (normalized)
-      function updateHiddenInput() {
-        // Normalize each technology: lowercase, trim, single space
-        const normalized = technologies.map(normalizeTechName);
-        // Remove duplicates (case-insensitive)
-        const unique = Array.from(new Set(normalized.map(t => t.toLowerCase())))
-          .map(lower => normalized.find(t => t.toLowerCase() === lower) || '')
-          .filter(Boolean);
-        technologiesHiddenInput.value = unique.join(', ');
-      }
-      
-      // Escape HTML to prevent XSS
-      function escapeHtml(text: string): string {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      }
-      
-      // Get filtered suggestions
-      function getSuggestions(query: string): string[] {
-        const lowerQuery = query.toLowerCase().trim();
-        if (!lowerQuery) return [];
-        
-        return commonTechnologies
-          .filter(tech => 
-            tech.toLowerCase().includes(lowerQuery) && 
-            !technologies.some(t => t.toLowerCase() === tech.toLowerCase())
-          )
-          .slice(0, 10);
-      }
-      
-      // Render suggestions
-      function renderSuggestions(suggestions: string[]) {
-        if (!technologiesSuggestions) return;
-        
-        if (suggestions.length === 0) {
-          technologiesSuggestions.classList.add('hidden');
-          return;
-        }
-        
-        technologiesSuggestions.innerHTML = '';
-        technologiesSuggestions.classList.remove('hidden');
-        
-        suggestions.forEach((suggestion, index) => {
-          const item = document.createElement('div');
-          item.className = `px-3 py-2 cursor-pointer hover:bg-gray-100 ${index === selectedSuggestionIndex ? 'bg-gray-100' : ''}`;
-          item.textContent = suggestion;
-          item.addEventListener('click', () => {
-            addTechnology(suggestion);
-            technologiesInput.value = '';
-            technologiesSuggestions.classList.add('hidden');
-            selectedSuggestionIndex = -1;
-          });
-          technologiesSuggestions.appendChild(item);
-        });
-      }
-      
-      // Add technology
-      function addTechnology(tech: string) {
-        const normalized = normalizeTechName(tech);
-        if (!normalized) return;
-        
-        // Check if already exists (case-insensitive)
-        const exists = technologies.some(t => normalizeTechName(t).toLowerCase() === normalized.toLowerCase());
-        if (exists) return;
-        
-        technologies.push(normalized);
-        renderTags();
-        updateHiddenInput();
-      }
-      
-      // Initialize
-      parseTechnologies();
-      
-      // Handle input
-      technologiesInput.addEventListener('input', (e) => {
-        const value = (e.target as HTMLInputElement).value;
-        const suggestions = getSuggestions(value);
-        selectedSuggestionIndex = -1;
-        renderSuggestions(suggestions);
-      });
-      
-      // Handle keydown
-      technologiesInput.addEventListener('keydown', (e) => {
-        const suggestions = Array.from(technologiesSuggestions?.children || []) as HTMLElement[];
-        
-        if (e.key === 'Enter' || e.key === ',') {
-          e.preventDefault();
-          
-          if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
-            // Select from suggestions
-            suggestions[selectedSuggestionIndex].click();
-          } else {
-            // Add current input value
-            const value = technologiesInput.value.trim();
-            if (value) {
-              addTechnology(value);
-              technologiesInput.value = '';
-              technologiesSuggestions?.classList.add('hidden');
-            }
-          }
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          if (suggestions.length > 0) {
-            selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
-            renderSuggestions(getSuggestions(technologiesInput.value));
-            suggestions[selectedSuggestionIndex]?.scrollIntoView({ block: 'nearest' });
-          }
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          if (suggestions.length > 0) {
-            selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
-            renderSuggestions(getSuggestions(technologiesInput.value));
-            if (selectedSuggestionIndex >= 0) {
-              suggestions[selectedSuggestionIndex]?.scrollIntoView({ block: 'nearest' });
-            }
-          }
-        } else if (e.key === 'Escape') {
-          technologiesSuggestions?.classList.add('hidden');
-          selectedSuggestionIndex = -1;
-        } else if (e.key === 'Backspace' && technologiesInput.value === '' && technologies.length > 0) {
-          // Remove last tag when backspace is pressed on empty input
-          technologies.pop();
-          renderTags();
-          updateHiddenInput();
-        }
-      });
-      
-      // Hide suggestions when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!technologiesContainer?.contains(e.target as Node)) {
-          technologiesSuggestions?.classList.add('hidden');
-          selectedSuggestionIndex = -1;
-        }
-      });
-      
-      // Update hidden input on form submit
-      if (form) {
-        form.addEventListener('submit', () => {
-          updateHiddenInput();
-        });
-      }
-    }
   })();
 </script>

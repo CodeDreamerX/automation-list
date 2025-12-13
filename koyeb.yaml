@@ -1,0 +1,32 @@
+# Koyeb deployment configuration
+# https://www.koyeb.com/docs/deployments/configuration
+
+name: automationlist
+
+# Build configuration
+build:
+  type: dockerfile
+  dockerfile_path: Dockerfile
+
+# Runtime configuration
+run:
+  # Port that the application listens on
+  # This should match the PORT environment variable
+  port: 4321
+  
+  # Health check configuration
+  healthcheck:
+    path: /
+    interval: 30
+    timeout: 10
+    initial_delay: 10
+
+# Environment variables (set these in Koyeb dashboard)
+# Required variables:
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY
+
+
+
+

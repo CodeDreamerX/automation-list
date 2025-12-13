@@ -1,5 +1,8 @@
 import type { MiddlewareHandler } from 'astro';
-import { createSupabaseServerClient } from './lib/supabaseServer';
+import { initSentry } from './lib/sentry';
+
+// Initialize Sentry once, globally
+initSentry();
 
 export const onRequest: MiddlewareHandler = async (context, next) => {
   const { url, cookies, locals } = context;
@@ -15,7 +18,29 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
                           url.pathname !== '/api/admin/login' &&
                           url.pathname !== '/api/admin/logout';
   
+  // Check if this is a prerendered route (these routes have export const prerender = true)
+  // Prerendered routes don't have access to request headers, so skip Supabase client creation
+  const isPrerenderedRoute = 
+    url.pathname.startsWith('/en/vendor/') ||
+    url.pathname.startsWith('/de/vendor/') ||
+    url.pathname.startsWith('/en/category/') ||
+    url.pathname.startsWith('/de/category/') ||
+    url.pathname.startsWith('/en/technology/') ||
+    url.pathname.startsWith('/de/technology/') ||
+    url.pathname.startsWith('/en/country/') ||
+    url.pathname.startsWith('/de/country/') ||
+    url.pathname === '/robots.txt';
+  
+  // Early return for prerendered routes - skip all Supabase client operations
+  if (isPrerenderedRoute) {
+    locals.isAdmin = false;
+    return next();
+  }
+  
   if (isAdminRoute) {
+    // Dynamically import Supabase client only when needed (not for prerendered routes)
+    const { createSupabaseServerClient } = await import('./lib/supabaseServer');
+    
     // Create Supabase client and check authentication
     const supabase = createSupabaseServerClient(cookies);
     const { data: { user } } = await supabase.auth.getUser();
@@ -79,10 +104,16 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
       }
     }
   } else {
-    // For non-admin routes, check admin status (useful for UI)
-    const supabase = createSupabaseServerClient(cookies);
-    const { data: { user } } = await supabase.auth.getUser();
-    locals.isAdmin = !!(user && user.user_metadata?.role === 'admin');
+    // For non-admin routes, dynamically import Supabase client only when needed
+    try {
+      const { createSupabaseServerClient } = await import('./lib/supabaseServer');
+      const supabase = createSupabaseServerClient(cookies);
+      const { data: { user } } = await supabase.auth.getUser();
+      locals.isAdmin = !!(user && user.user_metadata?.role === 'admin');
+    } catch {
+      // If Supabase client creation fails, just set isAdmin to false
+      locals.isAdmin = false;
+    }
   }
   
   return next();

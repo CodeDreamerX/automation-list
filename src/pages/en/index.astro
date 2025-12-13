@@ -13,17 +13,8 @@ import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import ExploreCTA from "../../components/ExploreCTA.astro";
-import { normalizeTech } from "../../lib/normalizeTech";
 
-const engNavItems = [
-  { label: "Home", href: "/en/" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
-
-// Fetch ALL vendors with vendor_categories
+// Fetch ALL vendors with vendor_categories (exclude deactivated)
 const { data: vendors } = await supabase
   .from("vendors")
   .select(`
@@ -36,7 +27,8 @@ const { data: vendors } = await supabase
         name_de
       )
     )
-  `);
+  `)
+  .neq('plan', 'deactivated');
 
 // Normalize category data shape
 const normalizedVendors = (vendors || []).map(v => ({
@@ -79,15 +71,20 @@ const { data: dbCategories } = await supabase
   .eq("is_active", true)
   .order("order_index", { ascending: true });
 
-// Helper function to count vendors by category slug
-function countByCategorySlug(categorySlug: string): number {
-  if (!normalizedVendors) return 0;
-  return normalizedVendors.filter(v => 
-    v.category_slugs.includes(categorySlug)
-  ).length;
-}
+// Fetch vendor counts from materialized view
+const { data: categoryVendorCounts } = await supabase
+  .from("category_vendor_counts")
+  .select("category_id, vendor_count");
 
-// Map database categories with counts
+// Create a map of category ID to vendor count
+const categoryCountMap = new Map<string, number>();
+(categoryVendorCounts || []).forEach((item: any) => {
+  if (item.category_id) {
+    categoryCountMap.set(item.category_id, item.vendor_count || 0);
+  }
+});
+
+// Map database categories with counts from materialized view
 const categories = (dbCategories || []).map(cat => ({
   slug: cat.slug || '',
   icon_name: cat.icon_name || '',
@@ -95,44 +92,24 @@ const categories = (dbCategories || []).map(cat => ({
   name_de: cat.name_de || '',
   description_en: cat.description_en || '',
   description_de: cat.description_de || '',
-  count: countByCategorySlug(cat.slug || ''),
+  count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
-// Extract and count technologies from vendors
-const technologyFrequency = new Map<string, number>();
-(normalizedVendors || []).forEach((vendor: any) => {
-  if (vendor.technologies && typeof vendor.technologies === 'string') {
-    const techs = vendor.technologies
-      .split(',')
-      .map((tech: string) => tech.trim())
-      .filter((tech: string) => tech.length > 0);
-    techs.forEach((tech: string) => {
-      const normalized = tech.toLowerCase().trim();
-      if (normalized) {
-        technologyFrequency.set(normalized, (technologyFrequency.get(normalized) || 0) + 1);
-      }
-    });
-  }
-});
-
-// Sort by frequency (descending) and get top 8
-const popularTechnologies = Array.from(technologyFrequency.entries())
-  .map(([name, count]) => ({ name, count, slug: normalizeTech(name) }))
-  .sort((a, b) => b.count - a.count)
-  .slice(0, 8);
 ---
 
 <BaseLayout 
-  title="Automation List - Coming Soon"
+  title="Automation List"
   description="Discover the best automation tools and workflows for your productivity needs."
   lang="en"
-  navItems={engNavItems}
 >
   <PageHero
     title="Find the Best Industrial Automation Vendors Worldwide"
     description="Compare system integrators, OEMs, robotics experts, MES/SCADA specialists and industrial IT vendors — vendor-neutral and built by automation engineers."
     primaryButtonText="Browse Directory →"
     primaryButtonHref="/en/vendors"
+    secondaryButtonText="Add Your Company for Free →"
+    secondaryButtonHref="/en/contact"
+    secondaryMicroCopy="Free during MVP phase"
   />
 
   <SearchForm 
@@ -141,23 +118,6 @@ const popularTechnologies = Array.from(technologyFrequency.entries())
   />
 
   <CategoryGrid categories={categories} lang="en" />
-
-  <!-- Popular Technologies Section -->
-  {popularTechnologies.length > 0 && (
-    <section class="container-px mx-auto max-w-7xl px-4 py-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Popular Technologies</h2>
-      <div class="flex flex-wrap justify-center gap-3">
-        {popularTechnologies.map((tech) => (
-          <a
-            href={`/en/technology/${tech.slug}`}
-            class="text-sm text-gray-700 hover:text-brand-600 hover:underline transition-colors px-3 py-1"
-          >
-            {tech.name} ({tech.count})
-          </a>
-        ))}
-      </div>
-    </section>
-  )}
 
   <FeaturedVendors
     vendors={featuredVendors}
@@ -174,7 +134,10 @@ const popularTechnologies = Array.from(technologyFrequency.entries())
 
   <UserBenefits />
 
-  <VendorBenefits />
+  <VendorBenefits 
+    ctaText="Add Your Company for Free →"
+    microCopy="Free during MVP phase"
+  />
 
   <ExploreCTA />
 </BaseLayout>

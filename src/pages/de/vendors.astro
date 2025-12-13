@@ -11,20 +11,12 @@ export const prerender = false;
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import VendorList from "../../components/vendors/VendorList.astro";
 
-const deNavItems = [
-  { label: "Startseite", href: "/de/" },
-  { label: "Kategorien", href: "/de/categories" },
-  { label: "Anbieter", href: "/de/vendors" },
-  { label: "Blog", href: "/de/blog" },
-  { label: "Kontakt", href: "/de/contact" },
-];
 ---
 
 <BaseLayout 
   title="Anbieter - Automation List"
   description="Durchsuchen Sie unser Verzeichnis von Industrieautomatisierungsanbietern weltweit."
   lang="de"
-  navItems={deNavItems}
 >
   <VendorList lang="de" pageTitle="Anbieterverzeichnis" />
 </BaseLayout>

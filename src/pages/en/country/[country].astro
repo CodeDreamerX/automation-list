@@ -1,7 +1,8 @@
 ---
-// Static Site Generation (SSG) - Base route (page 1) is pre-rendered at build time
-// Pagination pages (?page=2, etc.) are SSR'd on-demand
+// Server-Side Rendering (SSR) - This page is rendered on-demand
 // See STATIC_GENERATION_STRATEGY.md for details
+
+export const prerender = false;
 
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import VendorCard from "../../../components/VendorCard.astro";
@@ -9,42 +10,6 @@ import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 
-export async function getStaticPaths() {
-  // Fetch all vendors to extract unique countries
-  const { data: vendors, error } = await supabase
-    .from('vendors')
-    .select('country')
-    .not('country', 'is', null);
-
-  if (error) {
-    console.error('Error fetching vendors for countries:', error);
-    return [];
-  }
-
-  // Extract unique countries and normalize them
-  const countrySet = new Set<string>();
-  (vendors || []).forEach((vendor: any) => {
-    if (vendor.country && typeof vendor.country === 'string') {
-      const normalized = vendor.country.trim().toLowerCase();
-      if (normalized.length > 0) {
-        countrySet.add(normalized);
-      }
-    }
-  });
-
-  // Generate paths for each unique country (URL-encoded as slug)
-  return Array.from(countrySet).map((country) => ({
-    params: { country: encodeURIComponent(country) },
-  }));
-}
-
-const engNavItems = [
-  { label: "Home", href: "/en/" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
 
 // Get country from URL param
 const countryParam = Astro.params.country || '';
@@ -114,20 +79,22 @@ if (cachedResult) {
             name_de
           )
         )
-      `, { count: 'exact' })
+      `)
       // Case-insensitive country filter - use ilike for exact match (case-insensitive)
       .ilike('country', normalizedCountry)
+      .neq('plan', 'deactivated')
       // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
       .order('priority', { ascending: false })
       .order('name', { ascending: true });
   }
 
-  // Get total count - use a separate query with head: true
-  const { count } = await supabase
-    .from('vendors')
-    .select('*', { count: 'exact', head: true })
-    .ilike('country', normalizedCountry);
-  totalVendors = count;
+  // Get total count from materialized view
+  const { data: countryCount } = await supabase
+    .from('country_vendor_counts')
+    .select('vendor_count')
+    .ilike('country', normalizedCountry)
+    .single();
+  totalVendors = countryCount?.vendor_count || null;
 
   // Build paginated query
   const start = (page - 1) * pageSize;
@@ -182,7 +149,6 @@ const currentUrl = `https://automation-list.com/en/country/${encodeURIComponent(
   canonical={currentUrl}
   ogImage={defaultOg}
   lang="en"
-  navItems={engNavItems}
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",

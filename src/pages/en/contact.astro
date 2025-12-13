@@ -3,20 +3,12 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
-const engNavItems = [
-  { label: "Home", href: "/en/" },
-  { label: "Categories", href: "/en/categories" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: "Blog", href: "/en/blog" },
-  { label: "Contact", href: "/en/contact" },
-];
 ---
 
 <BaseLayout 
   title="Contact - Automation List"
   description="Get in touch with Automation List for questions, submissions, or partnership inquiries."
   lang="en"
-  navItems={engNavItems}
 >
   <section class="py-16 md:py-24 bg-white">
     <div class="container-px mx-auto max-w-3xl">
@@ -29,16 +21,82 @@ const engNavItems = [
         </p>
       </div>
       
+      <div class="card mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+          Company Listings (MVP Phase)
+        </h2>
+        <p class="text-gray-600 mb-4">
+          Please send your company information to:
+        </p>
+        <div class="mb-6">
+          <a href="mailto:listings@automation-list.com?subject=Company%20Listing%20Submission" class="text-xl text-brand-600 hover:text-brand-700 hover:underline font-semibold">
+            listings@automation-list.com
+          </a>
+        </div>
+        <p class="text-gray-600 mb-4">
+          Listings are free during our MVP phase and manually reviewed to ensure quality and relevance. Typical review time is 1–2 business days. This manual process is intentional to maintain directory quality and trust.
+        </p>
+        
+        <div class="bg-gray-50 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Required Submission Information</h3>
+          <p class="text-sm text-gray-600 mb-4">Please include the following information in your submission email:</p>
+          <ul class="space-y-2 text-gray-700">
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Company name</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Website URL</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Country</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Main services / technologies</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Contact email</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div class="card">
         <h2 class="text-2xl font-semibold text-gray-900 mb-4">
           Get in Touch
         </h2>
         <p class="text-gray-600 mb-6">
-          For general inquiries, company submissions, or partnership opportunities, please reach out to us.
+          For general inquiries or partnership opportunities, please reach out to us via email.
         </p>
-        <p class="text-gray-600">
-          Contact form coming soon.
-        </p>
+        <div class="space-y-4">
+          <div>
+            <p class="text-sm text-gray-500 uppercase tracking-wide mb-2">Email</p>
+            <a href="mailto:contact@automation-list.com" class="text-lg text-brand-600 hover:text-brand-700 hover:underline font-medium">
+              contact@automation-list.com
+            </a>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">What can we help you with?</h3>
+            <ul class="space-y-2 text-gray-600">
+              <li class="flex items-start">
+                <span class="text-brand-600 mr-2">•</span>
+                <span>Partnership and collaboration opportunities</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-brand-600 mr-2">•</span>
+                <span>General questions and feedback</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-brand-600 mr-2">•</span>
+                <span>Data correction or removal requests</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </section>

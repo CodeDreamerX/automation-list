@@ -24,6 +24,7 @@ export const allowedFields = [
   "priority",
   "og_member",
   "category_slugs",
+  "technology_slugs",
 ];
 
 export const REQUIRED_FIELDS = ['name', 'slug', 'country', 'category_slugs'];
@@ -68,14 +69,14 @@ export function normalizeRow(row: any): { normalized: any; unknownColumns: strin
         normalized[schemaField] = strValue === 'true' || strValue === '1' || strValue === 'yes';
       }
       // Convert number fields to numbers
-      else if (schemaField === 'priority' || schemaField === 'year_founded' || schemaField === 'employee_count') {
+      else if (schemaField === 'priority' || schemaField === 'year_founded' || schemaField === 'employee_count' || schemaField === 'hourly_rate') {
         const numValue = Number(rawValue);
         normalized[schemaField] = isNaN(numValue) ? null : numValue;
       }
-      // Handle category_slugs with semicolon separator
-      else if (schemaField === 'category_slugs') {
-        const categoryValue = String(rawValue || '');
-        normalized[schemaField] = categoryValue; // Store as-is, will be processed separately
+      // Handle category_slugs and technology_slugs with semicolon separator
+      else if (schemaField === 'category_slugs' || schemaField === 'technology_slugs') {
+        const value = String(rawValue || '');
+        normalized[schemaField] = value; // Store as-is, will be processed separately
       }
       // All other fields: normalize as string
       else {
@@ -95,12 +96,32 @@ export function normalizeRow(row: any): { normalized: any; unknownColumns: strin
   
   // Process category slugs: split by semicolon, lowercase, trim, filter empty
   if (normalized.category_slugs) {
-    normalized._categorySlugs = String(normalized.category_slugs)
+    const processed = String(normalized.category_slugs)
       .split(';')
       .map((s: string) => s.trim().toLowerCase())
       .filter(Boolean);
+    normalized._categorySlugs = processed;
+    // If processing resulted in empty array, set category_slugs to null for consistent validation
+    if (processed.length === 0) {
+      normalized.category_slugs = null;
+    }
   } else {
     normalized._categorySlugs = [];
+  }
+  
+  // Process technology slugs: split by semicolon, lowercase, trim, filter empty
+  if (normalized.technology_slugs) {
+    const processed = String(normalized.technology_slugs)
+      .split(';')
+      .map((s: string) => s.trim().toLowerCase())
+      .filter(Boolean);
+    normalized._technologySlugs = processed;
+    // If processing resulted in empty array, set technology_slugs to null
+    if (processed.length === 0) {
+      normalized.technology_slugs = null;
+    }
+  } else {
+    normalized._technologySlugs = [];
   }
   
   return { normalized, unknownColumns };
@@ -121,7 +142,14 @@ export function validateRow(row: any, index: number, allSlugs: string[]): Valida
   let duplicateSlug = false;
   
   // Check required fields
-  const missingRequired = REQUIRED_FIELDS.filter(field => !row[field] || row[field] === null);
+  const missingRequired = REQUIRED_FIELDS.filter(field => {
+    if (field === 'category_slugs') {
+      // For category_slugs, check that _categorySlugs array has at least one element
+      // This ensures we have valid category slugs after processing, not just whitespace
+      return !row._categorySlugs || !Array.isArray(row._categorySlugs) || row._categorySlugs.length === 0;
+    }
+    return !row[field] || row[field] === null;
+  });
   
   // Validate email
   if (row.email && row.email !== null) {

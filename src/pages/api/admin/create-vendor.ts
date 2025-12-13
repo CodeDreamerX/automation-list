@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
-import { normalizeTechForStorage } from '../../../lib/normalizeTech';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 
 export const prerender = false;
@@ -15,6 +14,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const contentType = request.headers.get('content-type') || '';
     let insertData: any;
     let categorySlugs: string[] = [];
+    let technologySlugs: string[] = [];
     
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
@@ -22,6 +22,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       
       // Extract category slugs from form data
       categorySlugs = form.getAll("category_slugs")
+        .map((slug) => String(slug).trim())
+        .filter((slug) => slug.length > 0);
+      
+      // Extract technology slugs from form data
+      technologySlugs = form.getAll("technology_slugs")
         .map((slug) => String(slug).trim())
         .filter((slug) => slug.length > 0);
       
@@ -37,7 +42,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         city: form.get('city')?.toString() || null,
         region: form.get('region')?.toString() || null,
         country: form.get('country')?.toString() || null,
-        technologies: form.get('technologies')?.toString() || null,
         languages: form.get('languages')?.toString() || null,
         certifications: form.get('certifications')?.toString() || null,
         tags: form.get('tags')?.toString() || null,
@@ -62,7 +66,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle JSON (backward compatibility)
       const body = await request.json();
-      const { category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
+      const { category_slugs, technology_slugs, ...rest } = body; // Extract category_slugs and technology_slugs separately, use rest for vendor data
       insertData = { ...rest };
       
       // Normalize types for JSON requests
@@ -102,6 +106,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       } else if (body.category_slugs) {
         categorySlugs = [String(body.category_slugs).trim()].filter((slug: string) => slug.length > 0);
       }
+      
+      // Extract technology slugs from JSON if present
+      if (body.technology_slugs && Array.isArray(body.technology_slugs)) {
+        technologySlugs = body.technology_slugs
+          .map((slug: any) => String(slug).trim())
+          .filter((slug: string) => slug.length > 0);
+      } else if (body.technology_slugs) {
+        technologySlugs = [String(body.technology_slugs).trim()].filter((slug: string) => slug.length > 0);
+      }
     }
 
     // Normalize website URL: add https:// if missing
@@ -112,21 +125,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    // Normalize technologies: split by comma, normalize each, remove duplicates, join back
-    if (insertData.technologies && typeof insertData.technologies === 'string') {
-      const techs = insertData.technologies
-        .split(',')
-        .map((tech: string) => normalizeTechForStorage(tech))
-        .filter((tech: string) => tech.length > 0);
-      
-      // Remove duplicates (case-insensitive)
-      const uniqueTechs = Array.from<string>(
-        new Set(techs.map((t: string) => t.toLowerCase()))
-      ).map((lower: string) => techs.find((t: string) => t.toLowerCase() === lower) || '')
-       .filter(Boolean);
-      
-      insertData.technologies = uniqueTechs.length > 0 ? uniqueTechs.join(', ') : null;
-    }
 
     // Add timestamps
     insertData.created_at = new Date().toISOString();
@@ -162,6 +160,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             .insert({
               vendor_id: vendor.id,
               category_id: cat.id
+            });
+        }
+      }
+    }
+
+    // Insert vendor_technologies entries if technology slugs were provided
+    if (technologySlugs && technologySlugs.length > 0 && vendor?.id) {
+      for (const slug of technologySlugs) {
+        const { data: tech } = await supabaseAdmin
+          .from("technologies")
+          .select("id")
+          .eq("slug", slug)
+          .single();
+
+        if (tech?.id) {
+          await supabaseAdmin
+            .from("vendor_technologies")
+            .insert({
+              vendor_id: vendor.id,
+              technology_id: tech.id
             });
         }
       }
