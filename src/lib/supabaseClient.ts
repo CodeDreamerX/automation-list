@@ -1,14 +1,9 @@
-// src/lib/supabaseClient.ts
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
+import { getRequiredEnvVar } from "./env";
 
-// Using non-PUBLIC variables since this is server-side only
-// PUBLIC_ prefix would expose these in client bundle unnecessarily
-// In SSR mode, import.meta.env is replaced at build time, so we need process.env at runtime
-const supabaseUrl = import.meta.env.SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('❌ Supabase URL or Anon Key is missing. Check your .env file.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ⚠️ SERVER-ONLY: This client uses the anon key for public read operations
+// For admin operations, use supabaseAdmin from supabaseAdminClient.ts instead
+export const supabase = createClient(
+  getRequiredEnvVar("SUPABASE_URL"),
+  getRequiredEnvVar("SUPABASE_ANON_KEY")
+);

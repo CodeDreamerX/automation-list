@@ -1,9 +1,12 @@
+# Development docker-compose file
+# This uses the same Dockerfile but with development-friendly settings
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: automationlist
+    container_name: automationlist-dev
     ports:
       - "4321:4321"
     # Load environment variables from .env.local file
@@ -15,6 +18,10 @@ services:
       - NODE_ENV=production
       - HOST=0.0.0.0
     restart: unless-stopped
+    # Mount source for development (optional - uncomment if you want live reload)
+    # volumes:
+    #   - ./src:/app/src:ro
+    #   - ./public:/app/public:ro
     healthcheck:
       # Use node to check if the server is responding
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:4321/', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]

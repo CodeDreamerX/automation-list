@@ -1,15 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import type { AstroCookies } from 'astro';
+import { getRequiredEnvVar } from './env';
 
 export function createSupabaseServerClient(cookies: AstroCookies) {
-  // In SSR mode, import.meta.env is replaced at build time, so we need process.env at runtime
-  const supabaseUrl = import.meta.env.SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('❌ Supabase URL or Anon Key is missing. Check your .env file.');
-  }
-  
+  const supabaseUrl = getRequiredEnvVar('SUPABASE_URL');
+  const supabaseAnonKey = getRequiredEnvVar('SUPABASE_ANON_KEY');
+
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
