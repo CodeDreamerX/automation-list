@@ -96,6 +96,37 @@
   });
 </script>
 
+<!-- 🔍 Mutation Observer (authoritative) -->
+<script is:inline>
+(function () {
+  const banner = document.getElementById("cookie-banner");
+  if (!banner) return;
+
+  console.log("[COOKIE] initial display:", getComputedStyle(banner).display);
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((m) => {
+      if (m.type === "attributes") {
+        console.log(
+          "[COOKIE] mutation:",
+          m.attributeName,
+          "→",
+          banner.getAttribute(m.attributeName),
+          "computed display:",
+          getComputedStyle(banner).display
+        );
+        console.trace("[COOKIE] stack trace");
+      }
+    });
+  });
+
+  observer.observe(banner, {
+    attributes: true,
+    attributeFilter: ["class", "style"]
+  });
+})();
+</script>
+
 <style>
   .cookie-banner {
     /* layout + positioning only */
@@ -115,8 +146,6 @@
     border-top: 1px solid #e5e7eb;
     box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
     padding: 1rem;
-
-  .cookie-banner-content {
     max-width: 1200px;
     margin: 0 auto;
     display: flex;
