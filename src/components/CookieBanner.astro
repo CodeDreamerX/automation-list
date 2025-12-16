@@ -58,8 +58,8 @@
     }
     
     window.dataLayer = window.dataLayer || [];
-    function gtag() {
-      window.dataLayer.push(arguments);
+    function gtag(...args: any[]) {
+      window.dataLayer.push(args);
     }
     
     const script = document.createElement("script");
@@ -98,20 +98,23 @@
 
 <style>
   .cookie-banner {
+    /* layout + positioning only */
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: white;
-    border-top: 1px solid #e5e7eb;
-    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    padding: 1rem;
+    z-index: 50;
   }
 
   .cookie-banner.hidden {
     display: none;
   }
+
+  .cookie-banner-content {
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
 
   .cookie-banner-content {
     max-width: 1200px;
