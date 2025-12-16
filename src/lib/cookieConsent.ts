@@ -79,9 +79,9 @@ export function loadGoogleAnalytics(): void {
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
   document.head.appendChild(script);
 
-  // Configure GA
+  // Configure GA with privacy settings
   gtag("js", new Date());
-  gtag("config", GA_MEASUREMENT_ID);
+  gtag("config", GA_MEASUREMENT_ID, { anonymize_ip: true });
 
   // Make gtag available globally
   (window as any).gtag = gtag;

@@ -1,8 +1,10 @@
 ---
 // Cookie Consent Banner Component
-// Shows only if no consent decision exists
+// Always rendered in HTML, hidden by default
+// Shown by client-side JavaScript if no consent decision exists
 ---
 
+<!-- Banner HTML - Always rendered, hidden by default -->
 <div id="cookie-banner" class="cookie-banner hidden">
   <div class="cookie-banner-content">
     <p class="cookie-banner-text">
@@ -19,83 +21,79 @@
   </div>
 </div>
 
+<!-- Inline script: Check localStorage and show banner if no consent -->
+<script is:inline>
+  (function () {
+    const KEY = "cookie_consent";
+    try {
+      const decision = localStorage.getItem(KEY);
+      if (decision === null) {
+        const banner = document.getElementById("cookie-banner");
+        if (banner) banner.classList.remove("hidden");
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<!-- Client script: Handle Accept/Reject buttons -->
 <script>
-  import { setConsent } from "../lib/cookieConsent";
-
   const CONSENT_KEY = "cookie_consent";
-
-  // Check if consent decision exists
-  function hasConsentDecision(): boolean {
-    if (typeof window === "undefined") {
-      return true; // Hide on server
-    }
-
+  const GA_MEASUREMENT_ID = "G-ERFBQMBSJP";
+  
+  // Load Google Analytics dynamically (only after explicit consent)
+  function loadGoogleAnalytics() {
+    // Double-check consent before loading
     try {
       const consent = localStorage.getItem(CONSENT_KEY);
-      return consent !== null; // Decision exists if key is present
+      if (consent !== "accepted") {
+        return; // No consent, do nothing
+      }
+    } catch (e) {
+      return; // localStorage unavailable, do nothing
+    }
+    
+    // Prevent double-loading
+    if (document.querySelector('script[src*="googletagmanager.com/gtag/js"]')) {
+      return;
+    }
+    
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
+    
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
+    document.head.appendChild(script);
+    
+    gtag("js", new Date());
+    gtag("config", GA_MEASUREMENT_ID, { anonymize_ip: true });
+    window.gtag = gtag;
+  }
+  
+  // Handle accept button
+  document.getElementById("cookie-accept")?.addEventListener("click", () => {
+    try {
+      localStorage.setItem(CONSENT_KEY, "accepted");
+      const banner = document.getElementById("cookie-banner");
+      if (banner) banner.classList.add("hidden");
+      loadGoogleAnalytics();
     } catch (error) {
-      return true; // Hide if localStorage unavailable
+      console.warn("Failed to save consent preference:", error);
     }
-  }
-
-  // Show banner only if no decision exists
-  function initBanner() {
-    const banner = document.getElementById("cookie-banner");
-    if (!banner) {
-      return; // Banner not found
+  });
+  
+  // Handle reject button
+  document.getElementById("cookie-reject")?.addEventListener("click", () => {
+    try {
+      localStorage.setItem(CONSENT_KEY, "rejected");
+      const banner = document.getElementById("cookie-banner");
+      if (banner) banner.classList.add("hidden");
+    } catch (error) {
+      console.warn("Failed to save consent preference:", error);
     }
-
-    if (hasConsentDecision()) {
-      banner.classList.add("hidden");
-      return; // Hide banner if decision already made
-    }
-
-    // Show banner if no decision exists
-    banner.classList.remove("hidden");
-  }
-
-  // Handle accept
-  function handleAccept() {
-    setConsent("accepted");
-    const banner = document.getElementById("cookie-banner");
-    if (banner) {
-      banner.classList.add("hidden");
-    }
-  }
-
-  // Handle reject
-  function handleReject() {
-    setConsent("rejected");
-    const banner = document.getElementById("cookie-banner");
-    if (banner) {
-      banner.classList.add("hidden");
-    }
-  }
-
-  // Initialize on DOM ready
-  if (typeof window !== "undefined") {
-    // Wait for DOM to be fully loaded
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => {
-        initBanner();
-        
-        const acceptButton = document.getElementById("cookie-accept");
-        const rejectButton = document.getElementById("cookie-reject");
-        
-        acceptButton?.addEventListener("click", handleAccept);
-        rejectButton?.addEventListener("click", handleReject);
-      });
-    } else {
-      // DOM already loaded
-      initBanner();
-      
-      const acceptButton = document.getElementById("cookie-accept");
-      const rejectButton = document.getElementById("cookie-reject");
-      
-      acceptButton?.addEventListener("click", handleAccept);
-      rejectButton?.addEventListener("click", handleReject);
-    }
-  }
+  });
 </script>
 
 <style>
