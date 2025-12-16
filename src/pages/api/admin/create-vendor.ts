@@ -34,7 +34,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       insertData = {
         name: form.get('name')?.toString() || null,
         slug: form.get('slug')?.toString() || null,
-        description: form.get('description')?.toString() || null,
+        description_en: form.get('description_en')?.toString() || null,
+        description_de: form.get('description_de')?.toString() || null,
         website: form.get('website')?.toString() || null,
         email: form.get('email')?.toString() || null,
         phone: form.get('phone')?.toString() || null,
@@ -91,6 +92,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (!insertData.plan) {
         insertData.plan = 'free';
       }
+      // Normalize description fields for JSON requests
+      insertData.description_en = insertData.description_en?.toString().trim() || null;
+      insertData.description_de = insertData.description_de?.toString().trim() || null;
       // Normalize logo fields for JSON requests
       insertData.logo_url = insertData.logo_url || null;
       insertData.logo_width = insertData.logo_width ? Number(insertData.logo_width) : null;

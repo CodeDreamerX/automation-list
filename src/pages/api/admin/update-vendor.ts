@@ -44,7 +44,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateData = {
         name: form.get('name')?.toString() || null,
         slug: form.get('slug')?.toString() || null,
-        description: form.get('description')?.toString() || null,
+        description_en: form.get('description_en')?.toString() || null,
+        description_de: form.get('description_de')?.toString() || null,
         website: form.get('website')?.toString() || null,
         email: form.get('email')?.toString() || null,
         phone: form.get('phone')?.toString() || null,
@@ -88,6 +89,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const { id: _, category_slugs, technology_slugs, ...rest } = body; // Extract category_slugs and technology_slugs separately, use rest for vendor data
       updateData = rest;
       
+      // Normalize description fields for JSON requests
+      if (updateData.description_en !== null && updateData.description_en !== undefined) {
+        updateData.description_en = updateData.description_en?.toString().trim() || null;
+      }
+      if (updateData.description_de !== null && updateData.description_de !== undefined) {
+        updateData.description_de = updateData.description_de?.toString().trim() || null;
+      }
       // Normalize logo fields for JSON requests
       updateData.logo_url = updateData.logo_url || null;
       updateData.logo_width = updateData.logo_width ? Number(updateData.logo_width) : null;

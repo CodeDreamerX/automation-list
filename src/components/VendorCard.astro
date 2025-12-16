@@ -8,6 +8,8 @@ interface Vendor {
   region?: string | null;
   technologies?: string | null;
   description?: string | null;
+  description_en?: string | null;
+  description_de?: string | null;
   logo_url?: string | null;
   logo_width?: number | null;
   logo_height?: number | null;
@@ -41,6 +43,16 @@ const {
   compact = false,
   lang = "en",
 } = Astro.props;
+
+// Helper function to get language-aware vendor description
+// For EN: use description_en only
+// For DE: use description_de, fallback to description_en if German is missing
+function getVendorDescription(vendor: Vendor, lang: "en" | "de"): string | null {
+  if (lang === "de") {
+    return vendor.description_de || vendor.description_en || null;
+  }
+  return vendor.description_en || null;
+}
 
 // Helper function to truncate description
 function truncateDescription(text: string | null | undefined, maxLength: number = 120): string {
@@ -178,11 +190,14 @@ const categorySlugs = vendor.category_slugs ||
   )}
 
   <!-- Short Description -->
-  {vendor.description && (
-    <p class="text-sm text-gray-600 text-center mt-2">
-      {truncateDescription(vendor.description, compact ? 100 : 120)}
-    </p>
-  )}
+  {(() => {
+    const vendorDescription = getVendorDescription(vendor, lang);
+    return vendorDescription ? (
+      <p class="text-sm text-gray-600 text-center mt-2">
+        {truncateDescription(vendorDescription, compact ? 100 : 120)}
+      </p>
+    ) : null;
+  })()}
 
   <!-- Country + Category Pills -->
   <div class="flex flex-wrap gap-2 justify-center mt-3">

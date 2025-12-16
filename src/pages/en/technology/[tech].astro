@@ -185,7 +185,7 @@ const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // SEO metadata
 const metaTitle = `Top ${techName} Automation Companies | Automation List`;
-const metaDescription = techDescription || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
+const metaDescription = (techDescription && techDescription.trim()) || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
 const origin = Astro.url.origin;
 const defaultOgImage = `${origin}/og/default.png`;
 const fullUrl = `https://automation-list.com/en/technology/${techSlug}`;

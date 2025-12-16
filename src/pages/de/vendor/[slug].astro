@@ -7,6 +7,7 @@ export const prerender = false;
 import { Fragment } from 'astro/jsx-runtime';
 import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { resolveMetaDescription } from '../../../lib/metaDescription';
 
 // Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
@@ -49,12 +50,20 @@ if (vendor.plan === 'deactivated') {
   return Astro.redirect('/de/vendors');
 }
 
+// Helper function to get language-aware vendor description
+// For DE pages: use description_de, fallback to description_en if German is missing
+function getVendorDescription(vendor: any): string | null {
+  return vendor.description_de || vendor.description_en || null;
+}
+
 // Normalize category and technology data shape
 const normalizedVendor = {
   ...vendor,
   category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
   // Build technologies string from vendor_technologies
-  technologies: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.name_de || vt.technologies?.name_en).filter(Boolean).join(', ') || vendor.technologies || null
+  technologies: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.name_de || vt.technologies?.name_en).filter(Boolean).join(', ') || vendor.technologies || null,
+  // Use language-aware description (DE: description_de with fallback to description_en)
+  description: getVendorDescription(vendor)
 };
 
 
@@ -155,9 +164,9 @@ const breadcrumbSchemaJson = JSON.stringify(breadcrumbSchema);
 // Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
 const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
 
-// Determine description: use meta_description if available, otherwise fallback to truncated vendor.description
-const pageDescription = normalizedVendor.meta_description || 
-  (normalizedVendor.description ? truncateDescription(normalizedVendor.description, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
+// Resolve meta description using centralized resolver
+// Returns null if no description available (meta tag will not be rendered)
+const pageDescription = resolveMetaDescription(normalizedVendor, 'de');
 
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
 const origin = Astro.url.origin;

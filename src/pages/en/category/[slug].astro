@@ -139,7 +139,7 @@ const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // SEO metadata
 const metaTitle = `${categoryName} Automation Vendors | Automation List`;
-const metaDescription = categoryDescription || `Discover top ${categoryName} automation vendors, integrators, and solution providers.`;
+const metaDescription = (categoryDescription && categoryDescription.trim()) || `Discover top ${categoryName} automation vendors, integrators, and solution providers.`;
 const origin = Astro.url.origin;
 const defaultOg = `${origin}/og/default.png`;
 const currentUrl = `https://automation-list.com/en/category/${categorySlug}`;

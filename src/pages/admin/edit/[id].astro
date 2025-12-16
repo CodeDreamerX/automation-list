@@ -76,7 +76,8 @@ if (Astro.request.method === 'POST') {
   const updateData: any = {
     name: formData.get('name')?.toString() || null,
     slug: formData.get('slug')?.toString() || null,
-    description: formData.get('description')?.toString() || null,
+    description_en: formData.get('description_en')?.toString() || null,
+    description_de: formData.get('description_de')?.toString() || null,
     website: formData.get('website')?.toString() || null,
     email: formData.get('email')?.toString() || null,
     phone: formData.get('phone')?.toString() || null,

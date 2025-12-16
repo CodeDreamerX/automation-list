@@ -5,6 +5,8 @@ interface Vendor {
   country?: string | null;
   technologies?: string | null;
   description?: string | null;
+  description_en?: string | null;
+  description_de?: string | null;
   logo_url?: string | null;
   logo_width?: number | null;
   logo_height?: number | null;
@@ -52,6 +54,19 @@ const {
   },
   isFeatured = () => false,
 } = Astro.props;
+
+// Infer language from vendorHrefPrefix (/en/vendor = "en", /de/vendor = "de")
+const lang: "en" | "de" = vendorHrefPrefix.startsWith("/de/") ? "de" : "en";
+
+// Helper function to get language-aware vendor description
+// For EN: use description_en only
+// For DE: use description_de, fallback to description_en if German is missing
+function getVendorDescription(vendor: Vendor): string | null {
+  if (lang === "de") {
+    return vendor.description_de || vendor.description_en || null;
+  }
+  return vendor.description_en || null;
+}
 ---
 
 <section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
@@ -124,9 +139,12 @@ const {
                 <p class="text-xs text-gray-500 mb-3">{formatTechnologies(vendor.technologies)}</p>
               )}
               
-              {vendor.description && (
-                <p class="text-sm text-gray-600 mb-4">{truncateDescription(vendor.description, 120)}</p>
-              )}
+              {(() => {
+                const vendorDescription = getVendorDescription(vendor);
+                return vendorDescription ? (
+                  <p class="text-sm text-gray-600 mb-4">{truncateDescription(vendorDescription, 120)}</p>
+                ) : null;
+              })()}
               
               <a 
                 href={`${vendorHrefPrefix}/${vendor.slug}`}

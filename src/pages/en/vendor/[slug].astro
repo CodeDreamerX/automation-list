@@ -7,6 +7,7 @@ export const prerender = false;
 import { Fragment } from 'astro/jsx-runtime';
 import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { resolveMetaDescription } from '../../../lib/metaDescription';
 
 // Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
@@ -49,12 +50,20 @@ if (vendor.plan === 'deactivated') {
   return Astro.redirect('/en/vendors');
 }
 
+// Helper function to get language-aware vendor description
+// For EN pages: use description_en only
+function getVendorDescription(vendor: any): string | null {
+  return vendor.description_en || null;
+}
+
 // Normalize category and technology data shape
 const normalizedVendor = {
   ...vendor,
   category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
   // Build technologies string from vendor_technologies
-  technologies: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.name_en || vt.technologies?.name_de).filter(Boolean).join(', ') || vendor.technologies || null
+  technologies: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.name_en || vt.technologies?.name_de).filter(Boolean).join(', ') || vendor.technologies || null,
+  // Use language-aware description (EN: description_en only)
+  description: getVendorDescription(vendor)
 };
 
 
@@ -155,9 +164,9 @@ const breadcrumbSchemaJson = JSON.stringify(breadcrumbSchema);
 // Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
 const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
 
-// Determine description: use meta_description if available, otherwise fallback to truncated vendor.description
-const pageDescription = normalizedVendor.meta_description || 
-  (normalizedVendor.description ? truncateDescription(normalizedVendor.description, 160) : `Learn more about ${normalizedVendor.name}, a leading vendor in industrial automation.`);
+// Resolve meta description using centralized resolver
+// Returns null if no description available (meta tag will not be rendered)
+const pageDescription = resolveMetaDescription(normalizedVendor, 'en');
 
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
 const origin = Astro.url.origin;

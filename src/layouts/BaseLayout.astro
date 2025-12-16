@@ -5,7 +5,7 @@ import CookieBanner from "../components/CookieBanner.astro";
 
 interface Props {
   title?: string;
-  description?: string;
+  description?: string | null;
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
@@ -21,9 +21,9 @@ interface Props {
 
 const {
   title = "Automation List",
-  description = "Discover the best automation tools and workflows for your productivity needs.",
+  description: descriptionProp,
   ogTitle,
-  ogDescription = description,
+  ogDescription: ogDescriptionProp,
   ogImage,
   ogUrl,
   ogType = "website",
@@ -32,6 +32,15 @@ const {
   canonical,
   meta,
 } = Astro.props;
+
+// Handle empty strings: treat them as missing and use fallback
+// For vendor pages: only render meta description if explicitly provided (not null)
+// If descriptionProp is null, don't render meta tag (description = undefined)
+// If descriptionProp is undefined (not provided), use fallback
+const description = descriptionProp === null 
+  ? undefined 
+  : (descriptionProp && descriptionProp.trim()) || "Discover the best automation tools and workflows for your productivity needs.";
+const ogDescription = (ogDescriptionProp && ogDescriptionProp.trim()) || description;
 
 // Determine canonical URL: use meta.canonical if provided, otherwise use canonical prop, otherwise generate from Astro.url.href
 const canonicalUrl = meta?.canonical || canonical || Astro.url.href;
@@ -135,7 +144,7 @@ if (isGerman) {
 <html lang={lang}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content={description} />
+    {description && <meta name="description" content={description} />}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
