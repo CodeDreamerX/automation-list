@@ -73,27 +73,41 @@ if (!uniqueCountryList) {
 const technologiesCacheKey = 'vendors:technologies:all';
 let uniqueTechnologyList = getCached<string[]>(technologiesCacheKey);
 if (!uniqueTechnologyList) {
-  const { data: allVendorsForTechnologies } = await supabase
+  // Fetch technologies from vendor_technologies join
+  // First get all active vendor IDs
+  const { data: activeVendors } = await supabase
     .from('vendors')
-    .select('technologies')
-    .not('technologies', 'is', null)
+    .select('id')
     .neq('plan', 'deactivated');
   
-  // Extract and normalize unique technologies
-  const technologySet = new Set<string>();
-  (allVendorsForTechnologies || []).forEach((vendor: any) => {
-    if (vendor.technologies && typeof vendor.technologies === 'string') {
-      const techs = vendor.technologies
-        .split(',')
-        .map((tech: string) => tech.trim())
-        .filter((tech: string) => tech.length > 0);
-      techs.forEach((tech: string) => {
-        technologySet.add(tech);
-      });
-    }
-  });
+  const activeVendorIds = (activeVendors || []).map(v => v.id);
   
-  uniqueTechnologyList = Array.from(technologySet).sort();
+  if (activeVendorIds.length > 0) {
+    const { data: vendorTechnologies } = await supabase
+      .from('vendor_technologies')
+      .select(`
+        technologies:technologies (
+          name_en,
+          name_de
+        )
+      `)
+      .in('vendor_id', activeVendorIds);
+    
+    // Extract and normalize unique technologies
+    const technologySet = new Set<string>();
+    (vendorTechnologies || []).forEach((vt: any) => {
+      if (vt.technologies) {
+        const techNameEn = vt.technologies.name_en;
+        const techNameDe = vt.technologies.name_de;
+        if (techNameEn) technologySet.add(techNameEn);
+        if (techNameDe) technologySet.add(techNameDe);
+      }
+    });
+    
+    uniqueTechnologyList = Array.from(technologySet).sort();
+  } else {
+    uniqueTechnologyList = [];
+  }
   
   if (uniqueTechnologyList) {
     setCached(technologiesCacheKey, uniqueTechnologyList, 300);
@@ -146,10 +160,10 @@ if (countryFilter) {
 }
 
 // If category filter is active, first get vendor IDs that have this category (cached)
-let categoryVendorIds: number[] | null = null;
+let categoryVendorIds: string[] | null = null;
 if (categoryId) {
   const categoryLinksCacheKey = `vendor_categories:category:${categoryId}`;
-  categoryVendorIds = getCached<number[]>(categoryLinksCacheKey);
+  categoryVendorIds = getCached<string[]>(categoryLinksCacheKey);
   
   if (categoryVendorIds === null) {
     const { data: vendorCategoryLinks, error: linkError } = await supabase
@@ -168,6 +182,38 @@ if (categoryId) {
       }
       setCached(categoryLinksCacheKey, categoryVendorIds, 300);
     }
+  }
+}
+
+// If technology filter is active, first get vendor IDs that have this technology (cached)
+let techVendorIds: string[] | null = null;
+if (normalizedTechnologyFilter) {
+  const techLinksCacheKey = `vendor_technologies:filter:${normalizedTechnologyFilter.toLowerCase()}`;
+  techVendorIds = getCached<string[]>(techLinksCacheKey);
+  
+  if (techVendorIds === null) {
+    const { data: techVendorLinks } = await supabase
+      .from('vendor_technologies')
+      .select(`
+        vendor_id,
+        technologies:technologies (
+          name_en,
+          name_de
+        )
+      `);
+    
+    techVendorIds = [];
+    if (techVendorLinks) {
+      const filterLower = normalizedTechnologyFilter.toLowerCase();
+      techVendorLinks.forEach((link: any) => {
+        const techNameEn = link.technologies?.name_en?.toLowerCase() || '';
+        const techNameDe = link.technologies?.name_de?.toLowerCase() || '';
+        if (techNameEn.includes(filterLower) || techNameDe.includes(filterLower)) {
+          techVendorIds!.push(link.vendor_id);
+        }
+      });
+    }
+    setCached(techLinksCacheKey, techVendorIds, 300);
   }
 }
 
@@ -192,8 +238,8 @@ function buildBaseQuery() {
   // Apply category filter using vendor IDs if present
   if (categoryVendorIds !== null) {
     if (categoryVendorIds.length === 0) {
-      // No vendors match this category, return empty result by filtering to non-existent ID
-      query = query.eq('id', -1);
+      // No vendors match this category, return empty result by filtering to non-existent UUID
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
     } else {
       query = query.in('id', categoryVendorIds);
     }
@@ -209,9 +255,14 @@ function buildBaseQuery() {
     query = query.ilike('country', normalizedCountryFilter);
   }
 
-  // Apply technology filter if present (use case-insensitive matching)
-  if (normalizedTechnologyFilter) {
-    query = query.ilike('technologies', `%${normalizedTechnologyFilter}%`);
+  // Apply technology filter if present (filter via vendor_technologies join)
+  if (techVendorIds !== null) {
+    if (techVendorIds.length === 0) {
+      // No vendors match this technology, return empty result
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    } else {
+      query = query.in('id', techVendorIds);
+    }
   }
 
   // Sort by priority (high priority first, nulls last), then by name ascending

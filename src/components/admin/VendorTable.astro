@@ -14,7 +14,12 @@ if (searchQuery) {
   filteredVendors = filteredVendors.filter((vendor) => {
     const nameMatch = vendor.name?.toLowerCase().includes(query) ?? false;
     const slugMatch = vendor.slug?.toLowerCase().includes(query) ?? false;
-    const technologiesMatch = vendor.technologies?.toLowerCase().includes(query) ?? false;
+    // Search in vendor_technologies
+    const technologiesMatch = (vendor.vendor_technologies || []).some((vt: any) => {
+      const techNameEn = vt.technologies?.name_en?.toLowerCase() || '';
+      const techNameDe = vt.technologies?.name_de?.toLowerCase() || '';
+      return techNameEn.includes(query) || techNameDe.includes(query);
+    });
     // Search in vendor_categories
     const categoryMatch = (vendor.vendor_categories || []).some((vc: any) => {
       const catNameEn = vc.categories?.name_en?.toLowerCase() || '';

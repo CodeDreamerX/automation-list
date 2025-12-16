@@ -75,8 +75,40 @@ if (cachedResult) {
   vendors = cachedResult.vendors || [];
   totalVendors = cachedResult.totalVendors;
 } else {
-  // Build base query builder function
-  // Search for vendors that have this technology name in their technologies field
+  // Get vendor IDs that have this technology via vendor_technologies
+  let techVendorIds: string[] = [];
+  if (technology) {
+    // Technology found in database - get vendors linked to this technology
+    const { data: techLinks } = await supabase
+      .from('vendor_technologies')
+      .select('vendor_id')
+      .eq('technology_id', technology.id);
+    
+    if (techLinks) {
+      techVendorIds = techLinks.map(link => link.vendor_id);
+    }
+  } else {
+    // Fallback: search by techName in technology names
+    const { data: matchingTechs } = await supabase
+      .from('technologies')
+      .select('id')
+      .or(`name_en.ilike.%${techName}%,name_de.ilike.%${techName}%`)
+      .eq('is_active', true);
+    
+    if (matchingTechs && matchingTechs.length > 0) {
+      const techIds = matchingTechs.map(t => t.id);
+      const { data: techLinks } = await supabase
+        .from('vendor_technologies')
+        .select('vendor_id')
+        .in('technology_id', techIds);
+      
+      if (techLinks) {
+        techVendorIds = techLinks.map(link => link.vendor_id);
+      }
+    }
+  }
+  
+  // Build query function
   function buildTechnologyQuery() {
     let query = supabase
       .from('vendors')
@@ -94,20 +126,11 @@ if (cachedResult) {
       `, { count: 'exact' })
       .neq('plan', 'deactivated');
     
-    // Case-insensitive technology filter - search within technologies field
-    // Try both English and German names to catch all vendors
-    if (technology) {
-      // Technology found in database - use its names
-      if (technology.name_en && technology.name_de) {
-        query = query.or(`technologies.ilike.%${technology.name_en}%,technologies.ilike.%${technology.name_de}%`);
-      } else if (technology.name_en) {
-        query = query.ilike('technologies', `%${technology.name_en}%`);
-      } else if (technology.name_de) {
-        query = query.ilike('technologies', `%${technology.name_de}%`);
-      }
+    if (techVendorIds.length === 0) {
+      // No vendors match this technology, return empty result
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
     } else {
-      // Fallback: search by techName (converted from slug)
-      query = query.ilike('technologies', `%${techName}%`);
+      query = query.in('id', techVendorIds);
     }
     
     // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
@@ -116,25 +139,16 @@ if (cachedResult) {
       .order('name', { ascending: true });
   }
 
-  // Get total count - build a separate count query without joins
+  // Get total count - use the same vendor IDs from technology filter
   let countQuery = supabase
     .from('vendors')
     .select('*', { count: 'exact', head: true })
     .neq('plan', 'deactivated');
   
-  // Apply the same technology filter
-  if (technology) {
-    // Technology found in database - use its names
-    if (technology.name_en && technology.name_de) {
-      countQuery = countQuery.or(`technologies.ilike.%${technology.name_en}%,technologies.ilike.%${technology.name_de}%`);
-    } else if (technology.name_en) {
-      countQuery = countQuery.ilike('technologies', `%${technology.name_en}%`);
-    } else if (technology.name_de) {
-      countQuery = countQuery.ilike('technologies', `%${technology.name_de}%`);
-    }
+  if (techVendorIds.length === 0) {
+    countQuery = countQuery.eq('id', '00000000-0000-0000-0000-000000000000');
   } else {
-    // Fallback: search by techName (converted from slug)
-    countQuery = countQuery.ilike('technologies', `%${techName}%`);
+    countQuery = countQuery.in('id', techVendorIds);
   }
   
   const { count } = await countQuery;

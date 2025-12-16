@@ -96,37 +96,6 @@
   });
 </script>
 
-<!-- 🔍 Mutation Observer (authoritative) -->
-<script is:inline>
-(function () {
-  const banner = document.getElementById("cookie-banner");
-  if (!banner) return;
-
-  console.log("[COOKIE] initial display:", getComputedStyle(banner).display);
-
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((m) => {
-      if (m.type === "attributes") {
-        console.log(
-          "[COOKIE] mutation:",
-          m.attributeName,
-          "→",
-          banner.getAttribute(m.attributeName),
-          "computed display:",
-          getComputedStyle(banner).display
-        );
-        console.trace("[COOKIE] stack trace");
-      }
-    });
-  });
-
-  observer.observe(banner, {
-    attributes: true,
-    attributeFilter: ["class", "style"]
-  });
-})();
-</script>
-
 <style>
   .cookie-banner {
     /* layout + positioning only */

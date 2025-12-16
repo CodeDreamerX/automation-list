@@ -95,6 +95,26 @@ const categories = (dbCategories || []).map(cat => ({
   count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
+// Build WebSite structured data with SearchAction
+const origin = Astro.url.origin;
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": `${origin}/en/`,
+  "name": "Automation List",
+  "description": "Discover the best automation tools and workflows for your productivity needs.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": `${origin}/en/vendors?q={search_term_string}`
+    },
+    "query-input": "required name=search_term_string"
+  }
+};
+
+const websiteSchemaJson = JSON.stringify(websiteSchema);
+
 ---
 
 <BaseLayout 
@@ -102,6 +122,7 @@ const categories = (dbCategories || []).map(cat => ({
   description="Discover the best automation tools and workflows for your productivity needs."
   lang="en"
 >
+  <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
   <PageHero
     title="Find the Best Industrial Automation Vendors Worldwide"
     description="Compare system integrators, OEMs, robotics experts, MES/SCADA specialists and industrial IT vendors — vendor-neutral and built by automation engineers."

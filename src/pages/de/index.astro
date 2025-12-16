@@ -94,6 +94,26 @@ const categories = (dbCategories || []).map(cat => ({
   count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
+// Build WebSite structured data with SearchAction
+const origin = Astro.url.origin;
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": `${origin}/de/`,
+  "name": "Automation List",
+  "description": "Entdecken Sie die besten Automatisierungstools und Workflows für Ihre Produktivitätsbedürfnisse.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": `${origin}/de/vendors?q={search_term_string}`
+    },
+    "query-input": "required name=search_term_string"
+  }
+};
+
+const websiteSchemaJson = JSON.stringify(websiteSchema);
+
 ---
 
 <BaseLayout 
@@ -101,6 +121,7 @@ const categories = (dbCategories || []).map(cat => ({
   description="Entdecken Sie die besten Automatisierungstools und Workflows für Ihre Produktivitätsbedürfnisse."
   lang="de"
 >
+  <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
   <PageHero
     title="Finden Sie die besten Industrieautomatisierungsanbieter weltweit"
     description="Vergleichen Sie Systemintegratoren, OEMs, Robotikexperten, MES/SCADA-Spezialisten und industrielle IT-Anbieter — anbieterneutral und von Automatisierungsingenieuren erstellt."

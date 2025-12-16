@@ -153,7 +153,7 @@ if (Astro.request.method === 'GET' && Astro.url.searchParams.get('action') === '
   return Astro.redirect('/admin');
 }
 
-// Fetch all vendors with vendor_categories
+// Fetch all vendors with vendor_categories and vendor_technologies
 const { data: vendors, error } = await supabaseAdmin
   .from('vendors')
   .select(`
@@ -161,6 +161,14 @@ const { data: vendors, error } = await supabaseAdmin
     vendor_categories (
       is_primary,
       categories:categories (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    ),
+    vendor_technologies (
+      technologies:technologies (
         id,
         slug,
         name_en,
