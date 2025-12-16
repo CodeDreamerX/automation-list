@@ -1,15 +1,14 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../lib/supabaseClient';
-import { normalizeTech } from '../lib/normalizeTech';
 
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const origin = url.origin;
 
-  // Fetch vendors with slug, updated_at for lastmod, country for country pages, and technologies for technology pages (exclude deactivated)
+  // Fetch vendors with slug, updated_at for lastmod, and country for country pages (exclude deactivated)
   const { data: vendors, error: vendorsError } = await supabase
     .from('vendors')
-    .select('slug, updated_at, country, technologies')
+    .select('slug, updated_at, country')
     .neq('plan', 'deactivated')
     .order('slug', { ascending: true });
 
@@ -26,6 +25,17 @@ export const GET: APIRoute = async ({ request }) => {
 
   if (categoriesError) {
     console.error('Error fetching categories for sitemap:', categoriesError);
+  }
+
+  // Fetch technologies with slug and updated_at for technology pages
+  const { data: technologies, error: technologiesError } = await supabase
+    .from('technologies')
+    .select('slug, updated_at')
+    .eq('is_active', true)
+    .order('slug', { ascending: true });
+
+  if (technologiesError) {
+    console.error('Error fetching technologies for sitemap:', technologiesError);
   }
 
   // Build sitemap XML
@@ -137,52 +147,26 @@ export const GET: APIRoute = async ({ request }) => {
   </url>`);
   });
 
-  // Technology pages - get distinct technologies from vendors with lastmod calculation
-  // Get unique technologies with their most recent update date
-  const technologyMap = new Map<string, Date>();
-  (vendors || []).forEach((vendor: any) => {
-    if (vendor.technologies && typeof vendor.technologies === 'string') {
-      // Split comma-separated technologies
-      const techs = vendor.technologies
-        .split(',')
-        .map((tech: string) => tech.trim())
-        .filter((tech: string) => tech.length > 0);
+  // Technology pages - generate URLs from technologies table with lastmod
+  (technologies || []).forEach((technology) => {
+    if (technology.slug) {
+      const lastmod = technology.updated_at 
+        ? new Date(technology.updated_at).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
       
-      const updateDate = vendor.updated_at ? new Date(vendor.updated_at) : new Date();
-      
-      // Normalize and add each technology to the map with update date
-      techs.forEach((tech: string) => {
-        const normalized = normalizeTech(tech);
-        if (normalized) {
-          const existingDate = technologyMap.get(normalized);
-          if (!existingDate || updateDate > existingDate) {
-            technologyMap.set(normalized, updateDate);
-          }
-        }
-      });
+      urls.push(`  <url>
+    <loc>${origin}/en/technology/${technology.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`);
+      urls.push(`  <url>
+    <loc>${origin}/de/technology/${technology.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`);
     }
-  });
-
-  // Sort technologies and generate technology page URLs with lastmod, changefreq, and priority
-  const uniqueTechnologies = Array.from(technologyMap.keys()).sort();
-  uniqueTechnologies.forEach((techSlug) => {
-    const lastmodDate = technologyMap.get(techSlug);
-    const lastmod = lastmodDate 
-      ? lastmodDate.toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0];
-    
-    urls.push(`  <url>
-    <loc>${origin}/en/technology/${techSlug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`);
-    urls.push(`  <url>
-    <loc>${origin}/de/technology/${techSlug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`);
   });
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

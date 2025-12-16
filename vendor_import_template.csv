@@ -1,0 +1,5 @@
+name,slug,country,category_slugs,region,city,address,website,email,phone,description,technologies,languages,certifications,tags,industries,year_founded,employee_count,hourly_rate,plan,featured,priority,og_member,technology_slugs
+Example Company,example-company,Germany,plcs;scada-hmi,Bavaria,Munich,123 Main Street,https://example.com,contact@example.com,+49 123 456789,Leading provider of automation solutions,Python;JavaScript;PLC,English;German,ISO 9001;CE Mark,automation;robotics;iot,Manufacturing;Automotive,2010,50-100,€50-100,free,true,1,false,python;javascript;plc
+
+
+

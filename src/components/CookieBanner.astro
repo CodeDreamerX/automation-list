@@ -23,9 +23,6 @@
   import { setConsent } from "../lib/cookieConsent";
 
   const CONSENT_KEY = "cookie_consent";
-  const banner = document.getElementById("cookie-banner");
-  const acceptButton = document.getElementById("cookie-accept");
-  const rejectButton = document.getElementById("cookie-reject");
 
   // Check if consent decision exists
   function hasConsentDecision(): boolean {
@@ -43,18 +40,24 @@
 
   // Show banner only if no decision exists
   function initBanner() {
+    const banner = document.getElementById("cookie-banner");
+    if (!banner) {
+      return; // Banner not found
+    }
+
     if (hasConsentDecision()) {
+      banner.classList.add("hidden");
       return; // Hide banner if decision already made
     }
 
-    if (banner) {
-      banner.classList.remove("hidden");
-    }
+    // Show banner if no decision exists
+    banner.classList.remove("hidden");
   }
 
   // Handle accept
   function handleAccept() {
     setConsent("accepted");
+    const banner = document.getElementById("cookie-banner");
     if (banner) {
       banner.classList.add("hidden");
     }
@@ -63,17 +66,35 @@
   // Handle reject
   function handleReject() {
     setConsent("rejected");
+    const banner = document.getElementById("cookie-banner");
     if (banner) {
       banner.classList.add("hidden");
     }
   }
 
-  // Initialize on page load
+  // Initialize on DOM ready
   if (typeof window !== "undefined") {
-    initBanner();
-    
-    acceptButton?.addEventListener("click", handleAccept);
-    rejectButton?.addEventListener("click", handleReject);
+    // Wait for DOM to be fully loaded
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        initBanner();
+        
+        const acceptButton = document.getElementById("cookie-accept");
+        const rejectButton = document.getElementById("cookie-reject");
+        
+        acceptButton?.addEventListener("click", handleAccept);
+        rejectButton?.addEventListener("click", handleReject);
+      });
+    } else {
+      // DOM already loaded
+      initBanner();
+      
+      const acceptButton = document.getElementById("cookie-accept");
+      const rejectButton = document.getElementById("cookie-reject");
+      
+      acceptButton?.addEventListener("click", handleAccept);
+      rejectButton?.addEventListener("click", handleReject);
+    }
   }
 </script>
 
@@ -164,6 +185,8 @@
     }
   }
 </style>
+
+
 
 
 

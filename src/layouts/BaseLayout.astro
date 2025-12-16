@@ -160,24 +160,6 @@ if (isGerman) {
     <meta property="twitter:description" content={ogDescription} />
     <meta property="twitter:image" content={ogImageUrl} />
 
-    <!-- MailerLite Universal -->
-    <script is:inline>
-      (function (w, d, e, u, f, l, n) {
-        w[f] =
-          w[f] ||
-          function () {
-            (w[f].q = w[f].q || []).push(arguments);
-          };
-        l = d.createElement(e);
-        l.async = 1;
-        l.src = u;
-        n = d.getElementsByTagName(e)[0];
-        n.parentNode.insertBefore(l, n);
-      })(window, document, "script", "https://assets.mailerlite.com/js/universal.js", "ml");
-      window.ml && window.ml("account", "1905335");
-    </script>
-    <!-- End MailerLite Universal -->
-
     <!-- Cookie Consent - Auto-load GA if consent exists -->
     <script>
       import { hasConsent, loadGoogleAnalytics } from "../lib/cookieConsent";

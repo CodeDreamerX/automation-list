@@ -555,9 +555,9 @@ const isNewVendor = !vendor || !vendor.id;
 
 <script>
   (function() {
-    const nameInput = document.getElementById('name');
-    const slugInput = document.getElementById('slug');
-    const websiteInput = document.getElementById('website');
+    const nameInput = document.getElementById('name') as HTMLInputElement;
+    const slugInput = document.getElementById('slug') as HTMLInputElement;
+    const websiteInput = document.getElementById('website') as HTMLInputElement;
     
     if (!nameInput || !slugInput || !websiteInput) return;
     
