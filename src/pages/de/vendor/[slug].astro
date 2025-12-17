@@ -60,7 +60,7 @@ function getVendorDescription(vendor: any): string | null {
 const normalizedVendor = {
   ...vendor,
   category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
-  // Build technologies string from vendor_technologies
+  // Keep vendor_technologies array for clickable links, also build string for backward compatibility
   technologies: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.name_de || vt.technologies?.name_en).filter(Boolean).join(', ') || vendor.technologies || null,
   // Use language-aware description (DE: description_de with fallback to description_en)
   description: getVendorDescription(vendor)
@@ -93,10 +93,34 @@ function truncateDescription(text: string | null | undefined, maxLength: number 
 }
 
 // Determine plan status
-const plan = normalizedVendor.plan || 'free';
+const planValue = normalizedVendor.plan;
+const plan = planValue ? String(planValue).toLowerCase().trim() : 'free';
 const isFeatured = normalizedVendor.featured === true || plan === 'featured';
-const isPro = plan === 'pro' || isFeatured;
-const isFree = plan === 'free' && !isFeatured;
+const isPro = plan === 'pro' || plan === 'featured' || isFeatured;
+const isFree = !isPro;
+
+// Debug logging
+console.log('=== VENDOR PLAN DEBUG ===');
+console.log('normalizedVendor.plan (raw):', normalizedVendor.plan);
+console.log('planValue:', planValue);
+console.log('plan (normalized):', plan);
+console.log('normalizedVendor.featured:', normalizedVendor.featured);
+console.log('isFeatured:', isFeatured);
+console.log('isPro:', isPro);
+console.log('isFree:', isFree);
+console.log('=== PRO FIELDS DEBUG ===');
+console.log('technologies:', normalizedVendor.technologies);
+console.log('certifications:', normalizedVendor.certifications);
+console.log('languages:', normalizedVendor.languages);
+console.log('industries:', normalizedVendor.industries);
+console.log('tags:', normalizedVendor.tags);
+console.log('year_founded:', normalizedVendor.year_founded);
+console.log('employee_count:', normalizedVendor.employee_count);
+console.log('hourly_rate:', normalizedVendor.hourly_rate);
+console.log('email:', normalizedVendor.email);
+console.log('phone:', normalizedVendor.phone);
+console.log('address:', normalizedVendor.address);
+console.log('========================');
 const isOgMember = normalizedVendor.og_member === true;
 
 // Helper function to convert country name to URL slug format
@@ -319,28 +343,39 @@ const breadcrumbs = [
     </div>
 
     <!-- SECTION 3 — GRID BLOCKS (conditionally rendered) -->
+    {((isPro && (normalizedVendor.vendor_technologies?.length > 0 || normalizedVendor.technologies || normalizedVendor.certifications || normalizedVendor.languages || normalizedVendor.industries || normalizedVendor.tags)) || (normalizedVendor.vendor_categories && normalizedVendor.vendor_categories.length > 0)) && (
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <!-- Technologies -->
-      {normalizedVendor.technologies && (
+      <!-- Technologies - Pro only -->
+      {isPro && normalizedVendor.vendor_technologies && normalizedVendor.vendor_technologies.length > 0 && (
         <div class="border border-gray-200 rounded-lg p-4">
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Technologien</h3>
-          {isFree ? (
-            <div class="flex flex-wrap gap-2">
-              {splitValue(normalizedVendor.technologies).slice(0, 2).map((tech) => (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {tech}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div class="flex flex-wrap gap-2">
-              {splitValue(normalizedVendor.technologies).map((tech) => (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {tech}
-                </span>
-              ))}
-            </div>
-          )}
+          <div class="flex flex-wrap gap-2">
+            {normalizedVendor.vendor_technologies.map((vt: any) => {
+              const techName = vt.technologies?.name_de || vt.technologies?.name_en;
+              const techSlug = vt.technologies?.slug;
+              return techName && techSlug ? (
+                <a 
+                  href={`/de/technology/${techSlug}`}
+                  class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
+                >
+                  {techName}
+                </a>
+              ) : null;
+            })}
+          </div>
+        </div>
+      )}
+      {/* Fallback for legacy technologies string if vendor_technologies not available */}
+      {isPro && (!normalizedVendor.vendor_technologies || normalizedVendor.vendor_technologies.length === 0) && normalizedVendor.technologies && (
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Technologien</h3>
+          <div class="flex flex-wrap gap-2">
+            {splitValue(normalizedVendor.technologies).map((tech) => (
+              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                {tech}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
@@ -400,8 +435,8 @@ const breadcrumbs = [
         </div>
       )}
 
-      <!-- Categories - Pro only -->
-      {isPro && normalizedVendor.vendor_categories && normalizedVendor.vendor_categories.length > 0 && (
+      <!-- Categories - Show for all profiles (free and pro) -->
+      {normalizedVendor.vendor_categories && normalizedVendor.vendor_categories.length > 0 && (
         <div class="border border-gray-200 rounded-lg p-4">
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Kategorien</h3>
           <div class="flex flex-wrap gap-2">
@@ -421,9 +456,10 @@ const breadcrumbs = [
         </div>
       )}
     </div>
+    )}
 
     <!-- SECTION 4 — COMPANY FACTS (pro/featured only) -->
-    {isPro && (normalizedVendor.year_founded || normalizedVendor.employee_count || normalizedVendor.hourly_rate || normalizedVendor.region || normalizedVendor.country) && (
+    {isPro && (normalizedVendor.year_founded || normalizedVendor.employee_count || normalizedVendor.hourly_rate || normalizedVendor.city || normalizedVendor.region || normalizedVendor.country) && (
       <div class="border border-gray-200 rounded-lg p-6 mb-8 bg-gray-50">
         <h2 class="text-xl font-semibold text-gray-900 mb-4">Unternehmensfakten</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -445,14 +481,14 @@ const breadcrumbs = [
               <p class="text-sm font-medium text-gray-900">{normalizedVendor.hourly_rate}</p>
             </div>
           )}
-          {(normalizedVendor.region || normalizedVendor.country) && (
+          {(normalizedVendor.city || normalizedVendor.region || normalizedVendor.country) && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Standort</p>
               <p class="text-sm font-medium text-gray-900">
                 {normalizedVendor.city && (
                   <>
                     {normalizedVendor.city}
-                    {normalizedVendor.region && ', '}
+                    {(normalizedVendor.region || normalizedVendor.country) && ', '}
                   </>
                 )}
                 {normalizedVendor.region && (
