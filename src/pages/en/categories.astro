@@ -45,12 +45,20 @@ const categoryNames = categories
 const description = categoryNames.length > 0
   ? `Browse industrial automation categories including ${categoryNames.join(', ')}${categoryNames.length < categories.length ? ', and more.' : '.'}`
   : "Browse industrial automation categories and discover vendors in your area of expertise.";
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Categories", href: "/en/categories" },
+];
+
 ---
 
 <BaseLayout 
   title="Categories - Automation List"
   description={description}
   lang="en"
+  breadcrumbs={breadcrumbs}
 >
   <CategoryGrid title="Categories" categories={categories} lang="en" />
 </BaseLayout>

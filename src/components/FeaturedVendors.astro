@@ -76,83 +76,82 @@ function getVendorDescription(vendor: Vendor): string | null {
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {vendors.map((vendor, i) => {
           const vendorIsFeatured = isFeatured(vendor);
+          const vendorHref = `${vendorHrefPrefix}/${vendor.slug}`;
           return (
-            <div
-              class={`fade-in-up border rounded-lg p-6 shadow-sm transition-all ${
-                vendorIsFeatured 
-                  ? 'border-yellow-300 bg-yellow-50/30 shadow-lg hover:border-yellow-400 hover:shadow-md' 
-                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-              }`}
+            <a
+              href={vendorHref}
+              class="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded-lg fade-in-up"
               style={`animation-delay: ${i * 0.07}s`}
+              aria-label={`${vendor.name} - ${vendorLinkText}`}
             >
-              {vendorIsFeatured && (
-                <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full mb-3">
-                  Featured Vendor
-                </span>
-              )}
-              
-              <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mb-4 mx-auto">
-                {vendor.logo_url ? (
-                  <img
-                    src={vendor.logo_url}
-                    alt={vendor.logo_alt || `${vendor.name} automation logo`}
-                    width={vendor.logo_width}
-                    height={vendor.logo_height}
-                    loading="lazy"
-                    class="max-w-[80%] max-h-[80%] object-contain"
-                  />
-                ) : (
-                  <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
-                    <span class="text-xs text-gray-400">No Logo</span>
-                  </div>
-                )}
-              </div>
-              
-              <h3 class="text-lg font-semibold text-gray-900 mb-1">
-                <a
-                  href={`${vendorHrefPrefix}/${vendor.slug}`}
-                  class="hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded transition-colors"
-                >
-                  {vendor.name}
-                </a>
-              </h3>
-              
-              {vendor.country && (
-                <p class="text-sm text-gray-600 mb-2">{vendor.country}</p>
-              )}
-              
-              {/* Display primary category from vendor_categories */}
-              {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
-                vendor.vendor_categories
-                  .filter((vc: any) => vc.is_primary === true)
-                  .map((vc: any) => {
-                    const categoryName = vc.categories?.name_en || vc.categories?.name_de;
-                    return categoryName ? (
-                      <span class="inline-block mb-2 px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
-                        {categoryName}
-                      </span>
-                    ) : null;
-                  })
-              )}
-              
-              {vendor.technologies && (
-                <p class="text-xs text-gray-500 mb-3">{formatTechnologies(vendor.technologies)}</p>
-              )}
-              
-              {(() => {
-                const vendorDescription = getVendorDescription(vendor);
-                return vendorDescription ? (
-                  <p class="text-sm text-gray-600 mb-4">{truncateDescription(vendorDescription, 120)}</p>
-                ) : null;
-              })()}
-              
-              <a 
-                href={`${vendorHrefPrefix}/${vendor.slug}`}
-                class="inline-block text-sm text-brand-700 hover:text-brand-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded transition-colors"
+              <div
+                class={`border rounded-lg p-6 shadow-sm transition-all ${
+                  vendorIsFeatured 
+                    ? 'border-yellow-300 bg-yellow-50/30 shadow-lg hover:border-yellow-400 hover:shadow-md active:bg-yellow-100/50 md:hover:bg-yellow-50/50' 
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-md active:bg-gray-50 md:hover:bg-gray-50'
+                }`}
               >
-                {vendorLinkText}
-              </a>
-            </div>
+                {vendorIsFeatured && (
+                  <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full mb-3">
+                    Featured Vendor
+                  </span>
+                )}
+                
+                <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mb-4 mx-auto">
+                  {vendor.logo_url ? (
+                    <img
+                      src={vendor.logo_url}
+                      alt={vendor.logo_alt || `${vendor.name} automation logo`}
+                      width={vendor.logo_width}
+                      height={vendor.logo_height}
+                      loading="lazy"
+                      class="max-w-[80%] max-h-[80%] object-contain"
+                    />
+                  ) : (
+                    <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
+                      <span class="text-xs text-gray-400">No Logo</span>
+                    </div>
+                  )}
+                </div>
+                
+                <h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-brand-700 transition-colors">
+                  {vendor.name}
+                </h3>
+                
+                {vendor.country && (
+                  <p class="text-sm text-gray-600 mb-2">{vendor.country}</p>
+                )}
+                
+                {/* Display primary category from vendor_categories */}
+                {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
+                  vendor.vendor_categories
+                    .filter((vc: any) => vc.is_primary === true)
+                    .map((vc: any) => {
+                      const categoryName = vc.categories?.name_en || vc.categories?.name_de;
+                      return categoryName ? (
+                        <span class="inline-block mb-2 px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+                          {categoryName}
+                        </span>
+                      ) : null;
+                    })
+                )}
+                
+                {vendor.technologies && (
+                  <p class="text-xs text-gray-500 mb-3">{formatTechnologies(vendor.technologies)}</p>
+                )}
+                
+                {(() => {
+                  const vendorDescription = getVendorDescription(vendor);
+                  return vendorDescription ? (
+                    <p class="text-sm text-gray-600 mb-4">{truncateDescription(vendorDescription, 120)}</p>
+                  ) : null;
+                })()}
+                
+                <span class="inline-block text-sm text-brand-700 group-hover:text-brand-800 font-medium transition-colors">
+                  {vendorLinkText}
+                </span>
+              </div>
+            </a>
           );
         })}
       </div>

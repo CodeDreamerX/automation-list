@@ -131,108 +131,106 @@ const categorySlugs = vendor.category_slugs ||
   [];
 ---
 
-<div
-  class={`relative block bg-white rounded-lg border p-4 transition-all flex flex-col items-center text-center ${
-    vendorIsFeatured
-      ? 'bg-yellow-50/30 border-yellow-300 hover:border-yellow-400 hover:shadow-md'
-      : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-  }`}
+<a
+  href={vendorHref}
+  class="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded-lg"
+  aria-label={`${vendor.name} - ${lang === "de" ? "Profil anzeigen" : "View Profile"}`}
 >
-  <!-- Featured Badge -->
-  {vendorIsFeatured && showFeaturedBadge && (
-    <span class="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">
-      Featured
-    </span>
-  )}
-
-  <!-- Vendor Logo -->
-  <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mb-4">
-    {vendor.logo_url ? (
-      <img
-        src={vendor.logo_url}
-        alt={vendor.logo_alt || `${vendor.name} logo`}
-        width={vendor.logo_width || 200}
-        height={vendor.logo_height || 80}
-        loading="lazy"
-        class="max-w-full max-h-full object-contain"
-      />
-    ) : (
-      <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
-        <span class="text-xs text-gray-400">No Logo</span>
-      </div>
-    )}
-  </div>
-
-  <!-- Vendor Name -->
-  <h3 class="text-lg font-semibold text-gray-900 mb-3">
-    <a
-      href={vendorHref}
-      class="hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded transition-colors"
-    >
-      {vendor.name}
-    </a>
-  </h3>
-
-  <!-- Category Chips -->
-  {categorySlugs.length > 0 && (
-    <div class="flex flex-wrap gap-1 mt-2">
-      {categorySlugs.slice(0, 3).map(slug => (
-        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-          {slug.replace(/-/g, " ")}
-        </span>
-      ))}
-      {categorySlugs.length > 3 && (
-        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-          +{categorySlugs.length - 3}
-        </span>
-      )}
-    </div>
-  )}
-
-  <!-- Short Description -->
-  {(() => {
-    const vendorDescription = getVendorDescription(vendor, lang);
-    return vendorDescription ? (
-      <p class="text-sm text-gray-600 text-center mt-2">
-        {truncateDescription(vendorDescription, compact ? 100 : 120)}
-      </p>
-    ) : null;
-  })()}
-
-  <!-- Country + Category Pills -->
-  <div class="flex flex-wrap gap-2 justify-center mt-3">
-    {vendor.country && (
-      <span class="text-xs bg-gray-200 px-2 py-0.5 rounded">
-        {getCountryFlag(vendor.country)} {vendor.country}
+  <div
+    class={`relative bg-white rounded-lg border p-4 transition-all flex flex-col items-center text-center ${
+      vendorIsFeatured
+        ? 'bg-yellow-50/30 border-yellow-300 hover:border-yellow-400 hover:shadow-md active:bg-yellow-100/50 md:hover:bg-yellow-50/50'
+        : 'border-gray-200 hover:border-gray-300 hover:shadow-md active:bg-gray-50 md:hover:bg-gray-50'
+    }`}
+  >
+    <!-- Featured Badge -->
+    {vendorIsFeatured && showFeaturedBadge && (
+      <span class="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">
+        Featured
       </span>
     )}
-    {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
-      vendor.vendor_categories.map((vc) => {
-        const categoryName = lang === "de" 
-          ? (vc.categories?.name_de || vc.categories?.name_en)
-          : (vc.categories?.name_en || vc.categories?.name_de);
-        return categoryName ? (
-          <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-            {categoryName}
+
+    <!-- Vendor Logo -->
+    <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mb-4">
+      {vendor.logo_url ? (
+        <img
+          src={vendor.logo_url}
+          alt={vendor.logo_alt || `${vendor.name} logo`}
+          width={vendor.logo_width || 200}
+          height={vendor.logo_height || 80}
+          loading="lazy"
+          class="max-w-full max-h-full object-contain"
+        />
+      ) : (
+        <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
+          <span class="text-xs text-gray-400">No Logo</span>
+        </div>
+      )}
+    </div>
+
+    <!-- Vendor Name -->
+    <h3 class="text-lg font-semibold text-gray-900 mb-3 group-hover:text-brand-700 transition-colors">
+      {vendor.name}
+    </h3>
+
+    <!-- Category Chips -->
+    {categorySlugs.length > 0 && (
+      <div class="flex flex-wrap gap-1 mt-2">
+        {categorySlugs.slice(0, 3).map(slug => (
+          <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+            {slug.replace(/-/g, " ")}
           </span>
-        ) : null;
-      })
+        ))}
+        {categorySlugs.length > 3 && (
+          <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+            +{categorySlugs.length - 3}
+          </span>
+        )}
+      </div>
     )}
+
+    <!-- Short Description -->
+    {(() => {
+      const vendorDescription = getVendorDescription(vendor, lang);
+      return vendorDescription ? (
+        <p class="text-sm text-gray-600 text-center mt-2">
+          {truncateDescription(vendorDescription, compact ? 100 : 120)}
+        </p>
+      ) : null;
+    })()}
+
+    <!-- Country + Category Pills -->
+    <div class="flex flex-wrap gap-2 justify-center mt-3">
+      {vendor.country && (
+        <span class="text-xs bg-gray-200 px-2 py-0.5 rounded">
+          {getCountryFlag(vendor.country)} {vendor.country}
+        </span>
+      )}
+      {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
+        vendor.vendor_categories.map((vc) => {
+          const categoryName = lang === "de" 
+            ? (vc.categories?.name_de || vc.categories?.name_en)
+            : (vc.categories?.name_en || vc.categories?.name_de);
+          return categoryName ? (
+            <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+              {categoryName}
+            </span>
+          ) : null;
+        })
+      )}
+    </div>
+
+    <!-- Technologies (first 2 only) -->
+    {vendor.technologies && (
+      <p class="text-xs text-gray-500 mt-2">
+        {formatTechnologies(vendor.technologies)}
+      </p>
+    )}
+
+    <!-- View Profile Text (styled but not a link) -->
+    <span class="mt-3 inline-block text-sm text-brand-700 group-hover:text-brand-800 font-medium transition-colors">
+      {lang === "de" ? "Profil anzeigen →" : "View Profile →"}
+    </span>
   </div>
-
-  <!-- Technologies (first 2 only) -->
-  {vendor.technologies && (
-    <p class="text-xs text-gray-500 mt-2">
-      {formatTechnologies(vendor.technologies)}
-    </p>
-  )}
-
-  <!-- View Profile Link -->
-  <a
-    href={vendorHref}
-    class="mt-3 inline-block text-sm text-brand-700 hover:text-brand-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded transition-colors"
-  >
-    {lang === "de" ? "Profil anzeigen →" : "View Profile →"}
-  </a>
-</div>
+</a>
 

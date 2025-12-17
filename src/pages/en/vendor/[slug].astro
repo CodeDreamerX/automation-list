@@ -99,6 +99,12 @@ const isPro = plan === 'pro' || isFeatured;
 const isFree = plan === 'free' && !isFeatured;
 const isOgMember = normalizedVendor.og_member === true;
 
+// Helper function to convert country name to URL slug format
+function countryToSlug(country: string | null | undefined): string {
+  if (!country) return '';
+  return country.toLowerCase().replace(/\s+/g, '-');
+}
+
 // Build location string
 function getLocation(): string {
   const parts: string[] = [];
@@ -110,8 +116,9 @@ function getLocation(): string {
 
 const location = getLocation();
 
-// Determine canonical URL
-const canonicalUrl = normalizedVendor.canonical_url || `https://automation-list.com/en/vendor/${slug}`;
+// Determine canonical URL - normalize to www for consistency
+const baseOrigin = Astro.url.origin.replace(/^https?:\/\/(?!www\.)(.+)$/, 'https://www.$1');
+const canonicalUrl = normalizedVendor.canonical_url || `${baseOrigin}/en/vendor/${slug}`;
 
 // Build JSON-LD Organization schema
 const organizationSchema = {
@@ -171,6 +178,13 @@ const pageDescription = resolveMetaDescription(normalizedVendor, 'en');
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
 const origin = Astro.url.origin;
 const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Vendors", href: "/en/vendors" },
+  { label: normalizedVendor.name, href: `/en/vendor/${slug}` },
+];
 ---
 
 <BaseLayout 
@@ -178,6 +192,7 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
   description={pageDescription}
   image={image}
   lang="en"
+  breadcrumbs={breadcrumbs}
   meta={{ canonical: canonicalUrl }}
 >
   <Fragment slot="head">
@@ -235,18 +250,43 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
           .filter((vc: any) => vc.is_primary === true)
           .map((vc: any) => {
             const categoryName = vc.categories?.name_en || vc.categories?.name_de;
-            return categoryName ? (
+            const categorySlug = vc.categories?.slug;
+            return categoryName && categorySlug ? (
               <p class="text-sm text-gray-600 mb-2">
-                <span class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+                <a 
+                  href={`/en/category/${categorySlug}`}
+                  class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded hover:bg-brand-100 transition"
+                >
                   {categoryName}
-                </span>
+                </a>
               </p>
             ) : null;
           })
       )}
 
       {location && (
-        <p class="text-sm text-gray-600 mb-4">{location}</p>
+        <p class="text-sm text-gray-600 mb-4">
+          {normalizedVendor.city && (
+            <>
+              {normalizedVendor.city}
+              {normalizedVendor.region && ', '}
+            </>
+          )}
+          {normalizedVendor.region && (
+            <>
+              {normalizedVendor.region}
+              {normalizedVendor.country && ', '}
+            </>
+          )}
+          {normalizedVendor.country && (
+            <a 
+              href={`/en/country/${countryToSlug(normalizedVendor.country)}`}
+              class="hover:text-brand-700 hover:underline transition"
+            >
+              {normalizedVendor.country}
+            </a>
+          )}
+        </p>
       )}
 
       {normalizedVendor.website && (
@@ -367,10 +407,14 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
           <div class="flex flex-wrap gap-2">
             {normalizedVendor.vendor_categories.map((vc) => {
               const categoryName = vc.categories?.name_en || vc.categories?.name_de;
-              return categoryName ? (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+              const categorySlug = vc.categories?.slug;
+              return categoryName && categorySlug ? (
+                <a 
+                  href={`/en/category/${categorySlug}`}
+                  class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
+                >
                   {categoryName}
-                </span>
+                </a>
               ) : null;
             })}
           </div>
@@ -404,7 +448,28 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
           {(normalizedVendor.region || normalizedVendor.country) && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Location</p>
-              <p class="text-sm font-medium text-gray-900">{location}</p>
+              <p class="text-sm font-medium text-gray-900">
+                {normalizedVendor.city && (
+                  <>
+                    {normalizedVendor.city}
+                    {normalizedVendor.region && ', '}
+                  </>
+                )}
+                {normalizedVendor.region && (
+                  <>
+                    {normalizedVendor.region}
+                    {normalizedVendor.country && ', '}
+                  </>
+                )}
+                {normalizedVendor.country && (
+                  <a 
+                    href={`/en/country/${countryToSlug(normalizedVendor.country)}`}
+                    class="text-brand-700 hover:text-brand-800 hover:underline transition"
+                  >
+                    {normalizedVendor.country}
+                  </a>
+                )}
+              </p>
             </div>
           )}
         </div>

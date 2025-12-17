@@ -141,12 +141,21 @@ const metaDescription = `Discover top industrial automation vendors, PLC experts
 const origin = Astro.url.origin;
 const defaultOg = `${origin}/og/default.png`;
 const currentUrl = `https://automation-list.com/de/country/${encodeURIComponent(normalizedCountry)}`;
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Anbieter", href: "/de/vendors" },
+  { label: CountryName, href: `/de/country/${encodeURIComponent(normalizedCountry)}` },
+];
+
 ---
 
 <BaseLayout 
   title={metaTitle}
   description={metaDescription}
   canonical={currentUrl}
+  breadcrumbs={breadcrumbs}
   image={defaultOg}
   lang="de"
 >

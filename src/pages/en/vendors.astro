@@ -11,12 +11,19 @@ export const prerender = false;
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import VendorList from "../../components/vendors/VendorList.astro";
 
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Vendors", href: "/en/vendors" },
+];
+
 ---
 
 <BaseLayout 
   title="Vendors - Automation List"
   description="Browse our directory of industrial automation vendors worldwide."
   lang="en"
+  breadcrumbs={breadcrumbs}
 >
   <VendorList lang="en" pageTitle="Vendors Directory" />
 </BaseLayout>

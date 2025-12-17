@@ -1,0 +1,58 @@
+---
+interface Props {
+  items: Array<{ label: string; href: string }>;
+  lang?: string;
+}
+
+const { items, lang = "en" } = Astro.props;
+
+// Don't render if only one item (just Home)
+if (items.length <= 1) {
+  return null;
+}
+---
+
+<nav aria-label="Breadcrumb" class="container-px mx-auto max-w-7xl py-3 border-b border-gray-200">
+  <ol class="flex items-center space-x-2 text-sm text-gray-600" itemscope itemtype="https://schema.org/BreadcrumbList">
+    {items.map((item, index) => {
+      const isLast = index === items.length - 1;
+      return (
+        <li 
+          class="flex items-center" 
+          itemprop="itemListElement" 
+          itemscope 
+          itemtype="https://schema.org/ListItem"
+        >
+          {index > 0 && (
+            <svg 
+              class="w-4 h-4 mx-2 text-gray-400" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+          {isLast ? (
+            <span 
+              class="font-medium text-gray-900" 
+              itemprop="name"
+            >
+              {item.label}
+            </span>
+          ) : (
+            <a 
+              href={item.href} 
+              class="hover:text-brand-600 transition-colors" 
+              itemprop="item"
+            >
+              <span itemprop="name">{item.label}</span>
+            </a>
+          )}
+          <meta itemprop="position" content={String(index + 1)} />
+        </li>
+      );
+    })}
+  </ol>
+</nav>

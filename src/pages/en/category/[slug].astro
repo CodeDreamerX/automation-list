@@ -144,6 +144,13 @@ const origin = Astro.url.origin;
 const defaultOg = `${origin}/og/default.png`;
 const currentUrl = `https://automation-list.com/en/category/${categorySlug}`;
 
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Categories", href: "/en/categories" },
+  { label: categoryName, href: `/en/category/${categorySlug}` },
+];
+
 ---
 
 <BaseLayout 
@@ -152,6 +159,7 @@ const currentUrl = `https://automation-list.com/en/category/${categorySlug}`;
   canonical={currentUrl}
   image={defaultOg}
   lang="en"
+  breadcrumbs={breadcrumbs}
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",

@@ -43,12 +43,20 @@ const categoryNames = categories
 const description = categoryNames.length > 0
   ? `Durchsuchen Sie Industrieautomatisierungskategorien, einschließlich ${categoryNames.join(', ')}${categoryNames.length < categories.length ? ' und mehr.' : '.'}`
   : "Durchsuchen Sie Industrieautomatisierungskategorien und entdecken Sie Anbieter in Ihrem Fachgebiet.";
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Kategorien", href: "/de/categories" },
+];
+
 ---
 
 <BaseLayout 
   title="Kategorien - Automation List"
   description={description}
   lang="de"
+  breadcrumbs={breadcrumbs}
 >
   <CategoryGrid title="Kategorien" categories={categories} lang="de" />
 </BaseLayout>

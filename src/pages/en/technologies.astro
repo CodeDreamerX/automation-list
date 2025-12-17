@@ -45,12 +45,20 @@ const technologyNames = technologies
 const description = technologyNames.length > 0
   ? `Browse industrial automation technologies including ${technologyNames.join(', ')}${technologyNames.length < technologies.length ? ', and more.' : '.'}`
   : "Browse industrial automation technologies and discover vendors specializing in your area of expertise.";
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Technologies", href: "/en/technologies" },
+];
+
 ---
 
 <BaseLayout 
   title="Technologies - Automation List"
   description={description}
   lang="en"
+  breadcrumbs={breadcrumbs}
 >
   <TechnologyGrid title="Technologies" technologies={technologies} lang="en" />
 </BaseLayout>

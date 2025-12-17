@@ -2,6 +2,7 @@
 import "../styles/globals.css";
 import { supabase } from "../lib/supabaseClient";
 import CookieBanner from "../components/CookieBanner.astro";
+import Breadcrumb from "../components/Breadcrumb.astro";
 
 interface Props {
   title?: string;
@@ -13,6 +14,7 @@ interface Props {
   ogType?: string;
   lang?: string;
   navItems?: Array<{ label: string; href: string }>;
+  breadcrumbs?: Array<{ label: string; href: string }>;
   canonical?: string;
   meta?: {
     canonical?: string;
@@ -29,6 +31,7 @@ const {
   ogType = "website",
   lang = "en",
   navItems: navItemsProp,
+  breadcrumbs,
   canonical,
   meta,
 } = Astro.props;
@@ -42,12 +45,45 @@ const description = descriptionProp === null
   : (descriptionProp && descriptionProp.trim()) || "Discover the best automation tools and workflows for your productivity needs.";
 const ogDescription = (ogDescriptionProp && ogDescriptionProp.trim()) || description;
 
-// Determine canonical URL: use meta.canonical if provided, otherwise use canonical prop, otherwise generate from Astro.url.href
-const canonicalUrl = meta?.canonical || canonical || Astro.url.href;
+// Normalize origin to always use https and www for consistency
+// This ensures canonical, hreflang, and OG URLs all use the same domain format
+const normalizeOrigin = (urlOrigin: string): string => {
+  // Ensure https protocol
+  let normalized = urlOrigin.replace(/^http:/, 'https:');
+  // Ensure www subdomain (unless already has www)
+  // Note: For production domains, always use www. For localhost, preserve whatever format is used
+  if (!normalized.includes('www.')) {
+    // For localhost, check if the original had www, otherwise keep as is
+    // For production domains (automation-list.com), always add www
+    if (!normalized.includes('localhost')) {
+      normalized = normalized.replace(/^(https?:\/\/)(.+)$/, '$1www.$2');
+    }
+  }
+  return normalized;
+};
+
+// Determine canonical URL: use meta.canonical if provided, otherwise use canonical prop, otherwise generate from normalized origin
+const canonicalUrl = meta?.canonical || canonical || (normalizeOrigin(Astro.url.origin) + Astro.url.pathname + Astro.url.search);
+
+// Extract origin from canonical URL if provided, otherwise normalize Astro.url.origin
+// This ensures hreflang URLs match the canonical URL's domain format
+let origin: string;
+if (canonicalUrl && (meta?.canonical || canonical)) {
+  // Extract origin from the canonical URL and normalize it
+  try {
+    const canonicalUrlObj = new URL(canonicalUrl);
+    origin = normalizeOrigin(canonicalUrlObj.origin);
+  } catch {
+    // Fallback to normalized origin if URL parsing fails
+    origin = normalizeOrigin(Astro.url.origin);
+  }
+} else {
+  // Use normalized origin
+  origin = normalizeOrigin(Astro.url.origin);
+}
 
 // Generate hreflang URLs
 const currentPath = Astro.url.pathname;
-const origin = Astro.url.origin;
 
 // Generate English and German alternate URLs
 let enUrl: string;
@@ -96,14 +132,82 @@ const popularCountries = (countryVendorCounts || [])
   .filter((item: any) => item.country && typeof item.country === "string" && item.country.trim().length > 0)
   .map((item: any) => item.country.trim());
 
-// Helper function to convert country name to URL slug (matching country page format)
-function countryToSlug(country: string): string {
-  return encodeURIComponent(country.toLowerCase().trim());
+// Country name translations (English -> German)
+const countryTranslations: Record<string, string> = {
+  'switzerland': 'Schweiz',
+  'germany': 'Deutschland',
+  'austria': 'Österreich',
+  'france': 'Frankreich',
+  'italy': 'Italien',
+  'united states': 'Vereinigte Staaten',
+  'united kingdom': 'Vereinigtes Königreich',
+  'netherlands': 'Niederlande',
+  'belgium': 'Belgien',
+  'spain': 'Spanien',
+  'portugal': 'Portugal',
+  'poland': 'Polen',
+  'czech republic': 'Tschechien',
+  'czechia': 'Tschechien',
+  'denmark': 'Dänemark',
+  'sweden': 'Schweden',
+  'norway': 'Norwegen',
+  'finland': 'Finnland',
+  'hungary': 'Ungarn',
+  'romania': 'Rumänien',
+  'slovakia': 'Slowakei',
+  'slovenia': 'Slowenien',
+  'croatia': 'Kroatien',
+  'serbia': 'Serbien',
+  'greece': 'Griechenland',
+  'turkey': 'Türkei',
+  'japan': 'Japan',
+  'china': 'China',
+  'south korea': 'Südkorea',
+  'india': 'Indien',
+  'brazil': 'Brasilien',
+  'mexico': 'Mexiko',
+  'canada': 'Kanada',
+  'australia': 'Australien',
+  'south africa': 'Südafrika',
+  'russia': 'Russland',
+  'ukraine': 'Ukraine',
+  'israel': 'Israel',
+  'singapore': 'Singapur',
+  'taiwan': 'Taiwan',
+  'thailand': 'Thailand',
+  'indonesia': 'Indonesien',
+  'malaysia': 'Malaysia',
+  'philippines': 'Philippinen',
+  'vietnam': 'Vietnam',
+  'new zealand': 'Neuseeland',
+  'argentina': 'Argentinien',
+  'chile': 'Chile',
+  'colombia': 'Kolumbien',
+  'peru': 'Peru',
+  'venezuela': 'Venezuela',
+};
+
+// Helper function to translate country name based on language
+function translateCountryName(country: string, targetLang: string): string {
+  if (targetLang === 'de') {
+    const countryLower = country.toLowerCase().trim();
+    return countryTranslations[countryLower] || country;
+  }
+  return country;
 }
 
-// Language switching logic
-const isGerman = currentPath.startsWith("/de/");
-const isEnglish = currentPath.startsWith("/en/");
+// Helper function to convert country name to URL slug (matching country page format)
+// Uses hyphens to match the format expected by country pages (which convert hyphens back to spaces)
+function countryToSlug(country: string): string {
+  return country
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-'); // Replace spaces with hyphens
+}
+
+// Language switching logic - use both path detection and lang prop for reliability
+const isGerman = lang === "de" || currentPath.startsWith("/de/");
+const isEnglish = lang === "en" || currentPath.startsWith("/en/");
 
 // Generate navItems based on language if not provided
 const navItems = navItemsProp || (isGerman ? [
@@ -289,6 +393,11 @@ if (isGerman) {
       </nav>
     </header>
 
+    <!-- BREADCRUMBS -->
+    {breadcrumbs && breadcrumbs.length > 0 && (
+      <Breadcrumb items={breadcrumbs} lang={lang} />
+    )}
+
     <!-- MAIN CONTENT -->
     <main>
       <slot />
@@ -351,12 +460,13 @@ if (isGerman) {
               {popularCountries.length > 0 ? (
                 popularCountries.map((country) => {
                   const countrySlug = countryToSlug(country);
+                  const displayCountry = translateCountryName(country, lang);
                   return (
                     <a
                       href={isGerman ? `/de/country/${countrySlug}` : `/en/country/${countrySlug}`}
                       class="text-sm text-[#6B7280] hover:underline"
                     >
-                      {country}
+                      {displayCountry}
                     </a>
                   );
                 })

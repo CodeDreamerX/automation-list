@@ -190,6 +190,13 @@ const origin = Astro.url.origin;
 const defaultOgImage = `${origin}/og/default.png`;
 const fullUrl = `https://automation-list.com/en/technology/${techSlug}`;
 
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Technologies", href: "/en/technologies" },
+  { label: techName, href: `/en/technology/${techSlug}` },
+];
+
 ---
 
 <BaseLayout 
@@ -197,6 +204,7 @@ const fullUrl = `https://automation-list.com/en/technology/${techSlug}`;
   description={metaDescription}
   canonical={fullUrl}
   ogImage={defaultOgImage}
+  breadcrumbs={breadcrumbs}
   lang="en"
 >
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
