@@ -98,6 +98,7 @@ if (Astro.request.method === 'POST') {
       }
 
       // Prepare vendor data with explicit field mapping and type conversions
+      // Note: 'technologies' field is NOT a database column - use 'technology_slugs' instead
       const vendorData = {
         name: row.name,
         slug: row.slug,
@@ -110,7 +111,6 @@ if (Astro.request.method === 'POST') {
         phone: row.phone || null,
         description_en: row.description_en || row.description || null,
         description_de: row.description_de || null,
-        technologies: row.technologies || null,
         languages: row.languages || null,
         certifications: row.certifications || null,
         tags: row.tags || null,

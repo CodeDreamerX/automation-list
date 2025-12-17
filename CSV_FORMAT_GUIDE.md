@@ -39,7 +39,7 @@ Here are all the fields you can include in your CSV:
 | `description` | Text | No | Company description (English) - maps to description_en | "Leading automation solutions..." |
 | `description_en` | Text | No | Company description in English | "Leading automation solutions..." |
 | `description_de` | Text | No | Company description in German | "Führender Anbieter von Automatisierungslösungen..." |
-| `technologies` | Text | No | Technologies used (comma-separated) | "Python, JavaScript, PLC" |
+| `technologies` | Text | No | ⚠️ **DEPRECATED** - Not stored in database. Use `technology_slugs` instead. | "Python, JavaScript, PLC" |
 | `languages` | Text | No | Languages supported (comma-separated) | "English, German, French" |
 | `certifications` | Text | No | Certifications (comma-separated) | "ISO 9001, CE Mark" |
 | `tags` | Text | No | Tags (comma-separated) | "automation, robotics, iot" |
@@ -51,17 +51,19 @@ Here are all the fields you can include in your CSV:
 | `featured` | Boolean | No | Featured vendor (true/false/1/yes) | "true" or "false" |
 | `priority` | Number | No | Priority (1-5, default: 5) | "1", "2", "3", "4", "5" |
 | `og_member` | Boolean | No | OG member status (true/false/1/yes) | "true" or "false" |
-| `technology_slugs` | Text | No | Semicolon-separated technology slugs | "python;javascript;plc" |
+| `technology_slugs` | Text | No | ✅ **Use this instead of `technologies`** - Semicolon-separated technology slugs that link to existing technologies | "python;javascript;plc" |
 
 ## Important Formatting Rules
 
 ### 1. Separators
 - **Category slugs**: Use semicolons (`;`) to separate multiple categories
   - Example: `plcs;scada-hmi;robotics`
-- **Technology slugs**: Use semicolons (`;`) to separate multiple technologies
+- **Technology slugs**: Use semicolons (`;`) to separate multiple technology slugs
   - Example: `python;javascript;plc`
-- **Other comma-separated fields**: Use commas (`,`) for technologies, languages, certifications, tags, industries
-  - Example: `Python, JavaScript, PLC`
+  - ⚠️ **Important**: Use `technology_slugs` (not `technologies`) to link technologies
+- **Other comma-separated fields**: Use commas (`,`) for languages, certifications, tags, industries
+  - Example: `English, German, French`
+  - ⚠️ **Note**: The `technologies` field is deprecated and not stored in the database
 
 ### 2. Boolean Values
 For `featured` and `og_member` fields, you can use:
@@ -232,10 +234,12 @@ This section provides precise instructions for AI agents generating CSV files fo
 
 ### Header Row Format
 ```csv
-name,slug,country,category_slugs,region,city,address,website,email,phone,description,description_en,description_de,technologies,languages,certifications,tags,industries,year_founded,employee_count,hourly_rate,plan,featured,priority,og_member,technology_slugs
+name,slug,country,category_slugs,region,city,address,website,email,phone,description,description_en,description_de,languages,certifications,tags,industries,year_founded,employee_count,hourly_rate,plan,featured,priority,og_member,technology_slugs
 ```
 
-**Important**: Column names are case-insensitive, but use lowercase for consistency.
+**Important**: 
+- Column names are case-insensitive, but use lowercase for consistency.
+- ⚠️ **Do NOT include `technologies` column** - it is deprecated and will cause import errors. Use `technology_slugs` instead.
 
 ## Required Fields (MUST be in every row)
 
@@ -279,13 +283,14 @@ Result: "acme-corporation-inc"
 - `technology_slugs`: `python;javascript;plc`
 
 **Comma-separated fields** (use `,`):
-- `technologies`: `Python, JavaScript, PLC`
 - `languages`: `English, German, French`
 - `certifications`: `ISO 9001, CE Mark`
 - `tags`: `automation, robotics, iot`
 - `industries`: `Manufacturing, Automotive`
 
-**Important**: Do NOT mix separators. Use semicolons ONLY for `category_slugs` and `technology_slugs`.
+**Important**: 
+- Do NOT mix separators. Use semicolons ONLY for `category_slugs` and `technology_slugs`.
+- ⚠️ **Do NOT use `technologies` field** - it is deprecated and not stored in the database. Use `technology_slugs` instead to link technologies.
 
 ### Boolean Fields
 Fields: `featured`, `og_member`
@@ -401,6 +406,9 @@ Before outputting CSV, verify:
 
 ❌ **Wrong**: `category_slugs: "plcs,scada-hmi"` (using comma instead of semicolon)
 ✅ **Correct**: `category_slugs: "plcs;scada-hmi"`
+
+❌ **Wrong**: `technologies: "Python, JavaScript, PLC"` (field not stored in database)
+✅ **Correct**: `technology_slugs: "python;javascript;plc"` (use slugs to link technologies)
 
 ❌ **Wrong**: `slug: "Acme Corporation"` (uppercase and spaces)
 ✅ **Correct**: `slug: "acme-corporation"`
