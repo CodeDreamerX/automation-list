@@ -4,9 +4,7 @@ export const prerender = false;
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import { supabase } from '../../../../lib/supabaseClient';
 import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
-import { normalizeRow, validateRow } from '../../../../lib/admin/csvUtils';
-import { readFile, unlink } from 'fs/promises';
-import { join } from 'path';
+import { normalizeRow, validateRow, csvStore } from '../../../../lib/admin/csvUtils';
 import Papa from 'papaparse';
 
 // Check authentication and redirect if not logged in
@@ -24,14 +22,9 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/admin/vendors/csv/upload?error=no_session');
   }
 
-  // Read the uploaded CSV file
-  let fileContent: string;
-  const tempFilePath = join(process.cwd(), '.temp', 'csv-uploads', `${sessionId}.csv`);
-  
-  try {
-    fileContent = await readFile(tempFilePath, 'utf-8');
-  } catch (error) {
-    console.error('Error reading uploaded file:', error);
+  // Read the uploaded CSV file from memory
+  const fileContent = csvStore.get(sessionId);
+  if (!fileContent) {
     return Astro.redirect('/admin/vendors/csv/upload?error=file_not_found');
   }
 
@@ -219,12 +212,8 @@ if (Astro.request.method === 'POST') {
     }
   }
 
-  // Clean up temporary file
-  try {
-    await unlink(tempFilePath);
-  } catch (error) {
-    console.error('Error deleting temp file:', error);
-  }
+  // Clean up in-memory CSV data
+  csvStore.delete(sessionId);
 
   // Clear session cookies
   Astro.cookies.delete('csv_upload_session', { path: '/' });

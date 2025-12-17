@@ -1,5 +1,8 @@
 // CSV schema and validation utilities
 
+// In-memory CSV storage for upload sessions (keyed by sessionId)
+export const csvStore = new Map<string, string>();
+
 export const allowedFields = [
   "name",
   "slug",

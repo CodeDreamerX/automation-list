@@ -5,9 +5,7 @@ import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
 import PreviewTable from '../../../../components/admin/PreviewTable.astro';
 import Statistics from '../../../../components/admin/Statistics.astro';
-import { normalizeRow, validateRow, type ValidationResult } from '../../../../lib/admin/csvUtils';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { normalizeRow, validateRow, type ValidationResult, csvStore } from '../../../../lib/admin/csvUtils';
 import Papa from 'papaparse';
 
 // Check authentication and redirect if not logged in
@@ -24,13 +22,9 @@ if (!sessionId) {
   return Astro.redirect('/admin/vendors/csv/upload?error=no_session');
 }
 
-// Read the uploaded CSV file
-let fileContent: string;
-try {
-  const tempFilePath = join(process.cwd(), '.temp', 'csv-uploads', `${sessionId}.csv`);
-  fileContent = await readFile(tempFilePath, 'utf-8');
-} catch (error) {
-  console.error('Error reading uploaded file:', error);
+// Read the uploaded CSV file from memory
+const fileContent = csvStore.get(sessionId);
+if (!fileContent) {
   return Astro.redirect('/admin/vendors/csv/upload?error=file_not_found');
 }
 

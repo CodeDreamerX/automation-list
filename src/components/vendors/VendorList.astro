@@ -8,9 +8,10 @@ import { normalizeTech } from '../../lib/normalizeTech';
 interface Props {
   lang: "en" | "de";
   pageTitle: string;
+  description?: string;
 }
 
-const { lang, pageTitle } = Astro.props;
+const { lang, pageTitle, description } = Astro.props;
 
 // Parse URL parameters (decode URL-encoded values safely)
 function safeDecode(param: string | null): string {
@@ -335,6 +336,9 @@ const categoryList = (dbCategories || []).map(cat => ({
 
 <div class="container-px mx-auto max-w-7xl px-4 py-10">
   <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
+  {description && (
+    <p class="text-lg md:text-xl text-gray-600 mb-8 max-w-3xl">{description}</p>
+  )}
 
   <!-- Category Filter Badges -->
   {categoryList.length > 0 && (

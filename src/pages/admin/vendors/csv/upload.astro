@@ -3,8 +3,7 @@ export const prerender = false;
 
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { csvStore } from '../../../../lib/admin/csvUtils';
 import { randomUUID } from 'crypto';
 
 // Check authentication and redirect if not logged in
@@ -37,43 +36,34 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/admin/vendors/csv/upload?error=empty_file');
   }
 
-  // Read file content
+  // Read file content into memory
   const fileContent = await file.text();
 
   // Generate a unique session ID for this upload
   const sessionId = randomUUID();
 
-  // Store file in temporary directory
-  try {
-    const tempDir = join(process.cwd(), '.temp', 'csv-uploads');
-    await mkdir(tempDir, { recursive: true });
-    
-    const tempFilePath = join(tempDir, `${sessionId}.csv`);
-    await writeFile(tempFilePath, fileContent, 'utf-8');
+  // Store CSV content in memory
+  csvStore.set(sessionId, fileContent);
 
-    // Store session ID and filename in cookies for the preview page
-    Astro.cookies.set('csv_upload_session', sessionId, {
-      httpOnly: true,
-      secure: Astro.url.protocol === 'https:',
-      sameSite: 'strict',
-      maxAge: 60 * 10, // 10 minutes
-      path: '/',
-    });
+  // Store session ID and filename in cookies for the preview page
+  Astro.cookies.set('csv_upload_session', sessionId, {
+    httpOnly: true,
+    secure: Astro.url.protocol === 'https:',
+    sameSite: 'strict',
+    maxAge: 60 * 10, // 10 minutes
+    path: '/',
+  });
 
-    Astro.cookies.set('csv_upload_filename', file.name, {
-      httpOnly: true,
-      secure: Astro.url.protocol === 'https:',
-      sameSite: 'strict',
-      maxAge: 60 * 10, // 10 minutes
-      path: '/',
-    });
+  Astro.cookies.set('csv_upload_filename', file.name, {
+    httpOnly: true,
+    secure: Astro.url.protocol === 'https:',
+    sameSite: 'strict',
+    maxAge: 60 * 10, // 10 minutes
+    path: '/',
+  });
 
-    // Redirect to preview page
-    return Astro.redirect('/admin/vendors/csv/preview');
-  } catch (error) {
-    console.error('Error storing uploaded file:', error);
-    return Astro.redirect('/admin/vendors/csv/upload?error=storage_error');
-  }
+  // Redirect to preview page
+  return Astro.redirect('/admin/vendors/csv/preview');
 }
 
 // Check for error messages
