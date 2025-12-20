@@ -23,6 +23,14 @@ const { data: vendor, error } = await supabase
         name_en,
         name_de
       )
+    ),
+    vendor_technologies (
+      technologies:technologies (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
     )
   `)
   .eq('slug', slug)
@@ -37,9 +45,11 @@ if (!vendor) {
 }
 
 // Normalize category data shape
+// Extract technologies from vendor_technologies relationship
 const normalizedVendor = {
   ...vendor,
-  category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+  category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
+  vendor_technologies_list: vendor.vendor_technologies?.map((vt: any) => vt.technologies).filter(Boolean) || []
 };
 
 const deNavItems = [
@@ -76,12 +86,21 @@ function truncateDescription(text: string | null | undefined, maxLength: number 
   return text.substring(0, maxLength).trim() + '...';
 }
 
+// Helper function to get language-aware vendor description
+// For DE: use description_de, fallback to description_en, then description if missing
+function getVendorDescription(vendor: typeof normalizedVendor): string | null {
+  return vendor.description_de || vendor.description_en || vendor.description || null;
+}
+
 // Determine plan status
 const plan = normalizedVendor.plan || 'free';
 const isFeatured = normalizedVendor.featured === true || plan === 'featured';
 const isPro = plan === 'pro' || isFeatured;
 const isFree = plan === 'free' && !isFeatured;
 const isOgMember = normalizedVendor.og_member === true;
+
+// Get the appropriate description for this language
+const vendorDescription = getVendorDescription(normalizedVendor);
 
 // Build location string
 function getLocation(): string {
@@ -104,7 +123,7 @@ const organizationSchema = {
   name: normalizedVendor.name,
   ...(normalizedVendor.website && { url: normalizedVendor.website }),
   ...(normalizedVendor.logo_url && { logo: normalizedVendor.logo_url }),
-  ...(normalizedVendor.description && { description: normalizedVendor.description }),
+  ...(vendorDescription && { description: vendorDescription }),
   ...((normalizedVendor.city || normalizedVendor.country) && {
     address: {
       "@type": "PostalAddress",
@@ -148,9 +167,9 @@ const breadcrumbSchemaJson = JSON.stringify(breadcrumbSchema);
 // Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
 const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
 
-// Determine description: use meta_description if available, otherwise fallback to truncated vendor.description
+// Determine description: use meta_description if available, otherwise fallback to truncated vendor description
 const pageDescription = normalizedVendor.meta_description || 
-  (normalizedVendor.description ? truncateDescription(normalizedVendor.description, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
+  (vendorDescription ? truncateDescription(vendorDescription, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
 
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
 const origin = Astro.url.origin;
@@ -220,11 +239,15 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
           .filter((vc: any) => vc.is_primary === true)
           .map((vc: any) => {
             const categoryName = vc.categories?.name_de || vc.categories?.name_en;
-            return categoryName ? (
+            const categorySlug = vc.categories?.slug;
+            return categoryName && categorySlug ? (
               <p class="text-sm text-gray-600 mb-2">
-                <span class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+                <a 
+                  href={`/de/category/${categorySlug}`}
+                  class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded hover:bg-brand-100 hover:text-brand-800 transition-colors"
+                >
                   {categoryName}
-                </span>
+                </a>
               </p>
             ) : null;
           })
@@ -248,11 +271,11 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
 
     <!-- SECTION 2 — DESCRIPTION -->
     <div class="mb-8">
-      {normalizedVendor.description && (
+      {vendorDescription && (
         <>
           <h2 class="text-xl font-semibold text-gray-900 mb-3">Über</h2>
           <p class="text-gray-700 text-sm leading-relaxed">
-            {isFree ? truncateDescription(normalizedVendor.description, 300) : normalizedVendor.description}
+            {isPro ? vendorDescription : truncateDescription(vendorDescription, 300)}
           </p>
           {isFree && (
             <p class="text-sm text-gray-500 italic mt-3 p-3 bg-gray-50 rounded border border-gray-200">
@@ -265,27 +288,24 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
 
     <!-- SECTION 3 — GRID BLOCKS (conditionally rendered) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <!-- Technologies -->
-      {normalizedVendor.technologies && (
+      <!-- Technologies - Pro only -->
+      {isPro && normalizedVendor.vendor_technologies_list && normalizedVendor.vendor_technologies_list.length > 0 && (
         <div class="border border-gray-200 rounded-lg p-4">
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Technologien</h3>
-          {isFree ? (
-            <div class="flex flex-wrap gap-2">
-              {splitValue(normalizedVendor.technologies).slice(0, 2).map((tech) => (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {tech}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div class="flex flex-wrap gap-2">
-              {splitValue(normalizedVendor.technologies).map((tech) => (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {tech}
-                </span>
-              ))}
-            </div>
-          )}
+          <div class="flex flex-wrap gap-2">
+            {normalizedVendor.vendor_technologies_list.map((tech: any) => {
+              const techName = tech.name_de || tech.name_en;
+              const techSlug = tech.slug;
+              return techName && techSlug ? (
+                <a 
+                  href={`/de/technology/${techSlug}`}
+                  class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                >
+                  {techName}
+                </a>
+              ) : null;
+            })}
+          </div>
         </div>
       )}
 
@@ -345,17 +365,21 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
         </div>
       )}
 
-      <!-- Categories - Pro only -->
-      {isPro && normalizedVendor.vendor_categories && normalizedVendor.vendor_categories.length > 0 && (
+      <!-- Categories -->
+      {normalizedVendor.vendor_categories && normalizedVendor.vendor_categories.length > 0 && (
         <div class="border border-gray-200 rounded-lg p-4">
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Kategorien</h3>
           <div class="flex flex-wrap gap-2">
             {normalizedVendor.vendor_categories.map((vc) => {
               const categoryName = vc.categories?.name_de || vc.categories?.name_en;
-              return categoryName ? (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+              const categorySlug = vc.categories?.slug;
+              return categoryName && categorySlug ? (
+                <a 
+                  href={`/de/category/${categorySlug}`}
+                  class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                >
                   {categoryName}
-                </span>
+                </a>
               ) : null;
             })}
           </div>

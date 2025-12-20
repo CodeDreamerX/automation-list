@@ -59,13 +59,13 @@ const {
 const lang: "en" | "de" = vendorHrefPrefix.startsWith("/de/") ? "de" : "en";
 
 // Helper function to get language-aware vendor description
-// For EN: use description_en only
-// For DE: use description_de, fallback to description_en if German is missing
+// For EN: use description_en, fallback to description if missing
+// For DE: use description_de, fallback to description_en, then description if missing
 function getVendorDescription(vendor: Vendor): string | null {
   if (lang === "de") {
-    return vendor.description_de || vendor.description_en || null;
+    return vendor.description_de || vendor.description_en || vendor.description || null;
   }
-  return vendor.description_en || null;
+  return vendor.description_en || vendor.description || null;
 }
 ---
 

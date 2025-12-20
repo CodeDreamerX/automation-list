@@ -20,6 +20,7 @@ const { data: vendors } = await supabase
   .select(`
     *,
     vendor_categories (
+      is_primary,
       categories:categories (
         id,
         slug,
