@@ -100,3 +100,7 @@ export function resolveMetaDescription(vendor: Vendor, lang: 'en' | 'de'): strin
 }
 
 
+
+
+
+

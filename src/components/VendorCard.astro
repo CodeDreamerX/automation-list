@@ -173,22 +173,6 @@ const categorySlugs = vendor.category_slugs ||
       {vendor.name}
     </h3>
 
-    <!-- Category Chips -->
-    {categorySlugs.length > 0 && (
-      <div class="flex flex-wrap gap-1 mt-2">
-        {categorySlugs.slice(0, 3).map(slug => (
-          <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-            {slug.replace(/-/g, " ")}
-          </span>
-        ))}
-        {categorySlugs.length > 3 && (
-          <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-            +{categorySlugs.length - 3}
-          </span>
-        )}
-      </div>
-    )}
-
     <!-- Short Description -->
     {(() => {
       const vendorDescription = getVendorDescription(vendor, lang);

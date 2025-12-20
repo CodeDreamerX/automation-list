@@ -18,14 +18,14 @@ const {
 
 <section class="fade-in-up bg-gray-50 mx-auto max-w-7xl pt-2 md:pt-3 pb-4 md:pb-6">
   <div class="flex items-center justify-center px-4 sm:px-6 lg:px-8">
-    <form action={action} method={method} class="flex gap-3 w-full max-w-3xl mx-auto">
+    <form action={action} method={method} class="flex flex-col sm:flex-row gap-3 w-full max-w-3xl mx-auto">
     <input 
       type="text" 
       name="q" 
       placeholder={placeholder}
-      class="flex-grow border border-gray-300 rounded-md px-5 py-3.5 text-base" 
+      class="flex-grow border border-gray-300 rounded-md px-4 sm:px-5 py-3.5 text-base min-w-0" 
     />
-    <button class="px-8 py-3.5 bg-black text-white rounded-md text-base font-medium hover:bg-gray-900">
+    <button class="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-black text-white rounded-md text-base font-medium hover:bg-gray-900 whitespace-nowrap">
       {buttonText}
     </button>
   </form>
