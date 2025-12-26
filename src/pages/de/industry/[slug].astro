@@ -1,0 +1,277 @@
+---
+// Server-Side Rendering (SSR) - This page is rendered on-demand
+// See STATIC_GENERATION_STRATEGY.md for details
+
+export const prerender = false;
+
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import VendorCard from "../../../components/VendorCard.astro";
+import Pagination from "../../../components/Pagination.astro";
+import { supabase } from "../../../lib/supabaseClient";
+import { getCached, setCached } from "../../../lib/cache";
+
+
+// Get industry slug from URL param
+const industrySlug = Astro.params.slug || '';
+
+// If no industry slug, redirect to vendors page
+if (!industrySlug) {
+  return Astro.redirect('/de/vendors');
+}
+
+// Fetch industry from database
+const { data: industry, error: industryError } = await supabase
+  .from('industries')
+  .select('id, slug, name_en, name_de, description_en, description_de')
+  .eq('slug', industrySlug)
+  .eq('is_active', true)
+  .maybeSingle();
+
+if (industryError) {
+  console.error('Error fetching industry:', industryError);
+}
+
+// If industry not found or inactive, return 404
+if (!industry) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not Found'
+  });
+}
+
+// Use industry data with bilingual support (German first, fallback to English)
+const industryName = industry.name_de || industry.name_en || industrySlug;
+const industryDescription = industry.description_de || industry.description_en || '';
+
+// Get pagination params
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
+const pageSize = 20;
+
+// Build cache key
+const cacheKey = `vendors:industry:de:${industrySlug}:${page}`;
+
+// Try to get cached result
+interface CachedIndustryResult {
+  vendors: any[];
+  totalVendors: number | null;
+}
+
+let cachedResult = getCached<CachedIndustryResult>(cacheKey);
+let vendors: any[] = [];
+let totalVendors: number | null = null;
+
+if (cachedResult) {
+  vendors = cachedResult.vendors || [];
+  totalVendors = cachedResult.totalVendors;
+} else {
+  // Get vendor IDs that have this industry via vendor_industries
+  let industryVendorIds: string[] = [];
+  
+  // Industry found in database - get vendors linked to this industry
+  const { data: industryLinks } = await supabase
+    .from('vendor_industries')
+    .select('vendor_id')
+    .eq('industry_id', industry.id);
+  
+  if (industryLinks) {
+    industryVendorIds = industryLinks.map(link => link.vendor_id);
+  }
+  
+  // Build query function
+  function buildIndustryQuery() {
+    let query = supabase
+      .from('vendors')
+      .select(`
+        *,
+        vendor_categories (
+          is_primary,
+          categories:categories (
+            id,
+            slug,
+            name_en,
+            name_de
+          )
+        )
+      `, { count: 'exact' })
+      .neq('plan', 'deactivated');
+    
+    if (industryVendorIds.length === 0) {
+      // No vendors match this industry, return empty result
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    } else {
+      query = query.in('id', industryVendorIds);
+    }
+    
+    // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
+    return query
+      .order('priority', { ascending: false, nullsFirst: false })
+      .order('name', { ascending: true });
+  }
+
+  // Get total count - use the same vendor IDs from industry filter
+  let countQuery = supabase
+    .from('vendors')
+    .select('*', { count: 'exact', head: true })
+    .neq('plan', 'deactivated');
+  
+  if (industryVendorIds.length === 0) {
+    countQuery = countQuery.eq('id', '00000000-0000-0000-0000-000000000000');
+  } else {
+    countQuery = countQuery.in('id', industryVendorIds);
+  }
+  
+  const { count } = await countQuery;
+  totalVendors = count;
+
+  // Build paginated query
+  const start = (page - 1) * pageSize;
+  const end = page * pageSize - 1;
+  const paginatedQuery = buildIndustryQuery().range(start, end);
+
+  // Execute paginated query
+  const { data, error } = await paginatedQuery;
+
+  if (error) {
+    console.error('Error fetching vendors:', error);
+    vendors = [];
+  } else {
+    vendors = data || [];
+  }
+
+  // Cache the result
+  if (totalVendors !== null) {
+    setCached(cacheKey, { vendors, totalVendors }, 300);
+  }
+}
+
+// Normalize category data shape
+const normalizedVendors = (vendors || []).map(v => ({
+  ...v,
+  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
+}));
+
+const totalPages = Math.ceil((totalVendors || 0) / pageSize);
+
+// SEO metadata
+const metaTitle = `Top ${industryName} Automatisierungsunternehmen | Automation List`;
+const metaDescription = (industryDescription && industryDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
+const origin = Astro.url.origin;
+const defaultOgImage = `${origin}/og/default.png`;
+const fullUrl = `https://automation-list.com/de/industry/${industrySlug}`;
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Branchen", href: "/de/industries" },
+  { label: industryName, href: `/de/industry/${industrySlug}` },
+];
+
+// Build JSON-LD BreadcrumbList schema
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Startseite",
+      item: `${origin}/de/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Branchen",
+      item: `${origin}/de/industries`,
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: industryName,
+      item: `${origin}/de/industry/${industrySlug}`,
+    },
+  ],
+};
+
+---
+
+<BaseLayout 
+  title={metaTitle}
+  description={metaDescription}
+  canonical={fullUrl}
+  ogImage={defaultOgImage}
+  breadcrumbs={breadcrumbs}
+  lang="de"
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": `Automatisierungsunternehmen für ${industryName}`,
+    "itemListElement": normalizedVendors.map((v, index) => ({
+      "@type": "Organization",
+      "position": index + 1,
+      "name": v.name,
+      "url": `https://automation-list.com/de/vendor/${v.slug}`,
+      "logo": v.logo_url,
+      "image": v.logo_url,
+      "address": v.country
+    }))
+  }, null, 2)} />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema, null, 2)} />
+  <div class="container-px mx-auto max-w-7xl px-4 py-10">
+    <!-- Industry Header -->
+    <div class="mb-8">
+      <div class="mb-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            {industryName}
+          </h1>
+          {industryDescription && (
+            <p class="text-gray-600 text-base">
+              {industryDescription}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Count -->
+    <div class="mb-4">
+      <p class="text-sm text-gray-600">
+        {totalVendors || 0} {totalVendors === 1 ? 'Anbieter' : 'Anbieter'} gefunden
+        {totalPages > 1 && (
+          <span class="text-xs text-gray-500 ml-2">
+            (Seite {page} von {totalPages})
+          </span>
+        )}
+      </p>
+    </div>
+
+    <!-- Vendor Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {normalizedVendors.length > 0 ? (
+        normalizedVendors.map(vendor => (
+          <VendorCard
+            vendor={vendor}
+            hrefPrefix="/de/vendor"
+            lang="de"
+          />
+        ))
+      ) : (
+        <div class="col-span-full text-center py-12">
+          <p class="text-gray-600">
+            Noch keine Anbieter für diese Branche vorhanden.
+          </p>
+        </div>
+      )}
+    </div>
+
+    <!-- Pagination -->
+    <Pagination
+      currentPage={page}
+      totalPages={totalPages}
+      baseUrl={Astro.url}
+      lang="de"
+    />
+  </div>
+</BaseLayout>
+

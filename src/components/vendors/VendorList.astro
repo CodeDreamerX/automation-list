@@ -4,6 +4,7 @@ import { getCached, setCached } from '../../lib/cache';
 import VendorCard from '../VendorCard.astro';
 import Pagination from '../Pagination.astro';
 import { normalizeTech } from '../../lib/normalizeTech';
+import { getIndustries } from '../../lib/getIndustries';
 
 interface Props {
   lang: "en" | "de";
@@ -27,6 +28,7 @@ const searchQuery = safeDecode(Astro.url.searchParams.get('q'));
 const countryFilter = safeDecode(Astro.url.searchParams.get('country'));
 const activeCategory = safeDecode(Astro.url.searchParams.get('category'));
 const technologyFilter = safeDecode(Astro.url.searchParams.get('technology'));
+const industriesFilter = safeDecode(Astro.url.searchParams.get('industries'));
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
 const pageSize = 24;
 
@@ -113,6 +115,19 @@ if (!uniqueTechnologyList) {
   if (uniqueTechnologyList) {
     setCached(technologiesCacheKey, uniqueTechnologyList, 300);
   }
+}
+
+// Fetch active industries for dropdown (cached)
+const industriesCacheKey = `industries:active:${lang}`;
+let industryList = getCached<any[]>(industriesCacheKey);
+if (!industryList) {
+  industryList = await getIndustries({ lang, activeOnly: true });
+  if (industryList) {
+    setCached(industriesCacheKey, industryList, 300);
+  }
+}
+if (!industryList) {
+  industryList = [];
 }
 
 // Helper function to convert country name to URL-friendly slug
@@ -218,6 +233,52 @@ if (normalizedTechnologyFilter) {
   }
 }
 
+// Parse industries filter (support comma-separated slugs)
+let industrySlugs: string[] = [];
+if (industriesFilter) {
+  industrySlugs = industriesFilter.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// If industry filter is active, get vendor IDs that have these industries (cached)
+let industryVendorIds: string[] | null = null;
+if (industrySlugs.length > 0) {
+  const industryLinksCacheKey = `vendor_industries:filter:${industrySlugs.sort().join(',')}`;
+  industryVendorIds = getCached<string[]>(industryLinksCacheKey);
+  
+  if (industryVendorIds === null) {
+    // Get industry IDs from slugs
+    const industryIds: string[] = [];
+    for (const slug of industrySlugs) {
+      const industry = industryList.find(ind => ind.slug === slug);
+      if (industry?.id) {
+        industryIds.push(industry.id);
+      }
+    }
+    
+    if (industryIds.length > 0) {
+      const { data: vendorIndustryLinks, error: linkError } = await supabase
+        .from('vendor_industries')
+        .select('vendor_id')
+        .in('industry_id', industryIds);
+      
+      if (linkError) {
+        console.error('Error fetching vendor-industry links:', linkError);
+        industryVendorIds = [];
+      } else {
+        // Get unique vendor IDs
+        industryVendorIds = Array.from(new Set((vendorIndustryLinks || []).map(link => link.vendor_id)));
+        if (industryVendorIds.length === 0) {
+          industryVendorIds = [];
+        }
+      }
+    } else {
+      industryVendorIds = [];
+    }
+    
+    setCached(industryLinksCacheKey, industryVendorIds, 300);
+  }
+}
+
 // Helper function to build base query with filters
 function buildBaseQuery() {
   let query = supabase
@@ -266,6 +327,16 @@ function buildBaseQuery() {
     }
   }
 
+  // Apply industry filter if present (filter via vendor_industries join)
+  if (industryVendorIds !== null) {
+    if (industryVendorIds.length === 0) {
+      // No vendors match these industries, return empty result
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    } else {
+      query = query.in('id', industryVendorIds);
+    }
+  }
+
   // Sort by priority (high priority first, nulls last), then by name ascending
   query = query.order('priority', { ascending: false, nullsLast: true })
     .order('name', { ascending: true });
@@ -274,7 +345,7 @@ function buildBaseQuery() {
 }
 
 // Build cache key for vendor listing query
-const cacheKey = `vendors:list:${lang}:${searchQuery || ''}:${activeCategory || ''}:${countryFilter || ''}:${technologyFilter || ''}:${page}`;
+const cacheKey = `vendors:list:${lang}:${searchQuery || ''}:${activeCategory || ''}:${countryFilter || ''}:${technologyFilter || ''}:${industriesFilter || ''}:${page}`;
 
 // Try to get cached result
 interface CachedVendorResult {
@@ -353,10 +424,11 @@ const categoryList = (dbCategories || []).map(cat => ({
           // Set new category
           url.searchParams.set('category', cat.slug);
         }
-        // Preserve other filters (search, country, technology)
+        // Preserve other filters (search, country, technology, industries)
         if (searchQuery) url.searchParams.set('q', searchQuery);
         if (countryFilter) url.searchParams.set('country', countryFilter);
         if (technologyFilter) url.searchParams.set('technology', technologyFilter);
+        if (industriesFilter) url.searchParams.set('industries', industriesFilter);
         // Reset to page 1 when filter changes
         url.searchParams.set('page', '1');
         return (
@@ -378,7 +450,7 @@ const categoryList = (dbCategories || []).map(cat => ({
     <form method="GET" action={Astro.url.pathname}>
       <!-- Reset to page 1 when filters change -->
       <input type="hidden" name="page" value="1" />
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Search Bar -->
         <div>
           <input
@@ -440,6 +512,25 @@ const categoryList = (dbCategories || []).map(cat => ({
             })}
           </select>
         </div>
+
+        <!-- Industry Filter -->
+        <div>
+          <select
+            name="industries"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
+          >
+            <option value="">{lang === "de" ? "Alle Branchen" : "All Industries"}</option>
+            {industryList.map(industry => {
+              // For single select, use first slug if multiple are selected
+              const selectedSlug = industrySlugs.length > 0 ? industrySlugs[0] : '';
+              return (
+                <option value={industry.slug} selected={selectedSlug === industry.slug}>
+                  {industry.name}
+                </option>
+              );
+            })}
+          </select>
+        </div>
       </div>
 
       <!-- Filter Buttons -->
@@ -450,7 +541,7 @@ const categoryList = (dbCategories || []).map(cat => ({
         >
           {lang === "de" ? "Filtern" : "Filter"}
         </button>
-        {(searchQuery || countryFilter || activeCategory || technologyFilter) && (
+        {(searchQuery || countryFilter || activeCategory || technologyFilter || industriesFilter) && (
           <a
             href={Astro.url.pathname}
             class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium"
@@ -466,7 +557,7 @@ const categoryList = (dbCategories || []).map(cat => ({
   <div class="mb-4">
     <p class="text-sm text-gray-600">
       {totalVendors || 0} {lang === "de" ? "Anbieter gefunden" : "vendors found"}
-      {(searchQuery || countryFilter || activeCategory || technologyFilter) && (
+      {(searchQuery || countryFilter || activeCategory || technologyFilter || industriesFilter) && (
         <span class="text-xs text-gray-500 ml-2">
           ({lang === "de" ? "gefiltert" : "filtered"})
         </span>
@@ -477,7 +568,7 @@ const categoryList = (dbCategories || []).map(cat => ({
         </span>
       )}
     </p>
-    {(searchQuery || countryFilter || activeCategory || technologyFilter) && (
+    {(searchQuery || countryFilter || activeCategory || technologyFilter || industriesFilter) && (
       <div class="mt-2 flex flex-wrap gap-2">
         {searchQuery && (
           <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
@@ -497,6 +588,12 @@ const categoryList = (dbCategories || []).map(cat => ({
         {technologyFilter && normalizedTechnologyFilter && (
           <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800">
             {lang === "de" ? "Technologie" : "Technology"}: {normalizedTechnologyFilter}
+          </span>
+        )}
+        {industriesFilter && industrySlugs.length > 0 && (
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-indigo-100 text-indigo-800">
+            {lang === "de" ? "Branche" : "Industry"}: {industryList.find(ind => ind.slug === industrySlugs[0])?.name || industrySlugs[0]}
+            {industrySlugs.length > 1 && ` +${industrySlugs.length - 1}`}
           </span>
         )}
       </div>

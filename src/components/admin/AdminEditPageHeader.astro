@@ -1,0 +1,26 @@
+---
+interface Props {
+  title: string;
+  subtitle: string;
+  backUrl: string;
+  backLabel: string;
+}
+
+const { title, subtitle, backUrl, backLabel } = Astro.props;
+---
+
+<!-- HEADER -->
+<div class="flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">{title}</h1>
+    <p class="mt-1 text-sm text-gray-600">
+      {subtitle}
+    </p>
+  </div>
+  <a
+    href={backUrl}
+    class="text-sm text-gray-600 hover:text-gray-900"
+  >
+    ← {backLabel}
+  </a>
+</div>

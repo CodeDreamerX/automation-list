@@ -3,7 +3,7 @@ export const prerender = false;
 
 import { protectAdminRoute } from '../../../lib/admin/authUtils';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
-import TechnologyForm from '../../../components/admin/TechnologyForm.astro';
+import IndustryForm from '../../../components/admin/IndustryForm.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
@@ -18,48 +18,30 @@ if (redirectResponse) {
 
 ---
 
-<AdminLayout title="New Technology - Admin Panel" currentPath="/admin/technologies">
+<AdminLayout title="New Industry - Admin Panel" currentPath="/admin/industries">
   <div class="space-y-6">
     <!-- HEADER -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">New Technology</h1>
+        <h1 class="text-2xl font-bold text-gray-900">New Industry</h1>
         <p class="mt-1 text-sm text-gray-600">
-          Create a new technology for the Automation List directory
+          Create a new industry for the Automation List directory
         </p>
       </div>
       <a
-        href="/admin/technologies"
+        href="/admin/industries"
         class="text-sm text-gray-600 hover:text-gray-900"
       >
-        ← Back to Technologies
+        ← Back to Industries
       </a>
     </div>
 
-    <!-- TECHNOLOGY FORM -->
+    <!-- INDUSTRY FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <TechnologyForm technology={null} />
+      <IndustryForm industry={null} />
     </div>
   </div>
 </AdminLayout>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

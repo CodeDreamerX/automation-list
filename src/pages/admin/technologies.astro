@@ -1,9 +1,10 @@
 ---
 export const prerender = false;
 
-import { supabase } from '../../lib/supabaseClient';
+import { supabaseAdmin } from '../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
+import AdminListPageHeader from '../../components/admin/AdminListPageHeader.astro';
 import { getTechnologyIconUrl } from '../../lib/iconUtils';
 
 // Check authentication and redirect if not logged in
@@ -13,7 +14,7 @@ if (redirectResponse) {
 }
 
 // Fetch all technologies from Supabase
-const { data: technologies, error } = await supabase
+const { data: technologies, error } = await supabaseAdmin
   .from('technologies')
   .select('id, slug, name_en, name_de, icon_name, order_index, is_active')
   .order('order_index', { ascending: true });
@@ -26,26 +27,14 @@ if (error) {
 
 <AdminLayout title="Technology Management - Admin Panel" currentPath="/admin/technologies">
   <div class="space-y-6">
-    <!-- HEADER -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Technology Management</h1>
-        <p class="mt-1 text-sm text-gray-600">
-          Manage all technologies in the Automation List directory
-        </p>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="text-sm text-gray-600">
-          Total: {technologies?.length || 0} technologies
-        </div>
-        <a
-          href="/admin/technologies/new"
-          class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-900 transition-colors text-sm font-medium"
-        >
-          + New Technology
-        </a>
-      </div>
-    </div>
+    <AdminListPageHeader
+      title="Technology Management"
+      description="Manage all technologies in the Automation List directory"
+      count={technologies?.length || 0}
+      entityName="technologies"
+      newItemUrl="/admin/technologies/new"
+      newItemLabel="New Technology"
+    />
 
     <!-- TECHNOLOGIES TABLE -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

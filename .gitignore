@@ -80,3 +80,6 @@ coverage/
 *.pem
 *.key
 .cert/
+
+# Reports
+reports/

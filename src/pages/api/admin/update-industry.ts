@@ -12,88 +12,66 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.formData();
     
+    const id = body.get("id");
     const slug = body.get("slug");
     const name_en = body.get("name_en");
     const name_de = body.get("name_de");
     const description_en = body.get("description_en");
     const description_de = body.get("description_de");
-    const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
     const is_active = body.get("is_active") ? true : false;
 
-    if (!slug) {
+    if (!id) {
       return new Response(
-        JSON.stringify({ error: 'Technology slug is required' }),
+        JSON.stringify({ error: 'Industry ID is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!name_en) {
-      return new Response(
-        JSON.stringify({ error: 'Technology name (English) is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    // Prepare update data with proper type conversions
+    const updateData: any = {};
+
+    if (slug) updateData.slug = slug.toString().trim();
+    if (name_en) updateData.name_en = name_en.toString().trim();
+    if (name_de) updateData.name_de = name_de.toString().trim();
+    if (description_en !== null) updateData.description_en = description_en?.toString().trim() || null;
+    if (description_de !== null) updateData.description_de = description_de?.toString().trim() || null;
+    if (order_index !== null && order_index !== '') {
+      updateData.order_index = parseInt(order_index.toString());
+    } else {
+      updateData.order_index = null;
     }
+    updateData.is_active = is_active;
+    
+    // Set updated_at timestamp
+    updateData.updated_at = new Date().toISOString();
 
-    // Prepare insert data
-    const insertData: any = {
-      slug: slug.toString().trim(),
-      name_en: name_en.toString().trim(),
-      name_de: name_de?.toString().trim() || null,
-      description_en: description_en?.toString().trim() || null,
-      description_de: description_de?.toString().trim() || null,
-      icon_name: icon_name?.toString() || null,
-      order_index: order_index ? parseInt(order_index.toString()) : null,
-      is_active: is_active,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Create technology using admin client
-    const { data, error } = await supabaseAdmin
-      .from('technologies')
-      .insert([insertData])
-      .select()
-      .single();
+    // Update industry using admin client
+    const { error } = await supabaseAdmin
+      .from('industries')
+      .update(updateData)
+      .eq('id', id);
 
     if (error) {
-      console.error('Error creating technology:', error);
+      console.error('Error updating industry:', error);
       return new Response(
-        JSON.stringify({ error: error.message || 'Failed to create technology' }),
+        JSON.stringify({ error: error.message || 'Failed to update industry' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(null, {
       status: 302,
-      headers: { Location: '/admin/technologies' },
+      headers: { Location: '/admin/industries' },
     });
   } catch (error: any) {
-    console.error('Error in create-technology endpoint:', error);
+    console.error('Error in update-industry endpoint:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

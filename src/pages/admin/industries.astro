@@ -1,3 +1,4 @@
+
 ---
 export const prerender = false;
 
@@ -5,7 +6,6 @@ import { supabaseAdmin } from '../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import AdminListPageHeader from '../../components/admin/AdminListPageHeader.astro';
-import { getIconUrl } from '../../lib/iconUtils';
 
 // Check authentication and redirect if not logged in
 const redirectResponse = await protectAdminRoute(Astro.locals);
@@ -13,37 +13,36 @@ if (redirectResponse) {
   return redirectResponse;
 }
 
-// Fetch all categories from Supabase
-const { data: categories, error } = await supabaseAdmin
-  .from('categories')
-  .select('id, slug, name_en, name_de, icon_name, order_index')
-  .order('order_index', { ascending: true });
+// Fetch all industries from Supabase
+const { data: industries, error } = await supabaseAdmin
+  .from('industries')
+  .select('id, slug, name_en, name_de, description_en, description_de, order_index, is_active')
+  .order('order_index', { ascending: true, nullsFirst: false })
+  .order('name_en', { ascending: true });
 
 if (error) {
-  console.error('Error fetching categories:', error);
+  console.error('Error fetching industries:', error);
 }
+
 ---
 
-<AdminLayout title="Category Management - Admin Panel" currentPath="/admin/categories">
+<AdminLayout title="Industry Management - Admin Panel" currentPath="/admin/industries">
   <div class="space-y-6">
     <AdminListPageHeader
-      title="Category Management"
-      description="Manage all categories in the Automation List directory"
-      count={categories?.length || 0}
-      entityName="categories"
-      newItemUrl="/admin/categories/new"
-      newItemLabel="New Category"
+      title="Industry Management"
+      description="Manage all industries in the Automation List directory"
+      count={industries?.length || 0}
+      entityName="industries"
+      newItemUrl="/admin/industries/new"
+      newItemLabel="New Industry"
     />
 
-    <!-- CATEGORIES TABLE -->
+    <!-- INDUSTRIES TABLE -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Icon
-              </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Name
               </th>
@@ -53,47 +52,53 @@ if (error) {
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Order
               </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Active
+              </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            {categories && categories.length > 0 ? (
-              categories.map((category) => {
-                const displayName = category.name_en || category.name_de || '-';
-                const iconUrl = getIconUrl(category.icon_name);
+            {industries && industries.length > 0 ? (
+              industries.map((industry) => {
+                const displayName = industry.name_en || industry.name_de || '-';
                 
                 return (
                   <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      {iconUrl ? (
-                        <img 
-                          src={iconUrl} 
-                          alt={displayName} 
-                          class="w-8 h-8"
-                          onerror="this.style.display='none'; this.nextElementSibling?.remove(); this.insertAdjacentHTML('afterend', '<div class=\\'flex items-center justify-center w-8 h-8 text-gray-400 text-xs\\'>—</div>');"
-                        />
-                      ) : (
-                        <div class="flex items-center justify-center w-8 h-8 text-gray-400 text-xs">—</div>
-                      )}
-                    </td>
                     <td class="px-6 py-4">
                       <div class="text-sm font-medium text-gray-900">{displayName}</div>
-                      {category.name_en && category.name_de && (
-                        <div class="text-xs text-gray-500">{category.name_de}</div>
+                      {industry.name_en && industry.name_de && (
+                        <div class="text-xs text-gray-500">{industry.name_de}</div>
+                      )}
+                      {industry.description_en && (
+                        <div class="text-xs text-gray-400 mt-1">{industry.description_en.substring(0, 60)}{industry.description_en.length > 60 ? '...' : ''}</div>
                       )}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{category.slug || '-'}</div>
+                      <div class="text-sm text-gray-900">{industry.slug || '-'}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{category.order_index ?? '-'}</div>
+                      <div class="text-sm text-gray-900">{industry.order_index ?? '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">
+                        {industry.is_active ? (
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active
+                          </span>
+                        ) : (
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div class="flex items-center justify-end gap-2">
                         <a
-                          href={`/admin/categories/edit/${category.id}`}
+                          href={`/admin/industries/edit/${industry.id}`}
                           class="text-black hover:text-gray-700 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors"
                         >
                           Edit
@@ -114,7 +119,7 @@ if (error) {
             ) : (
               <tr>
                 <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">
-                  No categories found.
+                  No industries found.
                 </td>
               </tr>
             )}
@@ -124,3 +129,5 @@ if (error) {
     </div>
   </div>
 </AdminLayout>
+
+

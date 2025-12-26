@@ -11,8 +11,10 @@ import UserBenefits from "../../components/UserBenefits.astro";
 import VendorBenefits from "../../components/VendorBenefits.astro";
 import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
+import IndustryGrid from "../../components/IndustryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import ExploreCTA from "../../components/ExploreCTA.astro";
+import { getIndustries } from "../../lib/getIndustries";
 
 // Fetch ALL vendors with vendor_categories (exclude deactivated)
 const { data: vendors } = await supabase
@@ -96,6 +98,10 @@ const categories = (dbCategories || []).map(cat => ({
   count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
+// Fetch active industries (limit 8-12, ordered by order_index then name)
+const allIndustries = await getIndustries({ lang: "en", activeOnly: true });
+const industries = allIndustries.slice(0, 12);
+
 // Build WebSite structured data with SearchAction
 const origin = Astro.url.origin;
 const websiteSchema = {
@@ -140,6 +146,8 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
   />
 
   <CategoryGrid categories={categories} lang="en" />
+
+  <IndustryGrid industries={industries} lang="en" />
 
   <FeaturedVendors
     vendors={featuredVendors}

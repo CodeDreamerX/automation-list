@@ -5,7 +5,7 @@ import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
 import AdminEditPageHeader from '../../../../components/admin/AdminEditPageHeader.astro';
-import CategoryForm from '../../../../components/admin/CategoryForm.astro';
+import IndustryForm from '../../../../components/admin/IndustryForm.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
@@ -20,36 +20,38 @@ if (redirectResponse) {
 
 const { id } = Astro.params;
 
-// Fetch category by ID
-const { data: category, error } = await supabaseAdmin
-  .from('categories')
+// Fetch industry by ID
+const { data: industry, error } = await supabaseAdmin
+  .from('industries')
   .select('*')
   .eq('id', id)
   .maybeSingle();
 
 if (error) {
-  console.error('Error fetching category:', error);
+  console.error('Error fetching industry:', error);
 }
 
-if (!category) {
-  return Astro.redirect('/admin/categories');
+if (!industry) {
+  return Astro.redirect('/admin/industries');
 }
 
 ---
 
-<AdminLayout title={`Edit Category: ${category.name_en || category.slug} - Admin Panel`} currentPath="/admin/categories">
+<AdminLayout title={`Edit Industry: ${industry.name_en || industry.slug} - Admin Panel`} currentPath="/admin/industries">
   <div class="space-y-6">
     <AdminEditPageHeader
-      title="Edit Category"
-      subtitle={category.name_en || category.slug || 'Category'}
-      backUrl="/admin/categories"
-      backLabel="Back to Categories"
+      title="Edit Industry"
+      subtitle={industry.name_en || industry.slug || 'Industry'}
+      backUrl="/admin/industries"
+      backLabel="Back to Industries"
     />
 
-    <!-- CATEGORY FORM -->
+    <!-- INDUSTRY FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <CategoryForm category={category} />
+      <IndustryForm industry={industry} />
     </div>
   </div>
 </AdminLayout>
+
+
 

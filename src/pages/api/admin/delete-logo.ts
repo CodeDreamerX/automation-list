@@ -46,29 +46,57 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Determine file path(s) from logo_url or construct from slug
     const filePathsToDelete: string[] = [];
 
-    // Try to extract path from logo_url (Supabase Storage URLs contain the path)
-    // URL format: https://{project}.supabase.co/storage/v1/object/public/vendor-logos/optimized/{slug}-logo.{ext}
-    const urlMatch = vendor.logo_url.match(/vendor-logos\/(.+)$/);
-    if (urlMatch) {
-      filePathsToDelete.push(urlMatch[1]);
-    } else if (vendor.slug) {
-      // Fallback: try both possible file formats (SVG and WEBP)
-      // Since uploads use upsert, there should only be one, but we'll try both to be safe
-      filePathsToDelete.push(`optimized/${vendor.slug}-logo.svg`);
-      filePathsToDelete.push(`optimized/${vendor.slug}-logo.webp`);
+    // The logo_url is stored in format: /logos/vendors/{filename}__{variant}.{ext}
+    // We need to extract the filename and construct the storage path: optimized/{filename}__{variant}.{ext}
+    if (vendor.logo_url) {
+      // Handle both relative paths (/logos/vendors/...) and full Supabase Storage URLs
+      let fileName = '';
+      
+      // Try to extract from relative path format: /logos/vendors/filename__variant.ext
+      const relativePathMatch = vendor.logo_url.match(/\/logos\/vendors\/(.+)$/);
+      if (relativePathMatch) {
+        fileName = relativePathMatch[1];
+        filePathsToDelete.push(`optimized/${fileName}`);
+      } else {
+        // Try to extract from Supabase Storage URL format: .../vendor-logos/optimized/...
+        const storageUrlMatch = vendor.logo_url.match(/vendor-logos\/optimized\/(.+)$/);
+        if (storageUrlMatch) {
+          fileName = storageUrlMatch[1];
+          filePathsToDelete.push(`optimized/${fileName}`);
+        } else {
+          // Try direct match for optimized/ path
+          const optimizedMatch = vendor.logo_url.match(/optimized\/(.+)$/);
+          if (optimizedMatch) {
+            fileName = optimizedMatch[1];
+            filePathsToDelete.push(`optimized/${fileName}`);
+          }
+        }
+      }
+      
+      // If we couldn't extract from logo_url, we can't safely determine the file path
+      // We'll skip storage deletion but still clear the database fields
     }
 
     // Delete file(s) from Supabase Storage if we have paths
+    let storageDeleteSuccess = false;
     if (filePathsToDelete.length > 0) {
-      const { error: deleteError } = await supabaseAdmin.storage
+      console.log(`Attempting to delete logo file(s) from storage: ${filePathsToDelete.join(', ')}`);
+      const { error: deleteError, data: deleteData } = await supabaseAdmin.storage
         .from('vendor-logos')
         .remove(filePathsToDelete);
 
       if (deleteError) {
         // Log error but continue - file might not exist or already deleted
         console.warn('Error deleting logo file(s) from storage:', deleteError);
+        console.warn('Logo URL was:', vendor.logo_url);
         // Don't fail the request if file deletion fails - still clear DB fields
+      } else {
+        storageDeleteSuccess = true;
+        console.log('Successfully deleted logo file(s) from storage:', deleteData);
       }
+    } else {
+      console.warn('Could not determine file path to delete from logo_url:', vendor.logo_url);
+      console.warn('Storage file deletion skipped, but database fields will still be cleared');
     }
 
     // Update vendor record to clear all logo fields

@@ -24,8 +24,8 @@ const { id } = Astro.params;
 // Create Supabase server client for authenticated operations
 const supabase = createSupabaseServerClient(Astro.cookies);
 
-// Fetch all categories from Supabase
-const { data: categories } = await supabase
+// Fetch all categories from Supabase (using admin client for consistency)
+const { data: categories } = await supabaseAdmin
   .from('categories')
   .select('id, slug, name_en, name_de')
   .order('order_index', { ascending: true })
@@ -72,6 +72,11 @@ if (Astro.request.method === 'POST') {
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
   
+  // Extract industry slugs from form data
+  const industrySlugs = formData.getAll("industry_slugs")
+    .map((slug) => String(slug).trim())
+    .filter((slug) => slug.length > 0);
+  
   // Build updateData from form fields
   const updateData: any = {
     name: formData.get('name')?.toString() || null,
@@ -88,7 +93,6 @@ if (Astro.request.method === 'POST') {
     languages: formData.get('languages')?.toString() || null,
     certifications: formData.get('certifications')?.toString() || null,
     tags: formData.get('tags')?.toString() || null,
-    industries: formData.get('industries')?.toString() || null,
     year_founded: formData.get('year_founded')?.toString() || null,
     employee_count: formData.get('employee_count')?.toString() || null,
     hourly_rate: formData.get('hourly_rate')?.toString() || null,
@@ -181,11 +185,37 @@ if (Astro.request.method === 'POST') {
     }
   }
 
+  // Update vendor_industries: delete all existing entries and reinsert new ones
+  await supabaseAdmin
+    .from('vendor_industries')
+    .delete()
+    .eq('vendor_id', vendorId);
+
+  // Insert new vendor_industries entries if industry slugs were provided
+  if (industrySlugs.length > 0) {
+    for (const slug of industrySlugs) {
+      const { data: industry } = await supabaseAdmin
+        .from("industries")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (industry?.id) {
+        await supabaseAdmin
+          .from("vendor_industries")
+          .insert({
+            vendor_id: vendorId,
+            industry_id: industry.id
+          });
+      }
+    }
+  }
+
   // Redirect back to admin panel after successful update
   return Astro.redirect('/admin');
 }
 
-// Fetch vendor by ID with vendor_categories and vendor_technologies
+// Fetch vendor by ID with vendor_categories, vendor_technologies, and vendor_industries
 const { data: vendor, error } = await supabaseAdmin
   .from('vendors')
   .select(`
@@ -200,6 +230,14 @@ const { data: vendor, error } = await supabaseAdmin
     ),
     vendor_technologies (
       technologies:technologies (
+        id,
+        slug,
+        name_en,
+        name_de
+      )
+    ),
+    vendor_industries (
+      industries:industries (
         id,
         slug,
         name_en,
@@ -223,15 +261,25 @@ const { data: technologies } = await supabaseAdmin
   .from('technologies')
   .select('id, slug, name_en, name_de')
   .eq('is_active', true)
-  .order('order_index', { ascending: true, nullsLast: true })
+  .order('order_index', { ascending: true, nullsFirst: false })
+  .order('name_en', { ascending: true });
+
+// Fetch all industries from Supabase (active only)
+const { data: industries } = await supabaseAdmin
+  .from('industries')
+  .select('id, slug, name_en, name_de')
+  .eq('is_active', true)
+  .order('order_index', { ascending: true, nullsFirst: false })
   .order('name_en', { ascending: true });
 
 // Normalize category data shape - extract category_slugs from vendor_categories M2M
 // Normalize technology data shape - extract technology_slugs from vendor_technologies M2M
+// Normalize industry data shape - extract industry_slugs from vendor_industries M2M
 const normalizedVendor = {
   ...vendor,
   category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
-  technology_slugs: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.slug).filter(Boolean) || []
+  technology_slugs: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.slug).filter(Boolean) || [],
+  industry_slugs: vendor.vendor_industries?.map((vi: any) => vi.industries?.slug).filter(Boolean) || []
 };
 
 ---
@@ -256,7 +304,7 @@ const normalizedVendor = {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={normalizedVendor} categories={categories || []} technologies={technologies || []} />
+      <VendorForm vendor={normalizedVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} />
     </div>
   </div>
 </AdminLayout>

@@ -1,0 +1,110 @@
+---
+interface Props {
+  src?: string | null;
+  alt?: string | null;
+}
+
+const { src, alt } = Astro.props;
+
+/**
+ * Extracts variant from logo filename.
+ * Expected filename patterns:
+ * - vendor-slug__white.webp
+ * - vendor-slug__light.webp
+ * - vendor-slug__gray.webp
+ * - vendor-slug__dark.webp
+ * - vendor-slug__brand.webp
+ * Works with both relative paths and full Supabase Storage URLs.
+ * Falls back to "white" if no variant is found.
+ */
+function getLogoVariant(src: string) {
+  // Match variant pattern: __variant followed by .extension or end of string
+  // This works for both relative paths and full URLs
+  const match = src.match(/__(white|light|gray|dark|brand)(?:\.|$|\?)/);
+  return match?.[1] ?? "white";
+}
+
+const variant = src ? getLogoVariant(src) : "white";
+const bgClassMap: Record<string, string> = {
+  white: "bg-white border border-gray-200",
+  light: "bg-gray-100 border border-gray-200",
+  gray: "bg-gray-300 border border-gray-400",
+  dark: "bg-gray-900 border border-gray-700",
+  brand: "bg-transparent",
+};
+const bgClass = bgClassMap[variant] || bgClassMap.white;
+---
+
+{(() => {
+  const logoUrl = src && typeof src === 'string' ? src.trim() : null;
+  const hasLogo = logoUrl && logoUrl.length > 0;
+  const isSvg = logoUrl?.toLowerCase().endsWith('.svg');
+  const imageId = `logo-img-${Math.random().toString(36).substr(2, 9)}`;
+  
+  return hasLogo ? (
+    <>
+      <div class={`rounded-lg min-h-[72px] px-4 py-2 flex items-center justify-center ${bgClass}`}>
+        {isSvg ? (
+          <object
+            id={imageId}
+            data={logoUrl}
+            type="image/svg+xml"
+            class="max-h-[44px] max-w-full"
+            style="height: 44px; width: auto; max-width: 100%; pointer-events: none; display: block;"
+            aria-label={alt || "Logo"}
+          >
+            <img
+              src={logoUrl}
+              alt={alt || "Logo"}
+              class="max-h-[44px] max-w-full object-contain"
+              style="width: auto; height: auto; max-width: 100%; max-height: 44px;"
+            />
+          </object>
+        ) : (
+          <img
+            id={imageId}
+            src={logoUrl}
+            alt={alt || "Logo"}
+            class="max-h-[44px] max-w-full object-contain"
+            loading="lazy"
+            decoding="async"
+            style="width: auto; height: auto; max-width: 100%; max-height: 44px;"
+          />
+        )}
+      </div>
+      <script define:vars={{ imageId, logoUrl, isSvg }}>
+        (function() {
+          if (isSvg) {
+            const obj = document.getElementById(imageId);
+            if (obj) {
+              obj.addEventListener('error', function() {
+                console.error('SVG logo failed to load:', logoUrl);
+              });
+              obj.addEventListener('load', function() {
+                console.log('SVG logo loaded:', logoUrl);
+              });
+            }
+          } else {
+            const img = document.getElementById(imageId);
+            if (img) {
+              img.addEventListener('error', function() {
+                console.error('Logo image failed to load:', logoUrl);
+                img.style.display = 'none';
+              });
+              img.addEventListener('load', function() {
+                if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                  console.warn('Logo image loaded but has zero dimensions:', logoUrl);
+                }
+              });
+            }
+          }
+        })();
+      </script>
+    </>
+  ) : (
+    <div class="rounded-lg min-h-[72px] px-4 flex items-center justify-center bg-gray-100 border border-gray-200">
+      <span class="text-xs text-gray-400">No Logo</span>
+    </div>
+  );
+})()}
+

@@ -26,7 +26,7 @@ const supabase = createSupabaseServerClient(Astro.cookies);
 const { data: categories } = await supabaseAdmin
   .from('categories')
   .select('id, slug, name_en, name_de')
-  .order('order_index', { ascending: true, nullsLast: true })
+  .order('order_index', { ascending: true, nullsFirst: false })
   .order('name_en', { ascending: true });
 
 // Fetch all technologies from Supabase
@@ -34,7 +34,15 @@ const { data: technologies } = await supabaseAdmin
   .from('technologies')
   .select('id, slug, name_en, name_de')
   .eq('is_active', true)
-  .order('order_index', { ascending: true, nullsLast: true })
+  .order('order_index', { ascending: true, nullsFirst: false })
+  .order('name_en', { ascending: true });
+
+// Fetch all industries from Supabase (active only)
+const { data: industries } = await supabaseAdmin
+  .from('industries')
+  .select('id, slug, name_en, name_de')
+  .eq('is_active', true)
+  .order('order_index', { ascending: true, nullsFirst: false })
   .order('name_en', { ascending: true });
 
 // Handle form submission
@@ -85,6 +93,11 @@ if (Astro.request.method === 'POST') {
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
   
+  // Extract industry slugs from form data
+  const industrySlugs = formData.getAll("industry_slugs")
+    .map((slug) => String(slug).trim())
+    .filter((slug) => slug.length > 0);
+  
   // Build insertData from form fields
   const insertData: any = {
     name: formData.get('name')?.toString() || null,
@@ -101,7 +114,6 @@ if (Astro.request.method === 'POST') {
     languages: formData.get('languages')?.toString() || null,
     certifications: formData.get('certifications')?.toString() || null,
     tags: formData.get('tags')?.toString() || null,
-    industries: formData.get('industries')?.toString() || null,
     year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
     employee_count: formData.get('employee_count')?.toString() || null,
     hourly_rate: formData.get('hourly_rate')?.toString() || null,
@@ -184,6 +196,26 @@ if (Astro.request.method === 'POST') {
     }
   }
 
+  // Insert vendor_industries entries if industry slugs were provided
+  if (industrySlugs.length > 0 && vendor?.id) {
+    for (const slug of industrySlugs) {
+      const { data: industry } = await supabaseAdmin
+        .from("industries")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (industry?.id) {
+        await supabaseAdmin
+          .from("vendor_industries")
+          .insert({
+            vendor_id: vendor.id,
+            industry_id: industry.id
+          });
+      }
+    }
+  }
+
   // Redirect to edit page of the newly created vendor
   if (vendor?.id) {
     return Astro.redirect(`/admin/edit/${vendor.id}`);
@@ -232,7 +264,7 @@ if (error === 'slug_exists') {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={emptyVendor} categories={categories || []} technologies={technologies || []} />
+      <VendorForm vendor={emptyVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} />
     </div>
   </div>
 </AdminLayout>

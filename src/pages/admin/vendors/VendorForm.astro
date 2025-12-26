@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 
-import { supabase } from '../../../lib/supabaseClient';
+import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../../lib/admin/authUtils';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
 import VendorForm from '../../../components/admin/VendorForm.astro';
@@ -19,7 +19,7 @@ if (redirectResponse) {
 }
 
 // Fetch all categories from Supabase
-const { data: categories } = await supabase
+const { data: categories } = await supabaseAdmin
   .from("categories")
   .select("*")
   .eq("is_active", true)
@@ -29,10 +29,10 @@ const { data: categories } = await supabase
 if (Astro.request.method === 'POST') {
   const formData = await Astro.request.formData();
   
-  // Check if slug already exists (read-only query, using anon client is OK)
+  // Check if slug already exists
   const slug = formData.get('slug')?.toString();
   if (slug) {
-    const { data: existingVendor } = await supabase
+    const { data: existingVendor } = await supabaseAdmin
       .from('vendors')
       .select('id')
       .eq('slug', slug)

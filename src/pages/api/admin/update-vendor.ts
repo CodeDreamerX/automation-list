@@ -56,7 +56,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         languages: form.get('languages')?.toString() || null,
         certifications: form.get('certifications')?.toString() || null,
         tags: form.get('tags')?.toString() || null,
-        industries: form.get('industries')?.toString() || null,
         year_founded: form.get('year_founded')?.toString() || null,
         employee_count: form.get('employee_count')?.toString() || null,
         hourly_rate: form.get('hourly_rate')?.toString() || null,

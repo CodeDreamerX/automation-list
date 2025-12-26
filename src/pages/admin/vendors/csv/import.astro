@@ -85,7 +85,7 @@ if (Astro.request.method === 'POST') {
       }
 
       // Check if slug already exists
-      const { data: existingVendor } = await supabase
+      const { data: existingVendor } = await supabaseAdmin
         .from('vendors')
         .select('id')
         .eq('slug', row.slug)
@@ -114,7 +114,6 @@ if (Astro.request.method === 'POST') {
         languages: row.languages || null,
         certifications: row.certifications || null,
         tags: row.tags || null,
-        industries: row.industries || null,
         year_founded: row.year_founded || null,
         employee_count: row.employee_count || null,
         hourly_rate: row.hourly_rate || null,

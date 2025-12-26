@@ -1,9 +1,10 @@
 ---
 export const prerender = false;
 
-import { supabase } from '../../../../lib/supabaseClient';
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import AdminEditPageHeader from '../../../../components/admin/AdminEditPageHeader.astro';
 import TechnologyForm from '../../../../components/admin/TechnologyForm.astro';
 
 // Handle logout first (before auth check)
@@ -20,7 +21,7 @@ if (redirectResponse) {
 const { id } = Astro.params;
 
 // Fetch technology by ID
-const { data: technology, error } = await supabase
+const { data: technology, error } = await supabaseAdmin
   .from('technologies')
   .select('*')
   .eq('id', id)
@@ -38,21 +39,12 @@ if (!technology) {
 
 <AdminLayout title={`Edit Technology: ${technology.name_en || technology.slug} - Admin Panel`} currentPath="/admin/technologies">
   <div class="space-y-6">
-    <!-- HEADER -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Edit Technology</h1>
-        <p class="mt-1 text-sm text-gray-600">
-          {technology.name_en || technology.slug || 'Technology'}
-        </p>
-      </div>
-      <a
-        href="/admin/technologies"
-        class="text-sm text-gray-600 hover:text-gray-900"
-      >
-        ← Back to Technologies
-      </a>
-    </div>
+    <AdminEditPageHeader
+      title="Edit Technology"
+      subtitle={technology.name_en || technology.slug || 'Technology'}
+      backUrl="/admin/technologies"
+      backLabel="Back to Technologies"
+    />
 
     <!-- TECHNOLOGY FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -60,6 +52,12 @@ if (!technology) {
     </div>
   </div>
 </AdminLayout>
+
+
+
+
+
+
 
 
 

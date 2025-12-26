@@ -1,5 +1,6 @@
 ---
 import { isFeatured } from '../lib/isFeatured';
+import LogoBox from './LogoBox.astro';
 
 interface Vendor {
   name: string;
@@ -7,7 +8,6 @@ interface Vendor {
   country?: string | null;
   region?: string | null;
   technologies?: string | null;
-  description?: string | null;
   description_en?: string | null;
   description_de?: string | null;
   logo_url?: string | null;
@@ -45,13 +45,13 @@ const {
 } = Astro.props;
 
 // Helper function to get language-aware vendor description
-// For EN: use description_en, fallback to description if missing
-// For DE: use description_de, fallback to description_en, then description if missing
+// For EN: use description_en
+// For DE: use description_de, fallback to description_en if missing
 function getVendorDescription(vendor: Vendor, lang: "en" | "de"): string | null {
   if (lang === "de") {
-    return vendor.description_de || vendor.description_en || vendor.description || null;
+    return vendor.description_de || vendor.description_en || null;
   }
-  return vendor.description_en || vendor.description || null;
+  return vendor.description_en || null;
 }
 
 // Helper function to truncate description
@@ -151,21 +151,11 @@ const categorySlugs = vendor.category_slugs ||
     )}
 
     <!-- Vendor Logo -->
-    <div class="w-[200px] h-[80px] flex items-center justify-center overflow-hidden mb-4">
-      {vendor.logo_url ? (
-        <img
-          src={vendor.logo_url}
-          alt={vendor.logo_alt || `${vendor.name} logo`}
-          width={vendor.logo_width || 200}
-          height={vendor.logo_height || 80}
-          loading="lazy"
-          class="max-w-full max-h-full object-contain"
-        />
-      ) : (
-        <div class="w-full h-full bg-gray-100 flex items-center justify-center rounded border border-gray-200">
-          <span class="text-xs text-gray-400">No Logo</span>
-        </div>
-      )}
+    <div class="mb-4 mx-auto">
+      <LogoBox
+        src={vendor.logo_url}
+        alt={vendor.logo_alt || `${vendor.name} logo`}
+      />
     </div>
 
     <!-- Vendor Name -->

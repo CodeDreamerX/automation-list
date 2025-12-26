@@ -1,0 +1,37 @@
+---
+interface Industry {
+  slug: string;
+  name: string;
+  description?: string;
+}
+
+interface Props {
+  industry: Industry;
+  lang?: string;
+  index?: number;
+}
+
+const {
+  industry,
+  lang = "en",
+  index = 0,
+} = Astro.props;
+
+// Build link using slug
+const link = `/${lang}/industry/${industry.slug}`;
+---
+
+<a
+  href={link}
+  class="fade-in-up relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition flex flex-col items-center text-center"
+  style={`animation-delay: ${index * 0.05}s`}
+>
+  <h3 class="text-lg font-semibold text-gray-900">{industry.name}</h3>
+  {industry.description && (
+    <p class="text-sm text-gray-600 mt-2">{industry.description}</p>
+  )}
+</a>
+
+
+
+
