@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -14,10 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { id } = body;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: 'Vendor ID is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Vendor ID is required', 400);
     }
 
     // Fetch vendor to get slug and logo information
@@ -29,18 +27,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (vendorError || !vendor) {
       console.error('Error fetching vendor:', vendorError);
-      return new Response(
-        JSON.stringify({ error: vendorError?.message || 'Vendor not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(vendorError?.message || 'Vendor not found', 404);
     }
 
     // If vendor has no logo, return success (nothing to delete)
     if (!vendor.logo_url) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'Vendor has no logo to delete' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      return successResponse({ message: 'Vendor has no logo to delete' });
     }
 
     // Determine file path(s) from logo_url or construct from slug
@@ -113,22 +105,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (updateError) {
       console.error('Error updating vendor:', updateError);
-      return new Response(
-        JSON.stringify({ error: updateError.message || 'Failed to clear logo fields' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(updateError.message || 'Failed to clear logo fields', 500);
     }
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Logo deleted successfully' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return successResponse({ message: 'Logo deleted successfully' });
   } catch (error: any) {
     console.error('Error in delete-logo endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

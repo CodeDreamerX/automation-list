@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -22,10 +23,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const is_active = body.get("is_active") ? true : false;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: 'Industry ID is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Industry ID is required', 400);
     }
 
     // Prepare update data with proper type conversions
@@ -54,10 +52,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (error) {
       console.error('Error updating industry:', error);
-      return new Response(
-        JSON.stringify({ error: error.message || 'Failed to update industry' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(error.message || 'Failed to update industry', 500);
     }
 
     return new Response(null, {
@@ -66,10 +61,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   } catch (error: any) {
     console.error('Error in update-industry endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

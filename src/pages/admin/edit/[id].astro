@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from '../../../lib/supabaseServer';
 import { protectAdminRoute } from '../../../lib/admin/authUtils';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
 import VendorForm from '../../../components/admin/VendorForm.astro';
+import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
@@ -270,12 +271,11 @@ if (!vendor) {
 }
 
 // Normalize category, technology, and industry data shape - extract slugs from M2M relationships
-const normalizedVendor = {
-  ...vendor,
-  category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
-  technology_slugs: vendor.vendor_technologies?.map((vt: any) => vt.technologies?.slug).filter(Boolean) || [],
-  industry_slugs: vendor.vendor_industries?.map((vi: any) => vi.industries?.slug).filter(Boolean) || []
-};
+const normalizedVendor = normalizeVendor(vendor, {
+  includeCategories: true,
+  includeTechnologies: true,
+  includeIndustries: true
+});
 
 ---
 

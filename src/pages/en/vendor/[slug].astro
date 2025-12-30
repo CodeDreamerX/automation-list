@@ -7,6 +7,7 @@ export const prerender = false;
 import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import LogoBox from '../../../components/LogoBox.astro';
+import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
 
 // Helper function to parse logo background variant from logo URL
 // Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
@@ -92,16 +93,17 @@ if (!vendor) {
 }
 
 // Normalize category, technology, and industry data shape
-const normalizedVendor = {
-  ...vendor,
-  category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
-  // Use language-specific description (EN: description_en)
-  description_en: vendor.description_en || null,
-  description_de: vendor.description_de || null,
-  // Keep technologies and industries as arrays with slug and name for linking
-  vendor_technologies: vendor.vendor_technologies || [],
-  vendor_industries: vendor.vendor_industries || []
-};
+const normalizedVendor = normalizeVendor(vendor, {
+  includeCategories: true,
+  includeTechnologies: false,
+  includeIndustries: false
+});
+// Use language-specific description (EN: description_en)
+normalizedVendor.description_en = vendor.description_en || null;
+normalizedVendor.description_de = vendor.description_de || null;
+// Keep technologies and industries as arrays with slug and name for linking
+normalizedVendor.vendor_technologies = vendor.vendor_technologies || [];
+normalizedVendor.vendor_industries = vendor.vendor_industries || [];
 
 const engNavItems = [
   { label: "Home", href: "/en/" },

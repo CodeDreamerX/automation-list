@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -14,10 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { id } = body;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: 'Category ID is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Category ID is required', 400);
     }
 
     // First, delete all vendor_categories rows referencing this category
@@ -28,10 +26,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (vendorCategoriesError) {
       console.error('Error deleting vendor_categories:', vendorCategoriesError);
-      return new Response(
-        JSON.stringify({ error: vendorCategoriesError.message || 'Failed to delete vendor_categories' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(vendorCategoriesError.message || 'Failed to delete vendor_categories', 500);
     }
 
     // Then delete the category itself
@@ -42,22 +37,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (categoryError) {
       console.error('Error deleting category:', categoryError);
-      return new Response(
-        JSON.stringify({ error: categoryError.message || 'Failed to delete category' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(categoryError.message || 'Failed to delete category', 500);
     }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return successResponse();
   } catch (error: any) {
     console.error('Error in delete-category endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

@@ -13,6 +13,8 @@ import IndustryGrid from "../../components/IndustryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import ExploreCTA from "../../components/ExploreCTA.astro";
 import { getIndustries } from "../../lib/getIndustries";
+import { normalizeVendors } from "../../lib/vendors/vendorUtils";
+import type { VendorWithRelations } from "../../types/vendor";
 
 
 // Fetch ALL vendors with vendor_categories (exclude deactivated)
@@ -33,10 +35,7 @@ const { data: allVendors } = await supabase
   .neq('plan', 'deactivated');
 
 // Normalize category data shape
-const normalizedVendors = (allVendors || []).map(v => ({
-  ...v,
-  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
-}));
+const normalizedVendors = normalizeVendors(allVendors || []);
 
 // Filter featured vendors
 const featured = normalizedVendors.filter(v => isFeatured(v));
@@ -53,10 +52,13 @@ if (featuredVendors.length === 0 && normalizedVendors.length > 0) {
 }
 
 // Helper function to format technologies for display (first 2 only)
-function formatTechnologies(technologies: string | null): string {
-  if (!technologies) return '';
-  const techArray = technologies.split(',').map(t => t.trim());
-  return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
+function formatTechnologies(vendor: VendorWithRelations): string {
+  if (!vendor.vendor_technologies || vendor.vendor_technologies.length === 0) return '';
+  const techNames = vendor.vendor_technologies
+    .map((vt: any) => vt.technologies?.name_de || vt.technologies?.name_en)
+    .filter(Boolean)
+    .slice(0, 2);
+  return techNames.join(', ') + (vendor.vendor_technologies.length > 2 ? '...' : '');
 }
 
 // Helper function to truncate description

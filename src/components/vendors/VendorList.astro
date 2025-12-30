@@ -5,6 +5,7 @@ import VendorCard from '../VendorCard.astro';
 import Pagination from '../Pagination.astro';
 import { normalizeTech } from '../../lib/normalizeTech';
 import { getIndustries } from '../../lib/getIndustries';
+import { normalizeVendors } from '../../lib/vendors/vendorUtils';
 
 interface Props {
   lang: "en" | "de";
@@ -451,10 +452,7 @@ if (cachedResult) {
 }
 
 // Normalize category data shape
-const normalizedVendors = (vendors || []).map(v => ({
-  ...v,
-  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
-}));
+const normalizedVendors = normalizeVendors(vendors || []);
 
 const filteredVendors = normalizedVendors;
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);

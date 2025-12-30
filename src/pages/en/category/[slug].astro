@@ -9,6 +9,7 @@ import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
+import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 
 
 // Get category slug from URL param
@@ -135,10 +136,7 @@ if (cachedResult) {
 }
 
 // Normalize category data shape
-const normalizedVendors = (vendors || []).map(v => ({
-  ...v,
-  category_slugs: v.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || []
-}));
+const normalizedVendors = normalizeVendors(vendors || []);
 
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 

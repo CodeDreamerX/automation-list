@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -23,10 +24,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       id = form.get('id')?.toString() || '';
       
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: 'Vendor ID is required' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
+        return errorResponse('Vendor ID is required', 400);
       }
       
       // Extract category slugs from form data
@@ -73,10 +71,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       id = body.id;
       
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: 'Vendor ID is required' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
+        return errorResponse('Vendor ID is required', 400);
       }
       
       const { id: _, category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
@@ -118,10 +113,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (error) {
       console.error('Error updating vendor:', error);
-      return new Response(
-        JSON.stringify({ error: error.message || 'Failed to update vendor' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(error.message || 'Failed to update vendor', 500);
     }
 
     // Update vendor_categories: delete all existing entries and reinsert new ones
@@ -151,16 +143,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return successResponse();
   } catch (error: any) {
     console.error('Error in update-vendor endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -14,10 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { id } = body;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: 'Vendor ID is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Vendor ID is required', 400);
     }
 
     // Delete vendor using admin client
@@ -28,22 +26,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (error) {
       console.error('Error deleting vendor:', error);
-      return new Response(
-        JSON.stringify({ error: error.message || 'Failed to delete vendor' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(error.message || 'Failed to delete vendor', 500);
     }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return successResponse();
   } catch (error: any) {
     console.error('Error in delete-vendor endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

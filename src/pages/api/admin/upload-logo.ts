@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import sharp from 'sharp';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -22,43 +23,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Validate required fields
     if (!file) {
-      return new Response(
-        JSON.stringify({ error: 'File is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('File is required', 400);
     }
 
     if (!vendorSlug) {
-      return new Response(
-        JSON.stringify({ error: 'vendorSlug is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('vendorSlug is required', 400);
     }
 
     // Sanitize vendorSlug to prevent path traversal attacks
     // Only allow alphanumeric, hyphens, and underscores
     const sanitizedVendorSlug = vendorSlug.trim().replace(/[^a-zA-Z0-9-_]/g, '');
     if (!sanitizedVendorSlug || sanitizedVendorSlug !== vendorSlug.trim()) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid vendorSlug format. Only alphanumeric characters, hyphens, and underscores are allowed.' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Invalid vendorSlug format. Only alphanumeric characters, hyphens, and underscores are allowed.', 400);
     }
 
     if (!vendorName) {
-      return new Response(
-        JSON.stringify({ error: 'vendorName is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('vendorName is required', 400);
     }
 
     // Validate file size (max 2MB)
     const maxSize = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
-      return new Response(
-        JSON.stringify({ error: 'File size exceeds 2MB limit' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('File size exceeds 2MB limit', 400);
     }
 
     // Get file type
@@ -75,18 +61,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
     
     if (!hasValidType && !hasValidExtension) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid file type. Only PNG, JPG/JPEG, SVG, and WEBP are allowed' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Invalid file type. Only PNG, JPG/JPEG, SVG, and WEBP are allowed', 400);
     }
 
     // Reject GIFs
     if (fileType === 'image/gif' || fileName.endsWith('.gif')) {
-      return new Response(
-        JSON.stringify({ error: 'GIF files are not allowed' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('GIF files are not allowed', 400);
     }
 
     // Step 7: Generate safe filename with variant encoding
@@ -237,10 +217,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (uploadError) {
       console.error('Error uploading to Supabase Storage:', uploadError);
-      return new Response(
-        JSON.stringify({ error: `Failed to upload file: ${uploadError.message}` }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(`Failed to upload file: ${uploadError.message}`, 500);
     }
 
     // Get public URL for preview/display purposes and storage
@@ -254,22 +231,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Generate suggested alt text
     const altText = `${vendorName} industrial automation logo`;
 
-    return new Response(
-      JSON.stringify({
-        publicUrl: publicUrl, // Return full Supabase Storage URL for display and storage
-        width,
-        height,
-        format,
-        altText
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return successResponse({
+      publicUrl: publicUrl, // Return full Supabase Storage URL for display and storage
+      width,
+      height,
+      format,
+      altText
+    });
   } catch (error: any) {
     console.error('Error in upload-logo endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -21,17 +22,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const is_active = body.get("is_active") ? true : false;
 
     if (!slug) {
-      return new Response(
-        JSON.stringify({ error: 'Industry slug is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Industry slug is required', 400);
     }
 
     if (!name_en) {
-      return new Response(
-        JSON.stringify({ error: 'Industry name (English) is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Industry name (English) is required', 400);
     }
 
     // Prepare insert data
@@ -56,10 +51,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (error) {
       console.error('Error creating industry:', error);
-      return new Response(
-        JSON.stringify({ error: error.message || 'Failed to create industry' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(error.message || 'Failed to create industry', 500);
     }
 
     return new Response(null, {
@@ -68,10 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   } catch (error: any) {
     console.error('Error in create-industry endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

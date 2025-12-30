@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
 
@@ -123,10 +124,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (error) {
       console.error('Error creating vendor:', error);
-      return new Response(
-        JSON.stringify({ error: error.message || 'Failed to create vendor' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(error.message || 'Failed to create vendor', 500);
     }
 
     // Insert vendor_categories entries if category slugs were provided
@@ -149,16 +147,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: vendor }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return successResponse(vendor);
   } catch (error: any) {
     console.error('Error in create-vendor endpoint:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 };
 

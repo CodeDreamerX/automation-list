@@ -4,6 +4,7 @@
 
 import type { AstroCookies } from 'astro';
 import { createSupabaseServerClient } from '../supabaseServer';
+import { unauthorizedResponse } from '../api/responses';
 
 // Protect admin routes - redirect to login if not authenticated
 // Uses locals.isAdmin set by middleware (which checks Supabase Auth + user_roles)
@@ -47,13 +48,7 @@ export async function protectAdminApiRoute(
   
   // If no user, return 401
   if (!user) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { 
-        status: 401, 
-        headers: { 'Content-Type': 'application/json' } 
-      }
-    );
+    return unauthorizedResponse();
   }
   
   // 3. Check user_roles table
@@ -66,13 +61,7 @@ export async function protectAdminApiRoute(
   
   // 4. If not admin → return 401
   if (roleData?.role !== 'admin') {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { 
-        status: 401, 
-        headers: { 'Content-Type': 'application/json' } 
-      }
-    );
+    return unauthorizedResponse();
   }
   
   // Authorized
