@@ -14,7 +14,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const contentType = request.headers.get('content-type') || '';
     let insertData: any;
     let categorySlugs: string[] = [];
-    let technologySlugs: string[] = [];
     
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
@@ -22,11 +21,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       
       // Extract category slugs from form data
       categorySlugs = form.getAll("category_slugs")
-        .map((slug) => String(slug).trim())
-        .filter((slug) => slug.length > 0);
-      
-      // Extract technology slugs from form data
-      technologySlugs = form.getAll("technology_slugs")
         .map((slug) => String(slug).trim())
         .filter((slug) => slug.length > 0);
       
@@ -66,7 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle JSON (backward compatibility)
       const body = await request.json();
-      const { category_slugs, technology_slugs, ...rest } = body; // Extract category_slugs and technology_slugs separately, use rest for vendor data
+      const { category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
       insertData = { ...rest };
       
       // Normalize types for JSON requests
@@ -91,9 +85,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (!insertData.plan) {
         insertData.plan = 'free';
       }
-      // Normalize description fields for JSON requests
-      insertData.description_en = insertData.description_en?.toString().trim() || null;
-      insertData.description_de = insertData.description_de?.toString().trim() || null;
       // Normalize logo fields for JSON requests
       insertData.logo_url = insertData.logo_url || null;
       insertData.logo_width = insertData.logo_width ? Number(insertData.logo_width) : null;
@@ -109,15 +100,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       } else if (body.category_slugs) {
         categorySlugs = [String(body.category_slugs).trim()].filter((slug: string) => slug.length > 0);
       }
-      
-      // Extract technology slugs from JSON if present
-      if (body.technology_slugs && Array.isArray(body.technology_slugs)) {
-        technologySlugs = body.technology_slugs
-          .map((slug: any) => String(slug).trim())
-          .filter((slug: string) => slug.length > 0);
-      } else if (body.technology_slugs) {
-        technologySlugs = [String(body.technology_slugs).trim()].filter((slug: string) => slug.length > 0);
-      }
     }
 
     // Normalize website URL: add https:// if missing
@@ -127,7 +109,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         insertData.website = 'https://' + website;
       }
     }
-
 
     // Add timestamps
     insertData.created_at = new Date().toISOString();
@@ -163,26 +144,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             .insert({
               vendor_id: vendor.id,
               category_id: cat.id
-            });
-        }
-      }
-    }
-
-    // Insert vendor_technologies entries if technology slugs were provided
-    if (technologySlugs && technologySlugs.length > 0 && vendor?.id) {
-      for (const slug of technologySlugs) {
-        const { data: tech } = await supabaseAdmin
-          .from("technologies")
-          .select("id")
-          .eq("slug", slug)
-          .single();
-
-        if (tech?.id) {
-          await supabaseAdmin
-            .from("vendor_technologies")
-            .insert({
-              vendor_id: vendor.id,
-              technology_id: tech.id
             });
         }
       }

@@ -17,14 +17,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const file = formData.get('file') as File | null;
     const vendorSlug = formData.get('vendorSlug')?.toString();
     const vendorName = formData.get('vendorName')?.toString();
-    const backgroundVariantRaw = formData.get('backgroundVariant')?.toString();
-    const backgroundVariant = backgroundVariantRaw?.trim() || 'white';
     const vendorId = formData.get('vendorId')?.toString();
-    
-    // Debug logging
-    console.log('Received backgroundVariant from form:', backgroundVariantRaw);
-    console.log('Using backgroundVariant:', backgroundVariant);
-    console.log('Vendor ID (if editing):', vendorId);
+    const backgroundVariant = formData.get('backgroundVariant')?.toString() || 'white';
 
     // Validate required fields
     if (!file) {
@@ -95,25 +89,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Validate background variant and default to 'white' if not provided
-    // Ensure variant is lowercase for consistency
-    const normalizedVariant = backgroundVariant?.toLowerCase().trim();
-    const validVariants = ['white', 'light', 'gray', 'dark', 'brand'];
-    const variant = normalizedVariant && validVariants.includes(normalizedVariant) ? normalizedVariant : 'white';
-    
-    // Log for debugging
-    console.log('Variant validation - input:', backgroundVariant, 'normalized:', normalizedVariant, 'final:', variant);
-
-    // Step 7: Encode variant into filename
-    // Strip extension, remove any existing variant suffix, then append new __<variant>
+    // Step 7: Generate safe filename with variant encoding
     const originalFileName = file.name;
     const lastDotIndex = originalFileName.lastIndexOf('.');
     let baseName = lastDotIndex > 0 ? originalFileName.substring(0, lastDotIndex) : originalFileName;
     const extension = lastDotIndex > 0 ? originalFileName.substring(lastDotIndex) : '';
-    
-    // Remove any existing variant suffix (__white, __light, __gray, __dark, __brand) from the filename
-    // This ensures we don't get double variants if the file already has one
-    baseName = baseName.replace(/__(white|light|gray|dark|brand)$/i, '');
     
     // Sanitize base name to prevent path traversal and ensure safe filename
     const sanitizedBaseName = baseName
@@ -122,8 +102,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .replace(/_{2,}/g, '_')
       .replace(/^_+|_+$/g, '');
     
-    // Construct filename with variant: baseName__variant.extension
-    const variantFileName = `${sanitizedBaseName}__${variant}${extension}`;
+    // Validate and sanitize background variant
+    const validVariants = ['white', 'light', 'gray', 'dark', 'brand'];
+    const sanitizedVariant = validVariants.includes(backgroundVariant.toLowerCase()) 
+      ? backgroundVariant.toLowerCase() 
+      : 'white';
+    
+    // Construct filename with variant encoding: baseName__variant.ext
+    const variantFileName = `${sanitizedBaseName}__${sanitizedVariant}${extension}`;
 
     // Read file as buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -184,9 +170,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       height = resizedMetadata.height || 0;
       format = 'webp';
       
-      // For raster images, replace extension with .webp but keep variant in filename
-      const variantBaseName = `${sanitizedBaseName}__${variant}`;
-      filePath = `optimized/${variantBaseName}.webp`;
+      // For raster images, replace extension with .webp and include variant
+      filePath = `optimized/${sanitizedBaseName}__${sanitizedVariant}.webp`;
     }
 
     // If editing an existing vendor, delete the old logo file first
@@ -203,7 +188,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           const oldLogoUrl = existingVendor.logo_url;
           const filePathsToDelete: string[] = [];
 
-          // Try to extract from relative path format: /logos/vendors/filename__variant.ext
+          // Try to extract from relative path format: /logos/vendors/filename.ext
           const relativePathMatch = oldLogoUrl.match(/\/logos\/vendors\/(.+)$/);
           if (relativePathMatch) {
             filePathsToDelete.push(`optimized/${relativePathMatch[1]}`);

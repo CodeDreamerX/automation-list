@@ -1,0 +1,88 @@
+---
+import type { CategoryFormOption } from '../../types/category';
+import type { TechnologyFormOption } from '../../types/technology';
+import type { IndustryFormOption } from '../../types/industry';
+import FormInput from './FormInput.astro';
+import FormSection from './FormSection.astro';
+
+interface Props {
+  vendor: any;
+  categories?: CategoryFormOption[];
+  technologies?: TechnologyFormOption[];
+  industries?: IndustryFormOption[];
+}
+
+const { vendor, categories = [], technologies = [], industries = [] } = Astro.props;
+---
+
+<FormSection title="Categorization">
+  <div>
+    <h2 class="text-lg font-semibold mb-2">Categories</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {categories.map(cat => {
+        const checked = vendor?.category_slugs?.includes(cat.slug);
+        return (
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="category_slugs" value={cat.slug} checked={checked} />
+            <span>{cat.name_en}</span>
+          </label>
+        );
+      })}
+    </div>
+  </div>
+  
+  <div>
+    <h2 class="text-lg font-semibold mb-2">Technologies</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {technologies.map(tech => {
+        const checked = vendor?.technology_slugs?.includes(tech.slug);
+        return (
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="technology_slugs" value={tech.slug} checked={checked} />
+            <span>{tech.name_en}</span>
+          </label>
+        );
+      })}
+    </div>
+  </div>
+  
+  <FormInput
+    id="languages"
+    name="languages"
+    label="Languages (comma-separated)"
+    value={vendor?.languages || ''}
+    placeholder="English, German, French"
+  />
+  
+  <FormInput
+    id="certifications"
+    name="certifications"
+    label="Certifications (comma-separated)"
+    value={vendor?.certifications || ''}
+    placeholder="Certification 1, Certification 2"
+  />
+  
+  <FormInput
+    id="tags"
+    name="tags"
+    label="Tags (comma-separated)"
+    value={vendor?.tags || ''}
+    placeholder="tag1, tag2, tag3"
+  />
+  
+  <div>
+    <h2 class="text-lg font-semibold mb-2">Industries</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {industries.map(industry => {
+        const checked = vendor?.industry_slugs?.includes(industry.slug);
+        return (
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="industry_slugs" value={industry.slug} checked={checked} />
+            <span>{industry.name_en}</span>
+          </label>
+        );
+      })}
+    </div>
+  </div>
+</FormSection>
+

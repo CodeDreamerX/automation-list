@@ -1,0 +1,62 @@
+---
+import FormInput from './FormInput.astro';
+import FormSection from './FormSection.astro';
+
+interface Props {
+  vendor: any;
+}
+
+const { vendor } = Astro.props;
+---
+
+<FormSection title="Contact Information">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <FormInput
+      id="email"
+      name="email"
+      label="Email"
+      type="email"
+      value={vendor?.email || ''}
+    />
+    
+    <FormInput
+      id="phone"
+      name="phone"
+      label="Phone"
+      type="tel"
+      value={vendor?.phone || ''}
+    />
+  </div>
+  
+  <FormInput
+    id="address"
+    name="address"
+    label="Address"
+    value={vendor?.address || ''}
+  />
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <FormInput
+      id="city"
+      name="city"
+      label="City"
+      value={vendor?.city || ''}
+    />
+    
+    <FormInput
+      id="region"
+      name="region"
+      label="Region"
+      value={vendor?.region || ''}
+    />
+    
+    <FormInput
+      id="country"
+      name="country"
+      label="Country"
+      value={vendor?.country || ''}
+      required
+    />
+  </div>
+</FormSection>
+

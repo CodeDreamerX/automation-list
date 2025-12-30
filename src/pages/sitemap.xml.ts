@@ -49,6 +49,18 @@ export const GET: APIRoute = async () => {
     console.error('Error fetching technologies for sitemap:', technologiesError);
   }
 
+  // Fetch industries with slug and updated_at for industry pages
+  // SEO: Only include active industries
+  const { data: industries, error: industriesError } = await supabase
+    .from('industries')
+    .select('slug, updated_at')
+    .eq('is_active', true)
+    .order('slug', { ascending: true });
+
+  if (industriesError) {
+    console.error('Error fetching industries for sitemap:', industriesError);
+  }
+
   // Build sitemap URLs array
   // SEO: Use Set to prevent duplicate URLs
   const urlSet = new Set<string>();
@@ -139,11 +151,20 @@ export const GET: APIRoute = async () => {
     }
   });
 
+  // Helper function to convert country name to URL slug (matching country page format)
+  // Uses hyphens to match the format expected by country pages (which convert hyphens back to spaces)
+  function countryToSlug(country: string): string {
+    return country
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-'); // Replace spaces with hyphens
+  }
+
   // Sort countries and generate country page URLs
   const uniqueCountries = Array.from(countryMap.keys()).sort();
   uniqueCountries.forEach((normalizedCountry) => {
     const lastmodDate = countryMap.get(normalizedCountry);
-    const countrySlug = encodeURIComponent(normalizedCountry);
+    const countrySlug = countryToSlug(normalizedCountry);
     
     const urlEn: SitemapUrl = {
       loc: `${PRODUCTION_DOMAIN}/en/country/${countrySlug}`,
@@ -185,6 +206,33 @@ export const GET: APIRoute = async () => {
       // Only include lastmod if we have a reliable timestamp
       if (technology.updated_at) {
         const lastmod = new Date(technology.updated_at).toISOString().split('T')[0];
+        urlEn.lastmod = lastmod;
+        urlDe.lastmod = lastmod;
+      }
+
+      addUrl(urlEn);
+      addUrl(urlDe);
+    }
+  });
+
+  // Industry pages - generate URLs from industries table
+  // SEO: Industry pages are important landing pages
+  (industries || []).forEach((industry) => {
+    if (industry.slug) {
+      const urlEn: SitemapUrl = {
+        loc: `${PRODUCTION_DOMAIN}/en/industry/${industry.slug}`,
+        changefreq: 'weekly',
+        priority: '0.8',
+      };
+      const urlDe: SitemapUrl = {
+        loc: `${PRODUCTION_DOMAIN}/de/industry/${industry.slug}`,
+        changefreq: 'weekly',
+        priority: '0.8',
+      };
+
+      // Only include lastmod if we have a reliable timestamp
+      if (industry.updated_at) {
+        const lastmod = new Date(industry.updated_at).toISOString().split('T')[0];
         urlEn.lastmod = lastmod;
         urlDe.lastmod = lastmod;
       }

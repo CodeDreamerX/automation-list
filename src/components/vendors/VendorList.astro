@@ -12,6 +12,8 @@ interface Props {
   description?: string;
 }
 
+import type { Category } from '../../types/category';
+
 const { lang, pageTitle, description } = Astro.props;
 
 // Parse URL parameters (decode URL-encoded values safely)
@@ -34,20 +36,20 @@ const pageSize = 24;
 
 // Fetch all categories from database for the dropdown (cached)
 const categoriesCacheKey = 'categories:all';
-let dbCategories = getCached(categoriesCacheKey);
+let dbCategories: Category[] | null = getCached<Category[]>(categoriesCacheKey);
 if (!dbCategories) {
   const { data } = await supabase
     .from('categories')
     .select('id, slug, name_en, name_de')
     .order('name_en', { ascending: true });
-  dbCategories = data;
+  dbCategories = data as Category[] | null;
   if (dbCategories) {
     setCached(categoriesCacheKey, dbCategories, 300);
   }
 }
 
 // Get category ID if category filter is active
-let categoryId: number | null = null;
+let categoryId: string | null = null;
 if (activeCategory) {
   const category = dbCategories?.find(cat => cat.slug === activeCategory);
   categoryId = category?.id || null;
@@ -70,6 +72,10 @@ if (!uniqueCountryList) {
   if (uniqueCountryList) {
     setCached(countriesCacheKey, uniqueCountryList, 300);
   }
+}
+// Ensure uniqueCountryList is always an array (never null)
+if (!uniqueCountryList) {
+  uniqueCountryList = [];
 }
 
 // Fetch all vendors to extract unique technologies for dropdown (cached)
@@ -116,6 +122,10 @@ if (!uniqueTechnologyList) {
     setCached(technologiesCacheKey, uniqueTechnologyList, 300);
   }
 }
+// Ensure uniqueTechnologyList is always an array (never null)
+if (!uniqueTechnologyList) {
+  uniqueTechnologyList = [];
+}
 
 // Fetch active industries for dropdown (cached)
 const industriesCacheKey = `industries:active:${lang}`;
@@ -142,6 +152,7 @@ function countryToSlug(country: string): string {
 // Helper function to convert country slug back to country name
 function slugToCountryName(slug: string): string | null {
   // Find the country in uniqueCountryList that matches this slug
+  if (!uniqueCountryList) return null;
   const matchingCountry = uniqueCountryList.find(country => 
     countryToSlug(country) === slug
   );
@@ -151,6 +162,7 @@ function slugToCountryName(slug: string): string | null {
 // Helper function to convert technology slug back to technology name
 function slugToTechnologyName(slug: string): string | null {
   // Find the technology in uniqueTechnologyList that matches this slug
+  if (!uniqueTechnologyList) return null;
   const matchingTechnology = uniqueTechnologyList.find(tech => 
     normalizeTech(tech) === slug
   );
@@ -279,6 +291,56 @@ if (industrySlugs.length > 0) {
   }
 }
 
+// Helper function to build count query with filters
+function buildCountQuery() {
+  let query = supabase
+    .from('vendors')
+    .select('*', { count: 'exact', head: true })
+    .neq('plan', 'deactivated');
+
+  // Apply category filter using vendor IDs if present
+  if (categoryVendorIds !== null) {
+    if (categoryVendorIds.length === 0) {
+      // No vendors match this category, return empty result by filtering to non-existent UUID
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    } else {
+      query = query.in('id', categoryVendorIds);
+    }
+  }
+
+  // Apply search filter if present (filter by vendor name)
+  if (searchQuery) {
+    query = query.ilike('name', `%${searchQuery}%`);
+  }
+
+  // Apply country filter if present (use case-insensitive matching)
+  if (normalizedCountryFilter) {
+    query = query.ilike('country', normalizedCountryFilter);
+  }
+
+  // Apply technology filter if present (filter via vendor_technologies join)
+  if (techVendorIds !== null) {
+    if (techVendorIds.length === 0) {
+      // No vendors match this technology, return empty result
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    } else {
+      query = query.in('id', techVendorIds);
+    }
+  }
+
+  // Apply industry filter if present (filter via vendor_industries join)
+  if (industryVendorIds !== null) {
+    if (industryVendorIds.length === 0) {
+      // No vendors match these industries, return empty result
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    } else {
+      query = query.in('id', industryVendorIds);
+    }
+  }
+
+  return query;
+}
+
 // Helper function to build base query with filters
 function buildBaseQuery() {
   let query = supabase
@@ -338,7 +400,7 @@ function buildBaseQuery() {
   }
 
   // Sort by priority (high priority first, nulls last), then by name ascending
-  query = query.order('priority', { ascending: false, nullsLast: true })
+  query = query.order('priority', { ascending: false, nullsFirst: false })
     .order('name', { ascending: true });
 
   return query;
@@ -362,8 +424,8 @@ if (cachedResult) {
   totalVendors = cachedResult.totalVendors;
 } else {
   // Get total count
-  const countQuery = buildBaseQuery();
-  const { count } = await countQuery.select('*', { count: 'exact', head: true });
+  const countQuery = buildCountQuery();
+  const { count } = await countQuery;
   totalVendors = count;
 
   // Build paginated query

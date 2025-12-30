@@ -63,9 +63,9 @@ if (cachedResult) {
 } else {
   // First, get vendor IDs that have this category
   const categoryLinksCacheKey = `vendor_categories:category:${categoryId}`;
-  let vendorIds = getCached<number[]>(categoryLinksCacheKey);
+  let vendorIds: number[] = getCached<number[]>(categoryLinksCacheKey) || [];
   
-  if (vendorIds === null) {
+  if (vendorIds.length === 0) {
     const { data: vendorCategoryLinks, error: linkError } = await supabase
       .from('vendor_categories')
       .select('vendor_id')
@@ -100,13 +100,18 @@ if (cachedResult) {
         .in('id', vendorIds)
         .neq('plan', 'deactivated')
         // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
-        .order('priority', { ascending: false, nullsLast: true })
+        .order('priority', { ascending: false, nullsFirst: false })
         .order('name', { ascending: true });
     }
 
-    // Get total count
-    const countQuery = buildCategoryQuery();
-    const { count } = await countQuery.select('*', { count: 'exact', head: true });
+    // Get total count - create a separate query for counting
+    let countQuery = supabase
+      .from('vendors')
+      .select('*', { count: 'exact', head: true })
+      .in('id', vendorIds)
+      .neq('plan', 'deactivated');
+    
+    const { count } = await countQuery;
     totalVendors = count || 0;
 
     // Build paginated query
@@ -157,7 +162,7 @@ const breadcrumbs = [
   title={metaTitle}
   description={metaDescription}
   canonical={currentUrl}
-  image={defaultOg}
+  ogImage={defaultOg}
   lang="en"
   breadcrumbs={breadcrumbs}
 >

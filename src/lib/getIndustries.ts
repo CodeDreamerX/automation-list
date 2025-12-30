@@ -31,8 +31,8 @@ export async function getIndustries({
   // Order by order_index (NULLS LAST), then by name based on language
   const nameField = lang === "de" ? "name_de" : "name_en";
   query = query
-    .order("order_index", { ascending: true, nullsLast: true })
-    .order(nameField, { ascending: true, nullsLast: true });
+    .order("order_index", { ascending: true, nullsFirst: false })
+    .order(nameField, { ascending: true, nullsFirst: false });
 
   const { data, error } = await query;
 

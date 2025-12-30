@@ -33,16 +33,12 @@ const { data: categories } = await supabaseAdmin
 const { data: technologies } = await supabaseAdmin
   .from('technologies')
   .select('id, slug, name_en, name_de')
-  .eq('is_active', true)
-  .order('order_index', { ascending: true, nullsFirst: false })
   .order('name_en', { ascending: true });
 
-// Fetch all industries from Supabase (active only)
+// Fetch all industries from Supabase
 const { data: industries } = await supabaseAdmin
   .from('industries')
   .select('id, slug, name_en, name_de')
-  .eq('is_active', true)
-  .order('order_index', { ascending: true, nullsFirst: false })
   .order('name_en', { ascending: true });
 
 // Handle form submission
@@ -115,7 +111,7 @@ if (Astro.request.method === 'POST') {
     certifications: formData.get('certifications')?.toString() || null,
     tags: formData.get('tags')?.toString() || null,
     year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
-    employee_count: formData.get('employee_count')?.toString() || null,
+    employee_count: formData.get('employee_count')?.toString() ? Number(formData.get('employee_count')!.toString()) : null,
     hourly_rate: formData.get('hourly_rate')?.toString() || null,
     plan: formData.get('plan')?.toString() || 'free',
     priority: formData.get('priority')?.toString() ? parseInt(formData.get('priority')!.toString()) : null,
@@ -139,6 +135,7 @@ if (Astro.request.method === 'POST') {
       insertData.website = 'https://' + website;
     }
   }
+
 
   // Add timestamps
   insertData.created_at = new Date().toISOString();

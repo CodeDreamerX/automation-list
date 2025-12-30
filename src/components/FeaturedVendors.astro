@@ -1,39 +1,55 @@
 ---
+import type { VendorWithRelations } from '../types/vendor';
 import LogoBox from './LogoBox.astro';
-
-interface Vendor {
-  name: string;
-  slug: string;
-  country?: string | null;
-  technologies?: string | null;
-  description_en?: string | null;
-  description_de?: string | null;
-  logo_url?: string | null;
-  logo_width?: number | null;
-  logo_height?: number | null;
-  logo_alt?: string | null;
-  priority?: number | null;
-  vendor_categories?: Array<{
-    is_primary?: boolean;
-    categories?: {
-      id: string;
-      slug: string;
-      name_en?: string;
-      name_de?: string;
-    };
-  }>;
-}
 
 interface Props {
   title?: string;
-  vendors: Vendor[];
+  vendors: VendorWithRelations[];
   viewAllHref: string;
   viewAllText?: string;
   vendorHrefPrefix: string;
   vendorLinkText?: string;
-  formatTechnologies?: (tech: string | null) => string;
+  formatTechnologies?: (vendor: VendorWithRelations) => string;
   truncateDescription?: (text: string | null | undefined, maxLength?: number) => string;
-  isFeatured?: (vendor: Vendor) => boolean;
+  isFeatured?: (vendor: VendorWithRelations) => boolean;
+}
+
+// Helper function to parse logo background variant from logo URL
+// Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
+function parseLogoVariant(logoUrl: string | null | undefined): "light" | "dark" | "neutral" | "brand" {
+  if (!logoUrl) return "light";
+  
+  const url = logoUrl.toLowerCase();
+  
+  // Check for explicit variant pattern: __{variant}.{ext}
+  const explicitVariantMatch = url.match(/__([a-z]+)\.(svg|png|jpg|jpeg|webp)$/);
+  if (explicitVariantMatch) {
+    const variant = explicitVariantMatch[1];
+    const variantMap: Record<string, "light" | "dark" | "neutral" | "brand"> = {
+      white: 'light',
+      light: 'neutral',
+      gray: 'neutral',
+      dark: 'dark',
+      brand: 'brand',
+    };
+    if (variantMap[variant]) {
+      return variantMap[variant];
+    }
+  }
+  
+  // Check for common filename patterns
+  // If filename contains "white", use dark background (white logo on dark bg)
+  if (url.includes('_white') || url.includes('-white') || url.match(/white[._-]/)) {
+    return 'dark';
+  }
+  
+  // If filename contains "dark" or "black", use light background
+  if (url.includes('_dark') || url.includes('-dark') || url.includes('_black') || url.includes('-black')) {
+    return 'light';
+  }
+  
+  // Default to light background
+  return 'light';
 }
 
 const {
@@ -43,10 +59,13 @@ const {
   viewAllText = "View All Vendors →",
   vendorHrefPrefix,
   vendorLinkText = "View Profile →",
-  formatTechnologies = (tech: string | null) => {
-    if (!tech) return '';
-    const techArray = tech.split(',').map(t => t.trim());
-    return techArray.slice(0, 2).join(', ') + (techArray.length > 2 ? '...' : '');
+  formatTechnologies = (vendor: VendorWithRelations) => {
+    if (!vendor.vendor_technologies || vendor.vendor_technologies.length === 0) return '';
+    const techNames = vendor.vendor_technologies
+      .map((vt: any) => vt.technologies?.name_en || vt.technologies?.name_de)
+      .filter(Boolean)
+      .slice(0, 2);
+    return techNames.join(', ') + (vendor.vendor_technologies.length > 2 ? '...' : '');
   },
   truncateDescription = (text: string | null | undefined, maxLength: number = 120) => {
     if (!text) return '';
@@ -55,19 +74,6 @@ const {
   },
   isFeatured = () => false,
 } = Astro.props;
-
-// Infer language from vendorHrefPrefix (/en/vendor = "en", /de/vendor = "de")
-const lang: "en" | "de" = vendorHrefPrefix.startsWith("/de/") ? "de" : "en";
-
-// Helper function to get language-aware vendor description
-// For EN: use description_en
-// For DE: use description_de, fallback to description_en if missing
-function getVendorDescription(vendor: Vendor): string | null {
-  if (lang === "de") {
-    return vendor.description_de || vendor.description_en || null;
-  }
-  return vendor.description_en || null;
-}
 ---
 
 <section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
@@ -81,67 +87,62 @@ function getVendorDescription(vendor: Vendor): string | null {
           return (
             <a
               href={vendorHref}
-              class="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded-lg fade-in-up"
+              class={`fade-in-up block border rounded-lg p-6 shadow-sm hover:shadow-md transition group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+                vendorIsFeatured 
+                  ? 'border-yellow-300 bg-yellow-50/30 shadow-lg hover:border-yellow-400' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
               style={`animation-delay: ${i * 0.07}s`}
               aria-label={`${vendor.name} - ${vendorLinkText}`}
             >
-              <div
-                class={`border rounded-lg p-6 shadow-sm transition-all ${
-                  vendorIsFeatured 
-                    ? 'border-yellow-300 bg-yellow-50/30 shadow-lg hover:border-yellow-400 hover:shadow-md active:bg-yellow-100/50 md:hover:bg-yellow-50/50' 
-                    : 'border-gray-200 hover:border-gray-300 hover:shadow-md active:bg-gray-50 md:hover:bg-gray-50'
-                }`}
-              >
-                {vendorIsFeatured && (
-                  <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full mb-3">
-                    Featured Vendor
-                  </span>
-                )}
-                
-                <div class="mb-4 mx-auto">
-                  <LogoBox
-                    src={vendor.logo_url}
-                    alt={vendor.logo_alt || `${vendor.name} automation logo`}
-                  />
-                </div>
-                
-                <h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-brand-700 transition-colors">
-                  {vendor.name}
-                </h3>
-                
-                {vendor.country && (
-                  <p class="text-sm text-gray-600 mb-2">{vendor.country}</p>
-                )}
-                
-                {/* Display primary category from vendor_categories */}
-                {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
-                  vendor.vendor_categories
-                    .filter((vc: any) => vc.is_primary === true)
-                    .map((vc: any) => {
-                      const categoryName = vc.categories?.name_en || vc.categories?.name_de;
-                      return categoryName ? (
-                        <span class="inline-block mb-2 px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
-                          {categoryName}
-                        </span>
-                      ) : null;
-                    })
-                )}
-                
-                {vendor.technologies && (
-                  <p class="text-xs text-gray-500 mb-3">{formatTechnologies(vendor.technologies)}</p>
-                )}
-                
-                {(() => {
-                  const vendorDescription = getVendorDescription(vendor);
-                  return vendorDescription ? (
-                    <p class="text-sm text-gray-600 mb-4">{truncateDescription(vendorDescription, 120)}</p>
-                  ) : null;
-                })()}
-                
-                <span class="inline-block text-sm text-brand-700 group-hover:text-brand-800 font-medium transition-colors">
-                  {vendorLinkText}
+              {vendorIsFeatured && (
+                <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full mb-3">
+                  Featured Vendor
                 </span>
+              )}
+              
+              <div class="mb-4 flex justify-center">
+                <LogoBox 
+                  src={vendor.logo_url} 
+                  alt={vendor.logo_alt || `${vendor.name} automation logo`}
+                  size="md"
+                  variant={parseLogoVariant(vendor.logo_url)}
+                  logoWidth={vendor.logo_width}
+                  logoHeight={vendor.logo_height}
+                />
               </div>
+              
+              <h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-brand-700 transition-colors">{vendor.name}</h3>
+              
+              {vendor.country && (
+                <p class="text-sm text-gray-600 mb-2">{vendor.country}</p>
+              )}
+              
+              {/* Display primary category from vendor_categories */}
+              {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
+                vendor.vendor_categories
+                  .filter((vc: any) => vc.is_primary === true)
+                  .map((vc: any) => {
+                    const categoryName = vc.categories?.name_en || vc.categories?.name_de;
+                    return categoryName ? (
+                      <span class="inline-block mb-2 px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded">
+                        {categoryName}
+                      </span>
+                    ) : null;
+                  })
+              )}
+              
+              {vendor.vendor_technologies && vendor.vendor_technologies.length > 0 && (
+                <p class="text-xs text-gray-500 mb-3">{formatTechnologies(vendor)}</p>
+              )}
+              
+              {(vendor.description_en || vendor.description_de) && (
+                <p class="text-sm text-gray-600 mb-4">{truncateDescription(vendor.description_en || vendor.description_de, 120)}</p>
+              )}
+              
+              <span class="inline-block text-sm text-brand-700 group-hover:text-brand-800 font-medium transition-colors">
+                {vendorLinkText}
+              </span>
             </a>
           );
         })}

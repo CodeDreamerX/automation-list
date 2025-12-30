@@ -1,0 +1,59 @@
+---
+import FormInput from './FormInput.astro';
+import FormTextarea from './FormTextarea.astro';
+import FormSection from './FormSection.astro';
+
+interface Props {
+  vendor: any;
+}
+
+const { vendor } = Astro.props;
+---
+
+<FormSection title="Basic Information">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <FormInput
+      id="name"
+      name="name"
+      label="Name"
+      value={vendor?.name || ''}
+      required
+    />
+    
+    <FormInput
+      id="slug"
+      name="slug"
+      label="Slug"
+      value={vendor?.slug || ''}
+      required
+      helpText="Auto-generated from name, but you can edit it"
+    />
+  </div>
+  
+  <FormTextarea
+    id="description_en"
+    name="description_en"
+    label="Description (English)"
+    value={vendor?.description_en || ''}
+    rows={5}
+  />
+  
+  <FormTextarea
+    id="description_de"
+    name="description_de"
+    label="Description (German)"
+    value={vendor?.description_de || ''}
+    rows={5}
+  />
+  
+  <FormInput
+    id="website"
+    name="website"
+    label="Website"
+    type="url"
+    value={vendor?.website || ''}
+    placeholder="example.com"
+    helpText="https:// will be added automatically if missing"
+  />
+</FormSection>
+

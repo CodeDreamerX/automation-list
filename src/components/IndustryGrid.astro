@@ -1,16 +1,11 @@
 ---
+import type { IndustryBasic } from '../types/industry';
 import IndustryCard from "./IndustryCard.astro";
-
-interface Industry {
-  slug: string;
-  name: string;
-  description?: string;
-}
 
 interface Props {
   title?: string;
   description?: string;
-  industries: Industry[];
+  industries: IndustryBasic[];
   lang?: string;
   headingLevel?: "h1" | "h2";
 }
@@ -41,6 +36,8 @@ const {
     </div>
   </section>
 )}
+
+
 
 
 

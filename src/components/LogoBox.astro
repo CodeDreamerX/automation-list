@@ -2,37 +2,52 @@
 interface Props {
   src?: string | null;
   alt?: string | null;
+  variant?: "light" | "dark" | "neutral" | "brand";
+  size?: "sm" | "md" | "lg";
+  logoWidth?: number | null;
+  logoHeight?: number | null;
 }
 
-const { src, alt } = Astro.props;
+const { 
+  src, 
+  alt,
+  variant = "light",
+  size = "md",
+  logoWidth,
+  logoHeight
+} = Astro.props;
 
 /**
- * Extracts variant from logo filename.
- * Expected filename patterns:
- * - vendor-slug__white.webp
- * - vendor-slug__light.webp
- * - vendor-slug__gray.webp
- * - vendor-slug__dark.webp
- * - vendor-slug__brand.webp
- * Works with both relative paths and full Supabase Storage URLs.
- * Falls back to "white" if no variant is found.
+ * LogoBox - The authority component for vendor logo display.
+ * 
+ * Responsibilities:
+ * - Container sizing
+ * - Background variant
+ * - Image scaling rules
+ * - Fallback UI
+ * - Accessibility
  */
-function getLogoVariant(src: string) {
-  // Match variant pattern: __variant followed by .extension or end of string
-  // This works for both relative paths and full URLs
-  const match = src.match(/__(white|light|gray|dark|brand)(?:\.|$|\?)/);
-  return match?.[1] ?? "white";
-}
 
-const variant = src ? getLogoVariant(src) : "white";
-const bgClassMap: Record<string, string> = {
-  white: "bg-white border border-gray-200",
-  light: "bg-gray-100 border border-gray-200",
-  gray: "bg-gray-300 border border-gray-400",
+// Background variant mapping
+const variantMap: Record<string, string> = {
+  light: "bg-white border border-gray-200",
   dark: "bg-gray-900 border border-gray-700",
-  brand: "bg-transparent",
+  neutral: "bg-gray-100 border border-gray-200",
+  brand: "bg-brand-50 border border-gray-200",
 };
-const bgClass = bgClassMap[variant] || bgClassMap.white;
+
+// Size mapping - fixed sizes for consistent layout
+const sizeMap: Record<string, { container: string; maxWidth: number; maxHeight: number }> = {
+  sm: { container: "w-[140px] h-[56px]", maxWidth: 124, maxHeight: 40 }, // 140-16=124, 56-16=40
+  md: { container: "w-[200px] h-[80px]", maxWidth: 184, maxHeight: 64 }, // 200-16=184, 80-16=64
+  lg: { container: "w-[280px] h-[112px]", maxWidth: 264, maxHeight: 96 }, // 280-16=264, 112-16=96
+};
+
+const bgClass = variantMap[variant] || variantMap.light;
+const sizeConfig = sizeMap[size] || sizeMap.md;
+const containerSize = sizeConfig.container;
+const maxLogoWidth = sizeConfig.maxWidth;
+const maxLogoHeight = sizeConfig.maxHeight;
 ---
 
 {(() => {
@@ -43,21 +58,19 @@ const bgClass = bgClassMap[variant] || bgClassMap.white;
   
   return hasLogo ? (
     <>
-      <div class={`rounded-lg min-h-[72px] px-4 py-2 flex items-center justify-center ${bgClass}`}>
+      <div class={`${containerSize} flex items-center justify-center rounded-lg ${bgClass} p-2`} style="overflow: hidden;">
         {isSvg ? (
           <object
             id={imageId}
             data={logoUrl}
             type="image/svg+xml"
-            class="max-h-[44px] max-w-full"
-            style="height: 44px; width: auto; max-width: 100%; pointer-events: none; display: block;"
+            style={`pointer-events: none; display: block; width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
             aria-label={alt || "Logo"}
           >
             <img
               src={logoUrl}
               alt={alt || "Logo"}
-              class="max-h-[44px] max-w-full object-contain"
-              style="width: auto; height: auto; max-width: 100%; max-height: 44px;"
+              style={`width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
             />
           </object>
         ) : (
@@ -65,10 +78,9 @@ const bgClass = bgClassMap[variant] || bgClassMap.white;
             id={imageId}
             src={logoUrl}
             alt={alt || "Logo"}
-            class="max-h-[44px] max-w-full object-contain"
+            style={`width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
             loading="lazy"
             decoding="async"
-            style="width: auto; height: auto; max-width: 100%; max-height: 44px;"
           />
         )}
       </div>
@@ -102,7 +114,7 @@ const bgClass = bgClassMap[variant] || bgClassMap.white;
       </script>
     </>
   ) : (
-    <div class="rounded-lg min-h-[72px] px-4 flex items-center justify-center bg-gray-100 border border-gray-200">
+    <div class={`${containerSize} flex items-center justify-center rounded-lg bg-gray-100 border border-gray-200`}>
       <span class="text-xs text-gray-400">No Logo</span>
     </div>
   );

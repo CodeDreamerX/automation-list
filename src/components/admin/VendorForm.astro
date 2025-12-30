@@ -1,562 +1,83 @@
 ---
+import type { CategoryFormOption } from '../../types/category';
+import type { TechnologyFormOption } from '../../types/technology';
+import type { IndustryFormOption } from '../../types/industry';
+import BasicInfoSection from './BasicInfoSection.astro';
+import ContactSection from './ContactSection.astro';
+import CategorizationSection from './CategorizationSection.astro';
+import CompanyInfoSection from './CompanyInfoSection.astro';
+import PlanSection from './PlanSection.astro';
+import LogoUploadSection from './LogoUploadSection.astro';
+import SEOSection from './SEOSection.astro';
+
 interface Props {
   vendor: any;
-  categories?: Array<{
-    id: string;
-    slug: string;
-    name_en: string;
-    name_de: string;
-  }>;
-  technologies?: Array<{
-    id: string;
-    slug: string;
-    name_en: string;
-    name_de: string;
-  }>;
-  industries?: Array<{
-    id: string;
-    slug: string;
-    name_en: string;
-    name_de: string;
-  }>;
+  categories?: CategoryFormOption[];
+  technologies?: TechnologyFormOption[];
+  industries?: IndustryFormOption[];
 }
 
 const { vendor, categories = [], technologies = [], industries = [] } = Astro.props;
 const isNewVendor = !vendor || !vendor.id;
+
+// Map form variant values to LogoBox variant values
+function mapVariantToLogoBox(formVariant: string): "light" | "dark" | "neutral" | "brand" {
+  const mapping: Record<string, "light" | "dark" | "neutral" | "brand"> = {
+    white: 'light',
+    light: 'neutral', // "Light Gray" maps to neutral
+    gray: 'neutral',
+    dark: 'dark',
+    brand: 'brand',
+  };
+  return mapping[formVariant] || 'light';
+}
+
+// Parse background variant from logo URL filename
+// Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
+function parseBackgroundVariantFromLogoUrl(logoUrl: string | null | undefined): string {
+  if (!logoUrl) return 'white';
+  
+  const url = logoUrl.toLowerCase();
+  // Check for explicit variant pattern: __{variant}.{ext}
+  const variantMatch = url.match(/__([a-z]+)\.(svg|png|jpg|jpeg|webp)$/);
+  if (variantMatch) {
+    const variant = variantMatch[1];
+    const validVariants = ['white', 'light', 'gray', 'dark', 'brand'];
+    if (validVariants.includes(variant)) {
+      return variant;
+    }
+  }
+  
+  // Default to white if no variant found
+  return 'white';
+}
+
+// Parse variant from existing logo URL or default to 'white'
+const defaultBackgroundVariant: string = parseBackgroundVariantFromLogoUrl(vendor?.logo_url);
+const defaultLogoBoxVariant = mapVariantToLogoBox(defaultBackgroundVariant);
 ---
 
 <form id="vendor-form" method="POST" class="space-y-8">
   {!isNewVendor && vendor?.id && (
     <input type="hidden" name="id" value={vendor.id} />
   )}
-  <!-- BASIC INFORMATION -->
-  <section>
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
-      Basic Information
-    </h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-          Name *
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={vendor?.name || ''}
-          required
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-      
-      <div>
-        <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">
-          Slug *
-        </label>
-        <input
-          type="text"
-          id="slug"
-          name="slug"
-          value={vendor?.slug || ''}
-          required
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-        <p class="text-xs text-gray-500 mt-1">Auto-generated from name, but you can edit it</p>
-      </div>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label for="description_en" class="block text-sm font-medium text-gray-700 mb-1">
-          Description (English)
-        </label>
-        <textarea
-          id="description_en"
-          name="description_en"
-          rows="5"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        >{vendor?.description_en || ''}</textarea>
-      </div>
-      
-      <div>
-        <label for="description_de" class="block text-sm font-medium text-gray-700 mb-1">
-          Description (German)
-        </label>
-        <textarea
-          id="description_de"
-          name="description_de"
-          rows="5"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        >{vendor?.description_de || ''}</textarea>
-      </div>
-    </div>
-    
-    <div>
-      <label for="website" class="block text-sm font-medium text-gray-700 mb-1">
-        Website
-      </label>
-      <input
-        type="url"
-        id="website"
-        name="website"
-        value={vendor?.website || ''}
-        placeholder="example.com"
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-      <p class="text-xs text-gray-500 mt-1">https:// will be added automatically if missing</p>
-    </div>
-  </section>
-
-  <!-- CONTACT INFORMATION -->
-  <section>
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
-      Contact Information
-    </h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-          Email
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={vendor?.email || ''}
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-      
-      <div>
-        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
-          Phone
-        </label>
-        <input
-          type="tel"
-          id="phone"
-          name="phone"
-          value={vendor?.phone || ''}
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-    </div>
-    
-    <div>
-      <label for="address" class="block text-sm font-medium text-gray-700 mb-1">
-        Address
-      </label>
-      <input
-        type="text"
-        id="address"
-        name="address"
-        value={vendor?.address || ''}
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div>
-        <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
-          City
-        </label>
-        <input
-          type="text"
-          id="city"
-          name="city"
-          value={vendor?.city || ''}
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-      
-      <div>
-        <label for="region" class="block text-sm font-medium text-gray-700 mb-1">
-          Region
-        </label>
-        <input
-          type="text"
-          id="region"
-          name="region"
-          value={vendor?.region || ''}
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-      
-      <div>
-        <label for="country" class="block text-sm font-medium text-gray-700 mb-1">
-          Country *
-        </label>
-        <input
-          type="text"
-          id="country"
-          name="country"
-          value={vendor?.country || ''}
-          required
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-    </div>
-  </section>
-
-  <!-- CATEGORIZATION -->
-  <section>
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
-      Categorization
-    </h2>
-    
-    <div>
-      <h2 class="text-lg font-semibold mb-2">Categories</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {categories.map(cat => {
-          const checked = vendor?.category_slugs?.includes(cat.slug);
-          return (
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="category_slugs" value={cat.slug} checked={checked} />
-              <span>{cat.name_en}</span>
-            </label>
-          );
-        })}
-      </div>
-    </div>
-    
-    <div>
-      <h2 class="text-lg font-semibold mb-2">Technologies</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {technologies.map(tech => {
-          const checked = vendor?.technology_slugs?.includes(tech.slug);
-          return (
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="technology_slugs" value={tech.slug} checked={checked} />
-              <span>{tech.name_en}</span>
-            </label>
-          );
-        })}
-      </div>
-    </div>
-    
-    <div>
-      <h2 class="text-lg font-semibold mb-2">Industries</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {industries.map(industry => {
-          const checked = vendor?.industry_slugs?.includes(industry.slug);
-          return (
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="industry_slugs" value={industry.slug} checked={checked} />
-              <span>{industry.name_en}</span>
-            </label>
-          );
-        })}
-      </div>
-    </div>
-    
-    <div>
-      <label for="languages" class="block text-sm font-medium text-gray-700 mb-1">
-        Languages (comma-separated)
-      </label>
-      <input
-        type="text"
-        id="languages"
-        name="languages"
-        value={vendor?.languages || ''}
-        placeholder="English, German, French"
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-    </div>
-    
-    <div>
-      <label for="certifications" class="block text-sm font-medium text-gray-700 mb-1">
-        Certifications (comma-separated)
-      </label>
-      <input
-        type="text"
-        id="certifications"
-        name="certifications"
-        value={vendor?.certifications || ''}
-        placeholder="Certification 1, Certification 2"
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-    </div>
-    
-    <div>
-      <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">
-        Tags (comma-separated)
-      </label>
-      <input
-        type="text"
-        id="tags"
-        name="tags"
-        value={vendor?.tags || ''}
-        placeholder="tag1, tag2, tag3"
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-    </div>
-    
-  </section>
-
-  <!-- COMPANY INFORMATION -->
-  <section>
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
-      Company Information
-    </h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div>
-        <label for="year_founded" class="block text-sm font-medium text-gray-700 mb-1">
-          Year Founded
-        </label>
-        <input
-          type="number"
-          id="year_founded"
-          name="year_founded"
-          value={vendor?.year_founded || ''}
-          min="1800"
-          max="2100"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-      
-      <div>
-        <label for="employee_count" class="block text-sm font-medium text-gray-700 mb-1">
-          Employee Count
-        </label>
-        <input
-          type="text"
-          id="employee_count"
-          name="employee_count"
-          value={vendor?.employee_count || ''}
-          placeholder="e.g., 50-100"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-      
-      <div>
-        <label for="hourly_rate" class="block text-sm font-medium text-gray-700 mb-1">
-          Hourly Rate
-        </label>
-        <input
-          type="text"
-          id="hourly_rate"
-          name="hourly_rate"
-          value={vendor?.hourly_rate || ''}
-          placeholder="e.g., €50-100"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-    </div>
-  </section>
-
-  <!-- PLAN & FEATURING -->
-  <section>
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
-      Plan & Featuring
-    </h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label for="plan" class="block text-sm font-medium text-gray-700 mb-1">
-          Plan
-        </label>
-        <select
-          id="plan"
-          name="plan"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        >
-          <option value="free" selected={vendor?.plan === 'free' || !vendor?.plan}>Free</option>
-          <option value="pro" selected={vendor?.plan === 'pro'}>Pro</option>
-          <option value="featured" selected={vendor?.plan === 'featured'}>Featured</option>
-          <option value="deactivated" selected={vendor?.plan === 'deactivated'}>Deactivated</option>
-        </select>
-      </div>
-      
-      <div>
-        <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">
-          Priority (1-5)
-        </label>
-        <select
-          id="priority"
-          name="priority"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        >
-          <option value="">None</option>
-          <option value="1" selected={vendor?.priority === 1}>1</option>
-          <option value="2" selected={vendor?.priority === 2}>2</option>
-          <option value="3" selected={vendor?.priority === 3}>3</option>
-          <option value="4" selected={vendor?.priority === 4}>4</option>
-          <option value="5" selected={vendor?.priority === 5}>5</option>
-        </select>
-      </div>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label for="featured_until" class="block text-sm font-medium text-gray-700 mb-1">
-          Featured Until
-        </label>
-        <input
-          type="date"
-          id="featured_until"
-          name="featured_until"
-          value={vendor?.featured_until ? new Date(vendor.featured_until).toISOString().split('T')[0] : ''}
-          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        />
-      </div>
-      
-      <div class="flex items-center">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            id="featured"
-            name="featured"
-            checked={vendor?.featured === true}
-            class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-          />
-          <span class="text-sm font-medium text-gray-700">Featured</span>
-        </label>
-      </div>
-    </div>
-    
-    <div class="flex items-center">
-      <label class="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          id="og_member"
-          name="og_member"
-          checked={vendor?.og_member === true}
-          class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-        />
-        <span class="text-sm font-medium text-gray-700">OG Member</span>
-      </label>
-    </div>
-  </section>
-
-  <!-- LOGO UPLOAD -->
-  <section>
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
-      Logo Upload
-    </h2>
-    
-    <!-- Hidden fields for logo data -->
-    <input type="hidden" id="logo_url" name="logo_url" value={vendor?.logo_url || ''} />
-    <input type="hidden" id="logo_width" name="logo_width" value={vendor?.logo_width || ''} />
-    <input type="hidden" id="logo_height" name="logo_height" value={vendor?.logo_height || ''} />
-    <input type="hidden" id="logo_format" name="logo_format" value={vendor?.logo_format || ''} />
-    <input type="hidden" id="logo_alt" name="logo_alt" value={vendor?.logo_alt || ''} />
-    
-    <!-- Logo Preview Container -->
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Logo Preview
-      </label>
-      <div 
-        id="logo-preview-container" 
-        class="w-[200px] h-[80px] border border-gray-300 rounded-md flex items-center justify-center bg-gray-50"
-        style="min-height: 80px;"
-      >
-        {vendor?.logo_url ? (
-          <img 
-            src={vendor.logo_url} 
-            alt={vendor.logo_alt || `${vendor.name || 'Vendor'} logo`}
-            id="logo-preview-img"
-            class="max-w-[80%] max-h-[80%] object-contain"
-            style="object-fit: contain; max-width: 80%; max-height: 80%;"
-          />
-        ) : (
-          <span class="text-xs text-gray-400" id="logo-preview-placeholder">No logo uploaded</span>
-        )}
-      </div>
-    </div>
-    
-    <!-- File Input -->
-    <div>
-      <label for="logo-file-input" class="block text-sm font-medium text-gray-700 mb-1">
-        Upload Logo
-      </label>
-      <input
-        type="file"
-        id="logo-file-input"
-        accept=".png,.jpg,.jpeg,.webp,.svg"
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-      <p class="text-xs text-gray-500 mb-2">
-        Accepted formats: PNG, JPG, JPEG, WEBP, SVG (max 2MB)
-      </p>
-      
-      <!-- Loading State -->
-      <div id="logo-upload-loading" class="hidden text-sm text-gray-600 mb-2">
-        <span class="inline-block animate-spin mr-2">⏳</span>
-        Uploading logo...
-      </div>
-      
-      <!-- Success Message -->
-      <div id="logo-upload-success" class="hidden text-sm text-green-600 mb-2">
-        ✓ Logo uploaded successfully!
-      </div>
-      
-      <!-- Error Message -->
-      <div id="logo-upload-error" class="hidden text-sm text-red-600 mb-2">
-        <span id="logo-upload-error-text"></span>
-      </div>
-    </div>
-  </section>
-
-  <!-- SEO METADATA -->
-  <section>
-    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
-      SEO Metadata
-    </h2>
-    
-    <div>
-      <label for="meta_title" class="block text-sm font-medium text-gray-700 mb-1">
-        Meta Title
-      </label>
-      <input
-        type="text"
-        id="meta_title"
-        name="meta_title"
-        value={vendor?.meta_title || ''}
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-    </div>
-    
-    <div>
-      <label for="meta_description" class="block text-sm font-medium text-gray-700 mb-1">
-        Meta Description
-      </label>
-      <textarea
-        id="meta_description"
-        name="meta_description"
-        rows="3"
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      >{vendor?.meta_description || ''}</textarea>
-    </div>
-    
-    <div>
-      <label for="canonical_url" class="block text-sm font-medium text-gray-700 mb-1">
-        Canonical URL
-      </label>
-      <input
-        type="url"
-        id="canonical_url"
-        name="canonical_url"
-        value={vendor?.canonical_url || ''}
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-      />
-    </div>
-    
-    <div>
-      <label for="logo_url_manual" class="block text-sm font-medium text-gray-700 mb-1">
-        Logo URL (Manual Override)
-      </label>
-      <input
-        type="url"
-        id="logo_url_manual"
-        value={vendor?.logo_url || ''}
-        class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-        placeholder="Or enter logo URL manually"
-      />
-      <p class="text-xs text-gray-500">Leave empty to use uploaded logo above</p>
-    </div>
-  </section>
+  
+  <BasicInfoSection vendor={vendor} />
+  <ContactSection vendor={vendor} />
+  <CategorizationSection 
+    vendor={vendor} 
+    categories={categories}
+    technologies={technologies}
+    industries={industries}
+  />
+  <CompanyInfoSection vendor={vendor} />
+  <PlanSection vendor={vendor} />
+  <LogoUploadSection 
+    vendor={vendor}
+    defaultBackgroundVariant={defaultBackgroundVariant}
+    defaultLogoBoxVariant={defaultLogoBoxVariant}
+  />
+  <SEOSection vendor={vendor} />
 
   <!-- SUBMIT BUTTONS -->
   <div class="flex items-center justify-between pt-4 border-t">
@@ -576,220 +97,6 @@ const isNewVendor = !vendor || !vendor.id;
 </form>
 
 <script>
-  (function() {
-    const nameInput = document.getElementById('name') as HTMLInputElement;
-    const slugInput = document.getElementById('slug') as HTMLInputElement;
-    const websiteInput = document.getElementById('website') as HTMLInputElement;
-    
-    if (!nameInput || !slugInput || !websiteInput) return;
-    
-    // Track if slug was manually edited
-    let slugManuallyEdited = false;
-    const initialSlug = slugInput.value;
-    const isNewVendor = !initialSlug || initialSlug.trim() === '';
-    
-    // Auto-generate slug from name (only for new vendors, until manually edited)
-    nameInput.addEventListener('input', function() {
-      // Only auto-generate for new vendors if user hasn't manually edited the slug
-      if (isNewVendor && !slugManuallyEdited) {
-        const name = nameInput.value.trim();
-        if (name) {
-          // Convert to slug: lowercase, replace spaces and special chars with hyphens
-          const slug = name
-            .toLowerCase()
-            .replace(/[^\w\s-]/g, '') // Remove special characters
-            .replace(/\s+/g, '-')      // Replace spaces with hyphens
-            .replace(/-+/g, '-')       // Replace multiple hyphens with single
-            .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
-          slugInput.value = slug;
-        } else {
-          // Clear slug if name is empty
-          slugInput.value = '';
-        }
-      }
-    });
-    
-    // Track manual slug edits
-    slugInput.addEventListener('input', function() {
-      // Mark as manually edited if user changes the slug
-      slugManuallyEdited = true;
-    });
-    
-    // Auto-prefix website URL with https://
-    websiteInput.addEventListener('blur', function() {
-      let url = websiteInput.value.trim();
-      if (url && !url.match(/^https?:\/\//i)) {
-        // Only add https:// if it doesn't already have a protocol
-        websiteInput.value = 'https://' + url;
-      }
-    });
-    
-    // Also handle on form submit to ensure it's always prefixed
-    const form = document.getElementById('vendor-form');
-    if (form) {
-      form.addEventListener('submit', function(e) {
-        let url = websiteInput.value.trim();
-        if (url && !url.match(/^https?:\/\//i)) {
-          websiteInput.value = 'https://' + url;
-        }
-        
-        // Sync manual logo URL override if provided
-        const logoUrlManual = document.getElementById('logo_url_manual') as HTMLInputElement;
-        const logoUrlHidden = document.getElementById('logo_url') as HTMLInputElement;
-        if (logoUrlManual && logoUrlHidden) {
-          const manualUrl = logoUrlManual.value.trim();
-          if (manualUrl) {
-            logoUrlHidden.value = manualUrl;
-          }
-        }
-      });
-    }
-    
-    // Logo Upload Handler
-    const logoFileInput = document.getElementById('logo-file-input') as HTMLInputElement;
-    const logoPreviewContainer = document.getElementById('logo-preview-container');
-    const logoPreviewImg = document.getElementById('logo-preview-img') as HTMLImageElement;
-    const logoPreviewPlaceholder = document.getElementById('logo-preview-placeholder');
-    const logoUploadLoading = document.getElementById('logo-upload-loading');
-    const logoUploadSuccess = document.getElementById('logo-upload-success');
-    const logoUploadError = document.getElementById('logo-upload-error');
-    const logoUploadErrorText = document.getElementById('logo-upload-error-text');
-    const logoUrlHidden = document.getElementById('logo_url') as HTMLInputElement;
-    const logoWidthHidden = document.getElementById('logo_width') as HTMLInputElement;
-    const logoHeightHidden = document.getElementById('logo_height') as HTMLInputElement;
-    const logoFormatHidden = document.getElementById('logo_format') as HTMLInputElement;
-    const logoAltHidden = document.getElementById('logo_alt') as HTMLInputElement;
-    
-    if (logoFileInput) {
-      logoFileInput.addEventListener('change', async function(e) {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-        
-        // Get vendor slug and name from form
-        const slugInput = document.getElementById('slug') as HTMLInputElement;
-        const nameInput = document.getElementById('name') as HTMLInputElement;
-        
-        const vendorSlug = slugInput?.value?.trim();
-        const vendorName = nameInput?.value?.trim();
-        
-        if (!vendorSlug) {
-          if (logoUploadError && logoUploadErrorText) {
-            logoUploadErrorText.textContent = 'Please enter a vendor slug first';
-            logoUploadError.classList.remove('hidden');
-            logoUploadSuccess?.classList.add('hidden');
-          }
-          return;
-        }
-        
-        if (!vendorName) {
-          if (logoUploadError && logoUploadErrorText) {
-            logoUploadErrorText.textContent = 'Please enter a vendor name first';
-            logoUploadError.classList.remove('hidden');
-            logoUploadSuccess?.classList.add('hidden');
-          }
-          return;
-        }
-        
-        // Validate file type
-        const allowedTypes = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
-        const fileName = file.name.toLowerCase();
-        const isValidType = allowedTypes.some(ext => fileName.endsWith(ext));
-        
-        if (!isValidType) {
-          if (logoUploadError && logoUploadErrorText) {
-            logoUploadErrorText.textContent = 'Invalid file type. Only PNG, JPG, JPEG, WEBP, and SVG are allowed.';
-            logoUploadError.classList.remove('hidden');
-            logoUploadSuccess?.classList.add('hidden');
-          }
-          return;
-        }
-        
-        // Validate file size (max 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-          if (logoUploadError && logoUploadErrorText) {
-            logoUploadErrorText.textContent = 'File size exceeds 2MB limit';
-            logoUploadError.classList.remove('hidden');
-            logoUploadSuccess?.classList.add('hidden');
-          }
-          return;
-        }
-        
-        // Show loading state
-        logoUploadLoading?.classList.remove('hidden');
-        logoUploadSuccess?.classList.add('hidden');
-        logoUploadError?.classList.add('hidden');
-        
-        // Prepare FormData
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('vendorSlug', vendorSlug);
-        formData.append('vendorName', vendorName);
-        
-        try {
-          // Upload to API
-          const response = await fetch('/api/admin/upload-logo', {
-            method: 'POST',
-            body: formData
-          });
-          
-          const result = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(result.error || 'Upload failed');
-          }
-          
-          // Update hidden fields
-          if (logoUrlHidden) logoUrlHidden.value = result.publicUrl || '';
-          if (logoWidthHidden) logoWidthHidden.value = result.width?.toString() || '';
-          if (logoHeightHidden) logoHeightHidden.value = result.height?.toString() || '';
-          if (logoFormatHidden) logoFormatHidden.value = result.format || '';
-          if (logoAltHidden) logoAltHidden.value = result.altText || '';
-          
-          // Update preview
-          if (logoPreviewContainer) {
-            // Hide placeholder
-            if (logoPreviewPlaceholder) {
-              logoPreviewPlaceholder.classList.add('hidden');
-            }
-            
-            // Create or update preview image
-            let previewImg = document.getElementById('logo-preview-img') as HTMLImageElement;
-            if (!previewImg) {
-              previewImg = document.createElement('img');
-              previewImg.id = 'logo-preview-img';
-              previewImg.className = 'max-w-[80%] max-h-[80%] object-contain';
-              previewImg.style.objectFit = 'contain';
-              previewImg.style.maxWidth = '80%';
-              previewImg.style.maxHeight = '80%';
-              logoPreviewContainer.appendChild(previewImg);
-            }
-            
-            previewImg.src = result.publicUrl;
-            previewImg.alt = result.altText || `${vendorName} logo`;
-            previewImg.classList.remove('hidden');
-          }
-          
-          // Show success message
-          logoUploadLoading?.classList.add('hidden');
-          logoUploadSuccess?.classList.remove('hidden');
-          logoUploadError?.classList.add('hidden');
-          
-          // Clear success message after 3 seconds
-          setTimeout(() => {
-            logoUploadSuccess?.classList.add('hidden');
-          }, 3000);
-          
-        } catch (error: any) {
-          console.error('Logo upload error:', error);
-          logoUploadLoading?.classList.add('hidden');
-          logoUploadSuccess?.classList.add('hidden');
-          if (logoUploadError && logoUploadErrorText) {
-            logoUploadErrorText.textContent = error.message || 'Failed to upload logo. Please try again.';
-            logoUploadError.classList.remove('hidden');
-          }
-        }
-      });
-    }
-    
-  })();
+  import { initVendorForm } from './vendor-form';
+  initVendorForm();
 </script>

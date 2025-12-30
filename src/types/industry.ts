@@ -23,6 +23,31 @@ export interface IndustryDB {
   is_active?: boolean;
 }
 
+/**
+ * Industry form option interface for admin forms
+ * 
+ * Used in form components where industries are displayed as options.
+ * Fields are required because form options come from populated database records.
+ */
+export interface IndustryFormOption {
+  id: string;
+  slug: string;
+  name_en: string;
+  name_de: string;
+}
+
+/**
+ * Simplified industry interface for components that only need basic info
+ * (used in card displays where id is not required)
+ */
+export interface IndustryBasic {
+  slug: string;
+  name: string; // Resolved by lang with fallback to name_en
+  description?: string; // Optional, resolved by lang
+}
+
+
+
 
 
 

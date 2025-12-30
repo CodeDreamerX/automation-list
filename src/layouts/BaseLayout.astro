@@ -214,11 +214,13 @@ const navItems = navItemsProp || (isGerman ? [
   { label: "Kategorien", href: "/de/categories" },
   { label: "Anbieter", href: "/de/vendors" },
   { label: "Technologien", href: "/de/technologies" },
+  { label: "Branchen", href: "/de/industries" },
   { label: "Kontakt", href: "/de/contact" },
 ] : [
   { label: "Categories", href: "/en/categories" },
   { label: "Vendors", href: "/en/vendors" },
   { label: "Technologies", href: "/en/technologies" },
+  { label: "Industries", href: "/en/industries" },
   { label: "Contact", href: "/en/contact" },
 ]);
 
@@ -447,6 +449,12 @@ if (isGerman) {
                 class="text-sm text-[#6B7280] hover:underline"
               >
                 {isGerman ? "Technologien" : "Technologies"}
+              </a>
+              <a 
+                href={isGerman ? "/de/industries" : "/en/industries"}
+                class="text-sm text-[#6B7280] hover:underline"
+              >
+                {isGerman ? "Branchen" : "Industries"}
               </a>
             </nav>
           </div>

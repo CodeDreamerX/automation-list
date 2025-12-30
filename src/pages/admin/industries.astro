@@ -5,7 +5,6 @@ export const prerender = false;
 import { supabaseAdmin } from '../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
-import AdminListPageHeader from '../../components/admin/AdminListPageHeader.astro';
 
 // Check authentication and redirect if not logged in
 const redirectResponse = await protectAdminRoute(Astro.locals);
@@ -28,14 +27,26 @@ if (error) {
 
 <AdminLayout title="Industry Management - Admin Panel" currentPath="/admin/industries">
   <div class="space-y-6">
-    <AdminListPageHeader
-      title="Industry Management"
-      description="Manage all industries in the Automation List directory"
-      count={industries?.length || 0}
-      entityName="industries"
-      newItemUrl="/admin/industries/new"
-      newItemLabel="New Industry"
-    />
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Industry Management</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Manage all industries in the Automation List directory
+        </p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-gray-600">
+          Total: {industries?.length || 0} industries
+        </div>
+        <a
+          href="/admin/industries/new"
+          class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-900 transition-colors text-sm font-medium"
+        >
+          + New Industry
+        </a>
+      </div>
+    </div>
 
     <!-- INDUSTRIES TABLE -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

@@ -4,7 +4,7 @@ export const prerender = false;
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../../lib/admin/authUtils';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
-import VendorForm from '../../../components/admin/VendorForm.astro';
+import VendorFormComponent from '../../../components/admin/VendorForm.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
@@ -24,6 +24,18 @@ const { data: categories } = await supabaseAdmin
   .select("*")
   .eq("is_active", true)
   .order("order_index", { ascending: true });
+
+// Fetch all technologies from Supabase
+const { data: technologies } = await supabaseAdmin
+  .from('technologies')
+  .select('id, slug, name_en, name_de')
+  .order('name_en', { ascending: true });
+
+// Fetch all industries from Supabase
+const { data: industries } = await supabaseAdmin
+  .from('industries')
+  .select('id, slug, name_en, name_de')
+  .order('name_en', { ascending: true });
 
 // Handle form submission
 if (Astro.request.method === 'POST') {
@@ -111,7 +123,7 @@ if (error === 'slug_exists') {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={emptyVendor} categories={categories || []} />
+      <VendorFormComponent vendor={emptyVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} />
     </div>
   </div>
 </AdminLayout>

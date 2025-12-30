@@ -1,10 +1,9 @@
 ---
 export const prerender = false;
 
-import { supabaseAdmin } from '../../lib/supabaseAdminClient';
+import { supabase } from '../../lib/supabaseClient';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
-import AdminListPageHeader from '../../components/admin/AdminListPageHeader.astro';
 import { getIconUrl } from '../../lib/iconUtils';
 
 // Check authentication and redirect if not logged in
@@ -14,7 +13,7 @@ if (redirectResponse) {
 }
 
 // Fetch all categories from Supabase
-const { data: categories, error } = await supabaseAdmin
+const { data: categories, error } = await supabase
   .from('categories')
   .select('id, slug, name_en, name_de, icon_name, order_index')
   .order('order_index', { ascending: true });
@@ -22,18 +21,31 @@ const { data: categories, error } = await supabaseAdmin
 if (error) {
   console.error('Error fetching categories:', error);
 }
+
 ---
 
 <AdminLayout title="Category Management - Admin Panel" currentPath="/admin/categories">
   <div class="space-y-6">
-    <AdminListPageHeader
-      title="Category Management"
-      description="Manage all categories in the Automation List directory"
-      count={categories?.length || 0}
-      entityName="categories"
-      newItemUrl="/admin/categories/new"
-      newItemLabel="New Category"
-    />
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Category Management</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Manage all categories in the Automation List directory
+        </p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-gray-600">
+          Total: {categories?.length || 0} categories
+        </div>
+        <a
+          href="/admin/categories/new"
+          class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-900 transition-colors text-sm font-medium"
+        >
+          + New Category
+        </a>
+      </div>
+    </div>
 
     <!-- CATEGORIES TABLE -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -62,6 +74,9 @@ if (error) {
             {categories && categories.length > 0 ? (
               categories.map((category) => {
                 const displayName = category.name_en || category.name_de || '-';
+                const bilingualName = category.name_en && category.name_de 
+                  ? `${category.name_en} / ${category.name_de}`
+                  : displayName;
                 const iconUrl = getIconUrl(category.icon_name);
                 
                 return (
@@ -124,3 +139,4 @@ if (error) {
     </div>
   </div>
 </AdminLayout>
+

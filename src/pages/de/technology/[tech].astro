@@ -135,7 +135,7 @@ if (cachedResult) {
     
     // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
     return query
-      .order('priority', { ascending: false, nullsLast: true })
+      .order('priority', { ascending: false, nullsFirst: false })
       .order('name', { ascending: true });
   }
 

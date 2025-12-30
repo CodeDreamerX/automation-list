@@ -1,12 +1,8 @@
 ---
-interface Industry {
-  slug: string;
-  name: string;
-  description?: string;
-}
+import type { IndustryBasic } from '../types/industry';
 
 interface Props {
-  industry: Industry;
+  industry: IndustryBasic;
   lang?: string;
   index?: number;
 }
@@ -31,6 +27,8 @@ const link = `/${lang}/industry/${industry.slug}`;
     <p class="text-sm text-gray-600 mt-2">{industry.description}</p>
   )}
 </a>
+
+
 
 
 

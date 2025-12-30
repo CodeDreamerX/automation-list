@@ -1,0 +1,86 @@
+---
+import FormInput from './FormInput.astro';
+import FormSelect from './FormSelect.astro';
+import FormSection from './FormSection.astro';
+
+interface Props {
+  vendor: any;
+}
+
+const { vendor } = Astro.props;
+
+const planOptions = [
+  { value: 'free', label: 'Free', selected: vendor?.plan === 'free' || !vendor?.plan },
+  { value: 'pro', label: 'Pro', selected: vendor?.plan === 'pro' },
+  { value: 'featured', label: 'Featured', selected: vendor?.plan === 'featured' },
+  { value: 'deactivated', label: 'Deactivated', selected: vendor?.plan === 'deactivated' },
+];
+
+const priorityOptions = [
+  { value: '', label: 'None', selected: !vendor?.priority },
+  { value: '1', label: '1', selected: vendor?.priority === 1 },
+  { value: '2', label: '2', selected: vendor?.priority === 2 },
+  { value: '3', label: '3', selected: vendor?.priority === 3 },
+  { value: '4', label: '4', selected: vendor?.priority === 4 },
+  { value: '5', label: '5', selected: vendor?.priority === 5 },
+];
+
+const featuredUntilValue = vendor?.featured_until 
+  ? new Date(vendor.featured_until).toISOString().split('T')[0] 
+  : '';
+---
+
+<FormSection title="Plan & Featuring">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <FormSelect
+      id="plan"
+      name="plan"
+      label="Plan"
+      options={planOptions}
+    />
+    
+    <FormSelect
+      id="priority"
+      name="priority"
+      label="Priority (1-5)"
+      options={priorityOptions}
+    />
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <FormInput
+      id="featured_until"
+      name="featured_until"
+      label="Featured Until"
+      type="date"
+      value={featuredUntilValue}
+    />
+    
+    <div class="flex items-center">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          id="featured"
+          name="featured"
+          checked={vendor?.featured === true}
+          class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+        />
+        <span class="text-sm font-medium text-gray-700">Featured</span>
+      </label>
+    </div>
+  </div>
+  
+  <div class="flex items-center">
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        id="og_member"
+        name="og_member"
+        checked={vendor?.og_member === true}
+        class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+      />
+      <span class="text-sm font-medium text-gray-700">OG Member</span>
+    </label>
+  </div>
+</FormSection>
+

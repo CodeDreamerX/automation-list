@@ -1,10 +1,9 @@
 ---
 export const prerender = false;
 
-import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+import { supabase } from '../../../../lib/supabaseClient';
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
-import AdminEditPageHeader from '../../../../components/admin/AdminEditPageHeader.astro';
 import CategoryForm from '../../../../components/admin/CategoryForm.astro';
 
 // Handle logout first (before auth check)
@@ -21,7 +20,7 @@ if (redirectResponse) {
 const { id } = Astro.params;
 
 // Fetch category by ID
-const { data: category, error } = await supabaseAdmin
+const { data: category, error } = await supabase
   .from('categories')
   .select('*')
   .eq('id', id)
@@ -39,12 +38,21 @@ if (!category) {
 
 <AdminLayout title={`Edit Category: ${category.name_en || category.slug} - Admin Panel`} currentPath="/admin/categories">
   <div class="space-y-6">
-    <AdminEditPageHeader
-      title="Edit Category"
-      subtitle={category.name_en || category.slug || 'Category'}
-      backUrl="/admin/categories"
-      backLabel="Back to Categories"
-    />
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Edit Category</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          {category.name_en || category.slug || 'Category'}
+        </p>
+      </div>
+      <a
+        href="/admin/categories"
+        class="text-sm text-gray-600 hover:text-gray-900"
+      >
+        ← Back to Categories
+      </a>
+    </div>
 
     <!-- CATEGORY FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

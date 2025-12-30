@@ -1,0 +1,115 @@
+---
+import LogoBox from '../LogoBox.astro';
+import FormInput from './FormInput.astro';
+import FormSelect from './FormSelect.astro';
+import FormSection from './FormSection.astro';
+
+interface Props {
+  vendor: any;
+  defaultBackgroundVariant: string;
+  defaultLogoBoxVariant: "light" | "dark" | "neutral" | "brand";
+}
+
+const { vendor, defaultBackgroundVariant, defaultLogoBoxVariant } = Astro.props;
+
+const variantOptions = [
+  { value: 'white', label: 'White', selected: defaultBackgroundVariant === 'white' },
+  { value: 'light', label: 'Light Gray', selected: defaultBackgroundVariant === 'light' },
+  { value: 'gray', label: 'Gray', selected: defaultBackgroundVariant === 'gray' },
+  { value: 'dark', label: 'Dark', selected: defaultBackgroundVariant === 'dark' },
+  { value: 'brand', label: 'Transparent (Brand)', selected: defaultBackgroundVariant === 'brand' },
+];
+---
+
+<FormSection title="Logo Upload">
+  <!-- Hidden fields for logo data -->
+  <input type="hidden" id="logo_url" name="logo_url" value={vendor?.logo_url || ''} />
+  <input type="hidden" id="logo_width" name="logo_width" value={vendor?.logo_width || ''} />
+  <input type="hidden" id="logo_height" name="logo_height" value={vendor?.logo_height || ''} />
+  <input type="hidden" id="logo_format" name="logo_format" value={vendor?.logo_format || ''} />
+  <input type="hidden" id="logo_alt" name="logo_alt" value={vendor?.logo_alt || ''} />
+  
+  <!-- Logo Preview Container -->
+  <div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+      Logo Preview
+    </label>
+    <div id="logo-preview-container" class="mx-auto" data-variant={defaultBackgroundVariant}>
+      {vendor?.logo_url ? (
+        <LogoBox 
+          src={vendor.logo_url} 
+          alt={vendor.logo_alt || `${vendor.name || 'Vendor'} logo`}
+          size="md"
+          variant={defaultLogoBoxVariant}
+          logoWidth={vendor.logo_width}
+          logoHeight={vendor.logo_height}
+        />
+      ) : (
+        <LogoBox 
+          src={null} 
+          alt=""
+          size="md"
+          variant={defaultLogoBoxVariant}
+        />
+      )}
+    </div>
+  </div>
+  
+  <!-- File Input -->
+  <div>
+    <label for="logo-file-input" class="block text-sm font-medium text-gray-700 mb-1">
+      Upload Logo
+    </label>
+    <input
+      type="file"
+      id="logo-file-input"
+      accept=".png,.jpg,.jpeg,.webp,.svg"
+      class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+    />
+    <p class="text-xs text-gray-500 mb-2">
+      Accepted formats: PNG, JPG, JPEG, WEBP, SVG (max 2MB)
+    </p>
+    
+    <!-- Background Variant Selection -->
+    <div class="mb-4">
+      <FormSelect
+        id="logo-background-variant"
+        name="logo_background_variant"
+        label="Background Variant"
+        options={variantOptions}
+        helpText="Select the background color variant for the logo preview"
+      />
+    </div>
+    
+    <!-- Loading State -->
+    <div id="logo-upload-loading" class="hidden text-sm text-gray-600 mb-2">
+      <span class="inline-block animate-spin mr-2">⏳</span>
+      Uploading logo...
+    </div>
+    
+    <!-- Success Message -->
+    <div id="logo-upload-success" class="hidden text-sm text-green-600 mb-2">
+      ✓ Logo uploaded successfully!
+    </div>
+    
+    <!-- Error Message -->
+    <div id="logo-upload-error" class="hidden text-sm text-red-600 mb-2">
+      <span id="logo-upload-error-text"></span>
+    </div>
+    
+    <!-- Delete Logo Button (only show if logo exists and vendor has ID) -->
+    <div id="delete-logo-container" class={`mt-4 ${(vendor?.logo_url && vendor?.id) ? '' : 'hidden'}`}>
+      <button
+        type="button"
+        id="delete-logo-button"
+        class="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+      >
+        Delete Logo
+      </button>
+      <p class="text-xs text-gray-500 mt-1">
+        Remove the current logo from this vendor
+      </p>
+    </div>
+  </div>
+</FormSection>
+

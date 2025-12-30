@@ -46,13 +46,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Determine file path(s) from logo_url or construct from slug
     const filePathsToDelete: string[] = [];
 
-    // The logo_url is stored in format: /logos/vendors/{filename}__{variant}.{ext}
-    // We need to extract the filename and construct the storage path: optimized/{filename}__{variant}.{ext}
+    // Extract the filename from logo_url and construct the storage path: optimized/{filename}.{ext}
     if (vendor.logo_url) {
       // Handle both relative paths (/logos/vendors/...) and full Supabase Storage URLs
       let fileName = '';
       
-      // Try to extract from relative path format: /logos/vendors/filename__variant.ext
+      // Try to extract from relative path format: /logos/vendors/filename.ext
       const relativePathMatch = vendor.logo_url.match(/\/logos\/vendors\/(.+)$/);
       if (relativePathMatch) {
         fileName = relativePathMatch[1];

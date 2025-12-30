@@ -1,20 +1,11 @@
 ---
+import type { CategoryBasic } from '../types/category';
 import CategoryCard from "./CategoryCard.astro";
-
-interface Category {
-  slug: string;
-  icon_name?: string;
-  name_en?: string;
-  name_de?: string;
-  description_en?: string;
-  description_de?: string;
-  count?: number;
-}
 
 interface Props {
   title?: string;
   description?: string;
-  categories: Category[];
+  categories: CategoryBasic[];
   lang?: string;
   headingLevel?: "h1" | "h2";
 }

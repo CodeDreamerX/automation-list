@@ -1,18 +1,9 @@
 ---
+import type { CategoryBasic } from '../types/category';
 import { getIconUrl } from '../lib/iconUtils';
 
-interface Category {
-  slug: string;
-  icon_name?: string;
-  name_en?: string;
-  name_de?: string;
-  description_en?: string;
-  description_de?: string;
-  count?: number;
-}
-
 interface Props {
-  category: Category;
+  category: CategoryBasic;
   lang?: string;
   index?: number;
 }

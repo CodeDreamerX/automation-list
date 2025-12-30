@@ -1,20 +1,11 @@
 ---
+import type { TechnologyBasic } from '../types/technology';
 import TechnologyCard from "./TechnologyCard.astro";
-
-interface Technology {
-  slug: string;
-  icon_name?: string;
-  name_en?: string;
-  name_de?: string;
-  description_en?: string;
-  description_de?: string;
-  count?: number;
-}
 
 interface Props {
   title?: string;
   description?: string;
-  technologies: Technology[];
+  technologies: TechnologyBasic[];
   lang?: string;
   headingLevel?: "h1" | "h2";
 }

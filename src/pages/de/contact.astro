@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 ---
@@ -12,19 +14,63 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <div class="container-px mx-auto max-w-3xl">
       <div class="text-center mb-12">
         <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-Kontaktieren Sie uns
+          Kontaktieren Sie uns
         </h1>
         <p class="text-lg text-gray-700 leading-relaxed">
-Haben Sie Fragen oder möchten Sie Ihr Unternehmen einreichen? Wir würden gerne von Ihnen hören.
+          Haben Sie Fragen oder möchten Sie Ihr Unternehmen einreichen? Wir würden gerne von Ihnen hören.
         </p>
       </div>
       
+      <div class="card mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+          Unternehmenseinträge (MVP-Phase)
+        </h2>
+        <p class="text-gray-600 mb-4">
+          Bitte senden Sie Ihre Unternehmensinformationen an:
+        </p>
+        <div class="mb-6">
+          <a href="mailto:listings@automation-list.com?subject=Unternehmenseintrag%20Einreichung" class="text-xl text-brand-600 hover:text-brand-700 hover:underline font-semibold">
+            listings@automation-list.com
+          </a>
+        </div>
+        <p class="text-gray-600 mb-4">
+          Einträge sind während unserer MVP-Phase kostenlos und werden manuell überprüft, um Qualität und Relevanz sicherzustellen. Die typische Bearbeitungszeit beträgt 1–2 Werktage. Dieser manuelle Prozess ist beabsichtigt, um die Verzeichnisqualität und das Vertrauen zu gewährleisten.
+        </p>
+        
+        <div class="bg-gray-50 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Erforderliche Einreichungsinformationen</h3>
+          <p class="text-sm text-gray-600 mb-4">Bitte fügen Sie die folgenden Informationen in Ihre Einreichungs-E-Mail ein:</p>
+          <ul class="space-y-2 text-gray-700">
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Firmenname</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Website-URL</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Land</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Hauptdienstleistungen / Technologien</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2 font-semibold">•</span>
+              <span>Kontakt-E-Mail</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div class="card">
         <h2 class="text-2xl font-semibold text-gray-900 mb-4">
           Kontakt aufnehmen
         </h2>
         <p class="text-gray-600 mb-6">
-          Für allgemeine Anfragen, Unternehmenseinreichungen oder Partnerschaftsmöglichkeiten kontaktieren Sie uns bitte per E-Mail.
+          Für allgemeine Anfragen oder Partnerschaftsmöglichkeiten kontaktieren Sie uns bitte per E-Mail.
         </p>
         <div class="space-y-4">
           <div>
@@ -36,10 +82,6 @@ Haben Sie Fragen oder möchten Sie Ihr Unternehmen einreichen? Wir würden gerne
           <div class="pt-4 border-t border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-3">Womit können wir Ihnen helfen?</h3>
             <ul class="space-y-2 text-gray-600">
-              <li class="flex items-start">
-                <span class="text-brand-600 mr-2">•</span>
-                <span>Unternehmenseinreichungen und Verzeichniseinträge</span>
-              </li>
               <li class="flex items-start">
                 <span class="text-brand-600 mr-2">•</span>
                 <span>Partnerschafts- und Kooperationsmöglichkeiten</span>

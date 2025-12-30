@@ -7,11 +7,7 @@
  * - Uses appropriate character limits (155 for EN, 160 for DE) for optimal SERP display
  */
 
-interface Vendor {
-  meta_description?: string | null;
-  description_en?: string | null;
-  description_de?: string | null;
-}
+import type { Vendor } from '../types/vendor';
 
 /**
  * Truncates text on word boundaries to a maximum character limit.
@@ -98,6 +94,8 @@ export function resolveMetaDescription(vendor: Vendor, lang: 'en' | 'de'): strin
     return null;
   }
 }
+
+
 
 
 

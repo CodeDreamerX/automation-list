@@ -1,18 +1,9 @@
 ---
+import type { TechnologyBasic } from '../types/technology';
 import { getTechnologyIconUrl } from '../lib/iconUtils';
 
-interface Technology {
-  slug: string;
-  icon_name?: string;
-  name_en?: string;
-  name_de?: string;
-  description_en?: string;
-  description_de?: string;
-  count?: number;
-}
-
 interface Props {
-  technology: Technology;
+  technology: TechnologyBasic;
   lang?: string;
   index?: number;
 }

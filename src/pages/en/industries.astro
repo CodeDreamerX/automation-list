@@ -1,0 +1,73 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import IndustryGrid from "../../components/IndustryGrid.astro";
+import { getIndustries } from "../../lib/getIndustries";
+import { supabase } from "../../lib/supabaseClient";
+
+// Fetch active industries from database
+const allIndustries = await getIndustries({ lang: "en", activeOnly: true });
+
+// Fetch vendor counts for each industry
+// First, get all vendor_industries links
+const { data: vendorIndustryLinks } = await supabase
+  .from("vendor_industries")
+  .select("industry_id, vendor_id");
+
+// Get all unique vendor IDs
+const vendorIds = Array.from(new Set((vendorIndustryLinks || []).map((link: any) => link.vendor_id).filter(Boolean)));
+
+// Get active vendors only
+let activeVendorIds = new Set<string>();
+if (vendorIds.length > 0) {
+  const { data: activeVendors } = await supabase
+    .from("vendors")
+    .select("id")
+    .in("id", vendorIds)
+    .neq("plan", "deactivated");
+  
+  activeVendorIds = new Set((activeVendors || []).map((v: any) => v.id));
+}
+
+// Count active vendors per industry
+const industryCountMap = new Map<string, number>();
+(vendorIndustryLinks || []).forEach((link: any) => {
+  if (link.industry_id && activeVendorIds.has(link.vendor_id)) {
+    const currentCount = industryCountMap.get(link.industry_id) || 0;
+    industryCountMap.set(link.industry_id, currentCount + 1);
+  }
+});
+
+// Map industries with vendor counts
+const industries = allIndustries.map((industry) => ({
+  ...industry,
+  count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
+}));
+
+// Generate dynamic description from actual industries
+const industryNames = industries
+  .slice(0, 6) // Limit to first 6 industries
+  .map((ind) => ind.name)
+  .filter(Boolean);
+const description = industryNames.length > 0
+  ? `Browse industrial automation industries including ${industryNames.join(', ')}${industryNames.length < industries.length ? ', and more.' : '.'}`
+  : "Browse industrial automation industries and discover vendors in your industry.";
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Industries", href: "/en/industries" },
+];
+
+---
+
+<BaseLayout 
+  title="Industries - Automation List"
+  description={description}
+  lang="en"
+  breadcrumbs={breadcrumbs}
+>
+  <IndustryGrid title="Industries" description={description} industries={industries} lang="en" headingLevel="h1" />
+</BaseLayout>
+

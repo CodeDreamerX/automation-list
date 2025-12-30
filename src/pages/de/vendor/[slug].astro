@@ -4,10 +4,48 @@
 
 export const prerender = false;
 
-import { Fragment } from 'astro/jsx-runtime';
 import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import LogoBox from '../../../components/LogoBox.astro';
+
+// Helper function to parse logo background variant from logo URL
+// Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
+// Also checks for common patterns in filename (e.g., logo_white.svg -> dark background)
+function parseLogoVariant(logoUrl: string | null | undefined): "light" | "dark" | "neutral" | "brand" {
+  if (!logoUrl) return "light";
+  
+  const url = logoUrl.toLowerCase();
+  
+  // Check for explicit variant pattern: __{variant}.{ext}
+  const explicitVariantMatch = url.match(/__([a-z]+)\.(svg|png|jpg|jpeg|webp)$/);
+  if (explicitVariantMatch) {
+    const variant = explicitVariantMatch[1];
+    const variantMap: Record<string, "light" | "dark" | "neutral" | "brand"> = {
+      white: 'light',
+      light: 'neutral',
+      gray: 'neutral',
+      dark: 'dark',
+      brand: 'brand',
+    };
+    if (variantMap[variant]) {
+      return variantMap[variant];
+    }
+  }
+  
+  // Check for common filename patterns
+  // If filename contains "white", use dark background (white logo on dark bg)
+  if (url.includes('_white') || url.includes('-white') || url.match(/white[._-]/)) {
+    return 'dark';
+  }
+  
+  // If filename contains "dark" or "black", use light background
+  if (url.includes('_dark') || url.includes('-dark') || url.includes('_black') || url.includes('-black')) {
+    return 'light';
+  }
+  
+  // Default to light background
+  return 'light';
+}
 
 // Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
@@ -38,8 +76,7 @@ const { data: vendor, error } = await supabase
         id,
         slug,
         name_en,
-        name_de,
-        is_active
+        name_de
       )
     )
   `)
@@ -54,14 +91,16 @@ if (!vendor) {
   return Astro.redirect('/de/vendors');
 }
 
-// Normalize category data shape
-// Extract technologies from vendor_technologies relationship
-// Extract industries from vendor_industries relationship (filter active only)
+// Normalize category, technology, and industry data shape
 const normalizedVendor = {
   ...vendor,
   category_slugs: vendor.vendor_categories?.map((vc: any) => vc.categories?.slug).filter(Boolean) || [],
-  vendor_technologies_list: vendor.vendor_technologies?.map((vt: any) => vt.technologies).filter(Boolean) || [],
-  vendor_industries_list: vendor.vendor_industries?.map((vi: any) => vi.industries).filter((industry: any) => industry && industry.is_active === true) || []
+  // Use language-specific description (DE: description_de, fallback to description_en if missing)
+  description_en: vendor.description_en || null,
+  description_de: vendor.description_de || null,
+  // Keep technologies and industries as arrays with slug and name for linking
+  vendor_technologies: vendor.vendor_technologies || [],
+  vendor_industries: vendor.vendor_industries || []
 };
 
 const deNavItems = [
@@ -98,21 +137,12 @@ function truncateDescription(text: string | null | undefined, maxLength: number 
   return text.substring(0, maxLength).trim() + '...';
 }
 
-// Helper function to get language-aware vendor description
-// For DE: use description_de, fallback to description_en if missing
-function getVendorDescription(vendor: typeof normalizedVendor): string | null {
-  return vendor.description_de || vendor.description_en || null;
-}
-
 // Determine plan status
 const plan = normalizedVendor.plan || 'free';
 const isFeatured = normalizedVendor.featured === true || plan === 'featured';
 const isPro = plan === 'pro' || isFeatured;
 const isFree = plan === 'free' && !isFeatured;
 const isOgMember = normalizedVendor.og_member === true;
-
-// Get the appropriate description for this language
-const vendorDescription = getVendorDescription(normalizedVendor);
 
 // Build location string
 function getLocation(): string {
@@ -125,6 +155,11 @@ function getLocation(): string {
 
 const location = getLocation();
 
+// Get primary category
+const primaryCategory = normalizedVendor.vendor_categories?.find((vc: any) => vc.is_primary === true);
+const primaryCategoryName = primaryCategory?.categories?.name_de || primaryCategory?.categories?.name_en;
+const primaryCategorySlug = primaryCategory?.categories?.slug;
+
 // Determine canonical URL
 const canonicalUrl = normalizedVendor.canonical_url || `https://automation-list.com/de/vendor/${slug}`;
 
@@ -135,7 +170,9 @@ const organizationSchema = {
   name: normalizedVendor.name,
   ...(normalizedVendor.website && { url: normalizedVendor.website }),
   ...(normalizedVendor.logo_url && { logo: normalizedVendor.logo_url }),
-  ...(vendorDescription && { description: vendorDescription }),
+  ...((normalizedVendor.description_de || normalizedVendor.description_en) && { 
+    description: normalizedVendor.description_de || normalizedVendor.description_en 
+  }),
   ...((normalizedVendor.city || normalizedVendor.country) && {
     address: {
       "@type": "PostalAddress",
@@ -179,27 +216,45 @@ const breadcrumbSchemaJson = JSON.stringify(breadcrumbSchema);
 // Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
 const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
 
-// Determine description: use meta_description if available, otherwise fallback to truncated vendor description
+// Determine description: use meta_description if available, otherwise fallback to truncated vendor.description_de (or description_en)
 const pageDescription = normalizedVendor.meta_description || 
-  (vendorDescription ? truncateDescription(vendorDescription, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
+  ((normalizedVendor.description_de || normalizedVendor.description_en) ? truncateDescription(normalizedVendor.description_de || normalizedVendor.description_en, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
 
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
 const origin = Astro.url.origin;
 const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
+
+// Prepare technologies data (Pro Members only)
+const technologiesToShow = isPro && normalizedVendor.vendor_technologies && normalizedVendor.vendor_technologies.length > 0
+  ? normalizedVendor.vendor_technologies
+  : [];
+
+// Prepare certifications data
+const certifications = isPro && normalizedVendor.certifications ? splitValue(normalizedVendor.certifications) : [];
+
+// Prepare languages data
+const languages = isPro && normalizedVendor.languages ? splitValue(normalizedVendor.languages) : [];
+
+// Prepare industries data (Pro Members only)
+const industries = isPro && normalizedVendor.vendor_industries ? normalizedVendor.vendor_industries : [];
+
+// Prepare tags data
+const tags = isPro && normalizedVendor.tags ? splitValue(normalizedVendor.tags) : [];
+
+// Prepare categories data (show everywhere, not just for Pro)
+const allCategories = normalizedVendor.vendor_categories || [];
 ---
 
 <BaseLayout 
   title={pageTitle}
   description={pageDescription}
-  image={image}
+  ogImage={image}
   lang="de"
   navItems={deNavItems}
   meta={{ canonical: canonicalUrl }}
 >
-  <Fragment slot="head">
-    <script type="application/ld+json" set:html={organizationSchemaJson} />
-    <script type="application/ld+json" set:html={breadcrumbSchemaJson} />
-  </Fragment>
+  <script slot="head" type="application/ld+json" set:html={organizationSchemaJson} />
+  <script slot="head" type="application/ld+json" set:html={breadcrumbSchemaJson} />
   <div class="container-px mx-auto max-w-4xl px-4 py-10">
     <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
       ← Zurück zu Anbietern
@@ -207,10 +262,14 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
 
     <!-- SECTION 1 — HEADER -->
     <div class={`mb-8 text-center ${isFeatured ? 'border-2 border-orange-300 rounded-lg p-6 bg-orange-50/30' : ''}`}>
-      <div class="mx-auto mb-4">
-        <LogoBox
-          src={normalizedVendor.logo_url}
+      <div class="flex justify-center mb-4">
+        <LogoBox 
+          src={normalizedVendor.logo_url} 
           alt={normalizedVendor.logo_alt || `${normalizedVendor.name} Logo`}
+          size="md"
+          variant={parseLogoVariant(normalizedVendor.logo_url)}
+          logoWidth={normalizedVendor.logo_width}
+          logoHeight={normalizedVendor.logo_height}
         />
       </div>
       
@@ -235,24 +294,16 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
         )}
       </div>
 
-      {/* Display primary category from vendor_categories */}
-      {normalizedVendor.vendor_categories && normalizedVendor.vendor_categories.length > 0 && (
-        normalizedVendor.vendor_categories
-          .filter((vc: any) => vc.is_primary === true)
-          .map((vc: any) => {
-            const categoryName = vc.categories?.name_de || vc.categories?.name_en;
-            const categorySlug = vc.categories?.slug;
-            return categoryName && categorySlug ? (
-              <p class="text-sm text-gray-600 mb-2">
-                <a 
-                  href={`/de/category/${categorySlug}`}
-                  class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded hover:bg-brand-100 hover:text-brand-800 transition-colors"
-                >
-                  {categoryName}
-                </a>
-              </p>
-            ) : null;
-          })
+      <!-- Primary Category -->
+      {primaryCategoryName && primaryCategorySlug && (
+        <p class="text-sm text-gray-600 mb-2">
+          <a 
+            href={`/de/category/${primaryCategorySlug}`}
+            class="inline-block px-2 py-1 text-xs font-medium bg-brand-50 text-brand-700 rounded hover:bg-brand-100 transition-colors"
+          >
+            {primaryCategoryName}
+          </a>
+        </p>
       )}
 
       {location && (
@@ -272,126 +323,134 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
     </div>
 
     <!-- SECTION 2 — DESCRIPTION -->
-    <div class="mb-8">
-      {vendorDescription && (
-        <>
-          <h2 class="text-xl font-semibold text-gray-900 mb-3">Über</h2>
-          <p class="text-gray-700 text-sm leading-relaxed">
-            {isPro ? vendorDescription : truncateDescription(vendorDescription, 300)}
+    {(normalizedVendor.description_de || normalizedVendor.description_en) && (
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-3">Über</h2>
+        <p class="text-gray-700 text-sm leading-relaxed">
+          {isFree ? truncateDescription(normalizedVendor.description_de || normalizedVendor.description_en, 300) : (normalizedVendor.description_de || normalizedVendor.description_en)}
+        </p>
+        {isFree && (
+          <p class="text-sm text-gray-500 italic mt-3 p-3 bg-gray-50 rounded border border-gray-200">
+            Dies ist eine kostenlose Anbieterliste. Upgraden Sie auf Pro, um das vollständige Profil freizuschalten.
           </p>
-          {isFree && (
-            <p class="text-sm text-gray-500 italic mt-3 p-3 bg-gray-50 rounded border border-gray-200">
-              Dies ist eine kostenlose Anbieterliste. Upgraden Sie auf Pro, um das vollständige Profil freizuschalten.
-            </p>
-          )}
-        </>
-      )}
-    </div>
+        )}
+      </div>
+    )}
 
-    <!-- SECTION 3 — GRID BLOCKS (conditionally rendered) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <!-- Technologies - Pro only -->
-      {isPro && normalizedVendor.vendor_technologies_list && normalizedVendor.vendor_technologies_list.length > 0 && (
-        <div class="border border-gray-200 rounded-lg p-4">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Technologien</h3>
-          <div class="flex flex-wrap gap-2">
-            {normalizedVendor.vendor_technologies_list.map((tech: any) => {
-              const techName = tech.name_de || tech.name_en;
-              const techSlug = tech.slug;
-              return techName && techSlug ? (
-                <a 
-                  href={`/de/technology/${techSlug}`}
-                  class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 hover:text-gray-900 transition-colors"
-                >
-                  {techName}
-                </a>
-              ) : null;
-            })}
+    <!-- SECTION 3 — GRID BLOCKS -->
+    {(technologiesToShow.length > 0 || certifications.length > 0 || languages.length > 0 || industries.length > 0 || tags.length > 0 || allCategories.length > 0) && (
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Technologies -->
+        {technologiesToShow.length > 0 && (
+          <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Technologien</h3>
+            <div class="flex flex-wrap gap-2">
+              {technologiesToShow.map((vt: any) => {
+                const tech = vt.technologies;
+                const techName = tech?.name_de || tech?.name_en;
+                const techSlug = tech?.slug;
+                if (!techName || !techSlug) return null;
+                return (
+                  <a 
+                    href={`/de/technology/${techSlug}`}
+                    class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    {techName}
+                  </a>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <!-- Industries - Pro only -->
-      {isPro && normalizedVendor.vendor_industries_list && normalizedVendor.vendor_industries_list.length > 0 && (
-        <div class="border border-gray-200 rounded-lg p-4">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Branchen</h3>
-          <div class="flex flex-wrap gap-2">
-            {normalizedVendor.vendor_industries_list.map((industry: any) => {
-              const industryName = industry.name_de || industry.name_en;
-              const industrySlug = industry.slug;
-              return industryName && industrySlug ? (
+        <!-- Certifications -->
+        {certifications.length > 0 && (
+          <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Zertifizierungen</h3>
+            <div class="flex flex-wrap gap-2">
+              {certifications.map((cert) => (
                 <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {industryName}
+                  {cert}
                 </span>
-              ) : null;
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <!-- Certifications - Pro only -->
-      {isPro && normalizedVendor.certifications && (
-        <div class="border border-gray-200 rounded-lg p-4">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Zertifizierungen</h3>
-          <div class="flex flex-wrap gap-2">
-            {splitValue(normalizedVendor.certifications).map((cert) => (
-              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                {cert}
-              </span>
-            ))}
+        <!-- Languages -->
+        {languages.length > 0 && (
+          <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Sprachen</h3>
+            <div class="flex flex-wrap gap-2">
+              {languages.map((lang) => (
+                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                  {lang}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <!-- Languages - Pro only -->
-      {isPro && normalizedVendor.languages && (
-        <div class="border border-gray-200 rounded-lg p-4">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Sprachen</h3>
-          <div class="flex flex-wrap gap-2">
-            {splitValue(normalizedVendor.languages).map((lang) => (
-              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                {lang}
-              </span>
-            ))}
+        <!-- Industries -->
+        {industries.length > 0 && (
+          <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Branchen</h3>
+            <div class="flex flex-wrap gap-2">
+              {industries.map((vi: any) => {
+                const industry = vi.industries;
+                const industryName = industry?.name_de || industry?.name_en;
+                const industrySlug = industry?.slug;
+                if (!industryName || !industrySlug) return null;
+                return (
+                  <a 
+                    href={`/de/industry/${industrySlug}`}
+                    class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    {industryName}
+                  </a>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <!-- Tags - Pro only -->
-      {isPro && normalizedVendor.tags && (
-        <div class="border border-gray-200 rounded-lg p-4">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Tags</h3>
-          <div class="flex flex-wrap gap-2">
-            {splitValue(normalizedVendor.tags).map((tag) => (
-              <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                {tag}
-              </span>
-            ))}
+        <!-- Tags -->
+        {tags.length > 0 && (
+          <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Tags</h3>
+            <div class="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <!-- Categories -->
-      {normalizedVendor.vendor_categories && normalizedVendor.vendor_categories.length > 0 && (
-        <div class="border border-gray-200 rounded-lg p-4">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Kategorien</h3>
-          <div class="flex flex-wrap gap-2">
-            {normalizedVendor.vendor_categories.map((vc) => {
-              const categoryName = vc.categories?.name_de || vc.categories?.name_en;
-              const categorySlug = vc.categories?.slug;
-              return categoryName && categorySlug ? (
-                <a 
-                  href={`/de/category/${categorySlug}`}
-                  class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 hover:text-gray-900 transition-colors"
-                >
-                  {categoryName}
-                </a>
-              ) : null;
-            })}
+        <!-- Categories -->
+        {allCategories.length > 0 && (
+          <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Kategorien</h3>
+            <div class="flex flex-wrap gap-2">
+              {allCategories.map((vc: any) => {
+                const categoryName = vc.categories?.name_de || vc.categories?.name_en;
+                const categorySlug = vc.categories?.slug;
+                if (!categoryName || !categorySlug) return null;
+                return (
+                  <a 
+                    href={`/de/category/${categorySlug}`}
+                    class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    {categoryName}
+                  </a>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    )}
 
     <!-- SECTION 4 — COMPANY FACTS (pro/featured only) -->
     {isPro && (normalizedVendor.year_founded || normalizedVendor.employee_count || normalizedVendor.hourly_rate || normalizedVendor.region || normalizedVendor.country) && (

@@ -1,0 +1,41 @@
+---
+import FormInput from './FormInput.astro';
+import FormSection from './FormSection.astro';
+
+interface Props {
+  vendor: any;
+}
+
+const { vendor } = Astro.props;
+---
+
+<FormSection title="Company Information">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <FormInput
+      id="year_founded"
+      name="year_founded"
+      label="Year Founded"
+      type="number"
+      value={vendor?.year_founded || ''}
+      min="1800"
+      max="2100"
+    />
+    
+    <FormInput
+      id="employee_count"
+      name="employee_count"
+      label="Employee Count"
+      value={vendor?.employee_count || ''}
+      placeholder="e.g., 50-100"
+    />
+    
+    <FormInput
+      id="hourly_rate"
+      name="hourly_rate"
+      label="Hourly Rate"
+      value={vendor?.hourly_rate || ''}
+      placeholder="e.g., €50-100"
+    />
+  </div>
+</FormSection>
+

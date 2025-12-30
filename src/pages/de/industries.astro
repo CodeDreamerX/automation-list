@@ -1,0 +1,73 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import IndustryGrid from "../../components/IndustryGrid.astro";
+import { getIndustries } from "../../lib/getIndustries";
+import { supabase } from "../../lib/supabaseClient";
+
+// Fetch active industries from database
+const allIndustries = await getIndustries({ lang: "de", activeOnly: true });
+
+// Fetch vendor counts for each industry
+// First, get all vendor_industries links
+const { data: vendorIndustryLinks } = await supabase
+  .from("vendor_industries")
+  .select("industry_id, vendor_id");
+
+// Get all unique vendor IDs
+const vendorIds = Array.from(new Set((vendorIndustryLinks || []).map((link: any) => link.vendor_id).filter(Boolean)));
+
+// Get active vendors only
+let activeVendorIds = new Set<string>();
+if (vendorIds.length > 0) {
+  const { data: activeVendors } = await supabase
+    .from("vendors")
+    .select("id")
+    .in("id", vendorIds)
+    .neq("plan", "deactivated");
+  
+  activeVendorIds = new Set((activeVendors || []).map((v: any) => v.id));
+}
+
+// Count active vendors per industry
+const industryCountMap = new Map<string, number>();
+(vendorIndustryLinks || []).forEach((link: any) => {
+  if (link.industry_id && activeVendorIds.has(link.vendor_id)) {
+    const currentCount = industryCountMap.get(link.industry_id) || 0;
+    industryCountMap.set(link.industry_id, currentCount + 1);
+  }
+});
+
+// Map industries with vendor counts
+const industries = allIndustries.map((industry) => ({
+  ...industry,
+  count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
+}));
+
+// Generate dynamic description from actual industries
+const industryNames = industries
+  .slice(0, 6) // Limit to first 6 industries
+  .map((ind) => ind.name)
+  .filter(Boolean);
+const description = industryNames.length > 0
+  ? `Durchsuchen Sie Industrieautomatisierungsbranchen, einschließlich ${industryNames.join(', ')}${industryNames.length < industries.length ? ' und mehr.' : '.'}`
+  : "Durchsuchen Sie Industrieautomatisierungsbranchen und entdecken Sie Anbieter in Ihrer Branche.";
+
+// Build breadcrumbs
+const breadcrumbs = [
+  { label: "Startseite", href: "/de/" },
+  { label: "Branchen", href: "/de/industries" },
+];
+
+---
+
+<BaseLayout 
+  title="Branchen - Automation List"
+  description={description}
+  lang="de"
+  breadcrumbs={breadcrumbs}
+>
+  <IndustryGrid title="Branchen" description={description} industries={industries} lang="de" headingLevel="h1" />
+</BaseLayout>
+
