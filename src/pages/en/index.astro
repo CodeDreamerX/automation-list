@@ -18,46 +18,105 @@ import ExploreCTA from "../../components/ExploreCTA.astro";
 import { getIndustries } from "../../lib/getIndustries";
 import type { VendorWithRelations } from "../../types/vendor";
 
-// Fetch ALL vendors with vendor_categories and vendor_technologies (exclude deactivated)
-const { data: vendors } = await supabase
+// Fetch ONLY featured vendors: plan='pro' OR (featured=true AND featured_until>now)
+// Use two queries to handle the complex condition, then combine and limit to 6
+const now = new Date().toISOString();
+
+// Query 1: Get pro plan vendors (limit 6, ordered by priority)
+const { data: proVendors } = await supabase
   .from("vendors")
   .select(`
     *,
     vendor_categories (
       is_primary,
       categories:categories (
-        id,
-        slug,
         name_en,
         name_de
       )
     ),
     vendor_technologies (
       technologies:technologies (
-        id,
-        slug,
         name_en,
         name_de
       )
     )
   `)
-  .neq('plan', 'deactivated');
+  .eq('plan', 'pro')
+  .order('priority', { ascending: true, nullsFirst: false })
+  .limit(6);
+
+// Query 2: Get featured vendors with valid featured_until date (limit 6, ordered by priority)
+const { data: featuredVendorsData } = await supabase
+  .from("vendors")
+  .select(`
+    *,
+    vendor_categories (
+      is_primary,
+      categories:categories (
+        name_en,
+        name_de
+      )
+    ),
+    vendor_technologies (
+      technologies:technologies (
+        name_en,
+        name_de
+      )
+    )
+  `)
+  .eq('featured', true)
+  .gt('featured_until', now)
+  .neq('plan', 'deactivated')
+  .order('priority', { ascending: true, nullsFirst: false })
+  .limit(6);
+
+// Combine and deduplicate by id
+const vendorMap = new Map();
+[...(proVendors || []), ...(featuredVendorsData || [])].forEach(v => {
+  if (!vendorMap.has(v.id)) {
+    vendorMap.set(v.id, v);
+  }
+});
+const vendors = Array.from(vendorMap.values());
 
 // Normalize category data shape
-const normalizedVendors = normalizeVendors(vendors || []);
+const normalizedVendors = normalizeVendors(vendors);
 
-// Filter featured vendors
-const featured = normalizedVendors.filter(v => isFeatured(v));
-
-// Sort featured vendors by priority ASC
-featured.sort((a, b) => (a.priority || 999) - (b.priority || 999));
+// No need to filter with isFeatured - queries already fetch only valid featured vendors:
+// - plan='pro' vendors (all pro vendors are featured)
+// - featured=true AND featured_until > now (only valid featured vendors)
+// Sort by priority ASC
+normalizedVendors.sort((a, b) => (a.priority || 999) - (b.priority || 999));
 
 // Limit to 6 vendors
-let featuredVendors = featured.slice(0, 6);
+let featuredVendors = normalizedVendors.slice(0, 6);
 
 // Fallback logic: if no featured vendors, use 6 random vendors (but don't mark as featured)
-if (featuredVendors.length === 0 && normalizedVendors.length > 0) {
-  featuredVendors = [...normalizedVendors].sort(() => Math.random() - 0.5).slice(0, 6);
+// Note: This fallback may not be needed if query works correctly, but kept for safety
+if (featuredVendors.length === 0) {
+  const { data: fallbackVendors } = await supabase
+    .from("vendors")
+    .select(`
+      *,
+      vendor_categories (
+        is_primary,
+        categories:categories (
+          name_en,
+          name_de
+        )
+      ),
+      vendor_technologies (
+        technologies:technologies (
+          name_en,
+          name_de
+        )
+      )
+    `)
+    .neq('plan', 'deactivated')
+    .limit(6);
+  
+  const normalizedFallback = normalizeVendors(fallbackVendors || []);
+  featuredVendors = [...normalizedFallback].sort(() => Math.random() - 0.5).slice(0, 6);
 }
 
 // Helper function to format technologies for display (first 2 only)
