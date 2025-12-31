@@ -8,6 +8,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import LogoBox from '../../../components/LogoBox.astro';
 import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
+import { truncateDescription } from '../../../lib/vendors/vendorFormatters';
 
 // Helper function to parse logo background variant from logo URL
 // Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
@@ -123,12 +124,6 @@ function formatValue(value: string | string[] | null | undefined): string {
   return String(value);
 }
 
-// Helper function to truncate description
-function truncateDescription(text: string | null | undefined, maxLength: number = 300): string {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength).trim() + '...';
-}
 
 // Determine plan status
 const plan = normalizedVendor.plan || 'free';
