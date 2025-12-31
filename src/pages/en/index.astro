@@ -156,6 +156,13 @@ const categories = (dbCategories || []).map(cat => ({
   count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
+// Get total vendor count (COUNT-only query, no rows fetched)
+// Excludes deactivated vendors via .neq("plan", "deactivated") filter
+const { count: totalVendorCount } = await supabase
+  .from("vendors")
+  .select("*", { count: "exact", head: true })
+  .neq("plan", "deactivated");
+
 // Fetch active industries (limit 8-12, ordered by order_index then name)
 const allIndustries = await getIndustries({ lang: "en", activeOnly: true });
 const industries = allIndustries.slice(0, 12);
@@ -191,6 +198,8 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
   <PageHero
     title="Find Vendors for Industrial Automation"
     description="Compare system integrators, OEMs, and automation experts – vendor-neutral and created by automation engineers."
+    vendorCount={totalVendorCount}
+    vendorCountLabel="verified automation vendors listed"
     primaryButtonText="Browse Directory →"
     primaryButtonHref="/en/vendors"
     secondaryButtonText="Add Your Company for Free →"
