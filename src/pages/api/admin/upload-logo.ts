@@ -20,6 +20,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const vendorName = formData.get('vendorName')?.toString();
     const vendorId = formData.get('vendorId')?.toString();
     const backgroundVariant = formData.get('backgroundVariant')?.toString() || 'white';
+    
+    // Validate and map background variant to database values: light, neutral, dark, brand
+    const validDbVariants = ['light', 'neutral', 'dark', 'brand'] as const;
+    const variantMap: Record<string, typeof validDbVariants[number]> = {
+      'white': 'light',
+      'light': 'light',
+      'gray': 'neutral',
+      'neutral': 'neutral',
+      'dark': 'dark',
+      'brand': 'brand'
+    };
+    const dbVariant = variantMap[backgroundVariant.toLowerCase()] || 'light';
 
     // Validate required fields
     if (!file) {
@@ -230,6 +242,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Generate suggested alt text
     const altText = `${vendorName} industrial automation logo`;
+
+    // Save logo_background_variant to database if vendorId is provided
+    if (vendorId) {
+      const { error: updateError } = await supabaseAdmin
+        .from('vendors')
+        .update({ logo_background_variant: dbVariant })
+        .eq('id', vendorId);
+
+      if (updateError) {
+        console.error('Error updating logo_background_variant:', updateError);
+        // Log error but don't fail the upload - variant update is non-critical
+      }
+    }
 
     return successResponse({
       publicUrl: publicUrl, // Return full Supabase Storage URL for display and storage
