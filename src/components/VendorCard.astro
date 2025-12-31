@@ -87,6 +87,7 @@ function getCountryFlag(country: string | null | undefined): string {
 
 // Helper function to parse logo background variant from logo URL
 // Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
+// Also checks for common patterns in filename (e.g., logo_white.svg -> dark background)
 function parseLogoVariant(logoUrl: string | null | undefined): "light" | "dark" | "neutral" | "brand" {
   if (!logoUrl) return "light";
   
@@ -123,6 +124,22 @@ function parseLogoVariant(logoUrl: string | null | undefined): "light" | "dark" 
   return 'light';
 }
 
+// Helper function to get logo variant: use stored logo_background_variant if available, otherwise parse from logo URL
+function getLogoVariant(vendor: VendorWithRelations): "light" | "dark" | "neutral" | "brand" {
+  // If vendor.logo_background_variant exists and is not null, use it directly
+  // Database stores: 'light', 'neutral', 'dark', 'brand' (already in LogoBox format)
+  const storedVariant = (vendor as any).logo_background_variant;
+  if (storedVariant && typeof storedVariant === 'string') {
+    const validVariants: ("light" | "dark" | "neutral" | "brand")[] = ['light', 'dark', 'neutral', 'brand'];
+    if (validVariants.includes(storedVariant as any)) {
+      return storedVariant as "light" | "dark" | "neutral" | "brand";
+    }
+  }
+  
+  // Fallback to filename-based parsing
+  return parseLogoVariant(vendor.logo_url);
+}
+
 const vendorHref = `${hrefPrefix}/${vendor.slug}`;
 const vendorIsFeatured = isFeatured(vendor);
 
@@ -157,7 +174,7 @@ const categorySlugs = vendor.category_slugs ||
         src={vendor.logo_url} 
         alt={vendor.logo_alt || `${vendor.name} logo`}
         size="md"
-        variant={parseLogoVariant(vendor.logo_url)}
+        variant={getLogoVariant(vendor)}
         logoWidth={vendor.logo_width}
         logoHeight={vendor.logo_height}
       />

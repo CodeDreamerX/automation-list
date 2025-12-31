@@ -49,6 +49,22 @@ function parseLogoVariant(logoUrl: string | null | undefined): "light" | "dark" 
   return 'light';
 }
 
+// Helper function to get logo variant: use stored logo_background_variant if available, otherwise parse from logo URL
+function getLogoVariant(vendor: any): "light" | "dark" | "neutral" | "brand" {
+  // If vendor.logo_background_variant exists and is not null, use it directly
+  // Database stores: 'light', 'neutral', 'dark', 'brand' (already in LogoBox format)
+  const storedVariant = vendor.logo_background_variant;
+  if (storedVariant && typeof storedVariant === 'string') {
+    const validVariants: ("light" | "dark" | "neutral" | "brand")[] = ['light', 'dark', 'neutral', 'brand'];
+    if (validVariants.includes(storedVariant as any)) {
+      return storedVariant as "light" | "dark" | "neutral" | "brand";
+    }
+  }
+  
+  // Fallback to filename-based parsing
+  return parseLogoVariant(vendor.logo_url);
+}
+
 // Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
 
@@ -331,7 +347,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           src={normalizedVendor.logo_url} 
           alt={normalizedVendor.logo_alt || `${normalizedVendor.name} logo`}
           size="md"
-          variant={parseLogoVariant(normalizedVendor.logo_url)}
+          variant={getLogoVariant(normalizedVendor)}
           logoWidth={normalizedVendor.logo_width}
           logoHeight={normalizedVendor.logo_height}
         />
