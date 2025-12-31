@@ -52,8 +52,23 @@ function parseBackgroundVariantFromLogoUrl(logoUrl: string | null | undefined): 
   return 'white';
 }
 
-// Parse variant from existing logo URL or default to 'white'
-const defaultBackgroundVariant: string = parseBackgroundVariantFromLogoUrl(vendor?.logo_url);
+// Map database values (light, neutral, dark, brand) back to form values (white, light, gray, dark, brand)
+function mapDbVariantToFormVariant(dbVariant: string | null | undefined): string {
+  if (!dbVariant) return 'white';
+  const dbToFormMap: Record<string, string> = {
+    'light': 'white',
+    'neutral': 'gray',
+    'dark': 'dark',
+    'brand': 'brand'
+  };
+  return dbToFormMap[dbVariant.toLowerCase()] || 'white';
+}
+
+// Use stored logo_background_variant if available (mapped from DB to form value), otherwise parse from logo URL, default to 'white'
+const storedDbVariant = vendor?.logo_background_variant;
+const defaultBackgroundVariant: string = storedDbVariant 
+  ? mapDbVariantToFormVariant(storedDbVariant)
+  : (parseBackgroundVariantFromLogoUrl(vendor?.logo_url) || 'white');
 const defaultLogoBoxVariant = mapVariantToLogoBox(defaultBackgroundVariant);
 ---
 

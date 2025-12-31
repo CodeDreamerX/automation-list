@@ -64,6 +64,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         logo_height: form.get('logo_height')?.toString() ? Number(form.get('logo_height')!.toString()) : null,
         logo_format: form.get('logo_format')?.toString() || null,
         logo_alt: form.get('logo_alt')?.toString() || null,
+        logo_background_variant: (() => {
+          const formVariant = form.get('logo_background_variant')?.toString() || null;
+          if (!formVariant) return null;
+          // Map form values (white, light, gray, dark, brand) to DB values (light, neutral, dark, brand)
+          const variantMap: Record<string, string> = {
+            'white': 'light',
+            'light': 'light',
+            'gray': 'neutral',
+            'neutral': 'neutral',
+            'dark': 'dark',
+            'brand': 'brand'
+          };
+          return variantMap[formVariant.toLowerCase()] || 'light';
+        })(),
       };
     } else {
       // Handle JSON (backward compatibility)
@@ -83,6 +97,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateData.logo_height = updateData.logo_height ? Number(updateData.logo_height) : null;
       updateData.logo_format = updateData.logo_format || null;
       updateData.logo_alt = updateData.logo_alt || null;
+      // Map form values (white, light, gray, dark, brand) to DB values (light, neutral, dark, brand)
+      if (updateData.logo_background_variant) {
+        const variantMap: Record<string, string> = {
+          'white': 'light',
+          'light': 'light',
+          'gray': 'neutral',
+          'neutral': 'neutral',
+          'dark': 'dark',
+          'brand': 'brand'
+        };
+        updateData.logo_background_variant = variantMap[updateData.logo_background_variant.toLowerCase()] || 'light';
+      } else {
+        updateData.logo_background_variant = null;
+      }
       
       // Extract category slugs from JSON if present
       if (body.category_slugs && Array.isArray(body.category_slugs)) {
