@@ -60,6 +60,46 @@ if (Astro.request.method === 'POST') {
   
   if (action && vendorId) {
     if (action === 'delete') {
+      // First, fetch vendor to get logo information before deletion
+      const { data: vendor } = await supabaseAdmin
+        .from('vendors')
+        .select('id, logo_url')
+        .eq('id', vendorId)
+        .single();
+
+      // Delete logo from storage if vendor has a logo
+      if (vendor?.logo_url) {
+        const filePathsToDelete: string[] = [];
+        
+        // Extract the filename from logo_url and construct the storage path
+        const relativePathMatch = vendor.logo_url.match(/\/logos\/vendors\/(.+)$/);
+        if (relativePathMatch) {
+          filePathsToDelete.push(`optimized/${relativePathMatch[1]}`);
+        } else {
+          const storageUrlMatch = vendor.logo_url.match(/vendor-logos\/optimized\/(.+)$/);
+          if (storageUrlMatch) {
+            filePathsToDelete.push(`optimized/${storageUrlMatch[1]}`);
+          } else {
+            const optimizedMatch = vendor.logo_url.match(/optimized\/(.+)$/);
+            if (optimizedMatch) {
+              filePathsToDelete.push(`optimized/${optimizedMatch[1]}`);
+            }
+          }
+        }
+
+        // Delete file(s) from Supabase Storage if we have paths
+        if (filePathsToDelete.length > 0) {
+          const { error: deleteError } = await supabaseAdmin.storage
+            .from('vendor-logos')
+            .remove(filePathsToDelete);
+
+          if (deleteError) {
+            console.warn('Error deleting logo file(s) from storage:', deleteError);
+          }
+        }
+      }
+
+      // Delete vendor using admin client
       const { error } = await supabaseAdmin
         .from('vendors')
         .delete()
@@ -142,6 +182,46 @@ if (Astro.request.method === 'GET' && Astro.url.searchParams.get('action') === '
 
   const vendorId = Astro.url.searchParams.get('id');
   if (vendorId) {
+    // First, fetch vendor to get logo information before deletion
+    const { data: vendor } = await supabaseAdmin
+      .from('vendors')
+      .select('id, logo_url')
+      .eq('id', vendorId)
+      .single();
+
+    // Delete logo from storage if vendor has a logo
+    if (vendor?.logo_url) {
+      const filePathsToDelete: string[] = [];
+      
+      // Extract the filename from logo_url and construct the storage path
+      const relativePathMatch = vendor.logo_url.match(/\/logos\/vendors\/(.+)$/);
+      if (relativePathMatch) {
+        filePathsToDelete.push(`optimized/${relativePathMatch[1]}`);
+      } else {
+        const storageUrlMatch = vendor.logo_url.match(/vendor-logos\/optimized\/(.+)$/);
+        if (storageUrlMatch) {
+          filePathsToDelete.push(`optimized/${storageUrlMatch[1]}`);
+        } else {
+          const optimizedMatch = vendor.logo_url.match(/optimized\/(.+)$/);
+          if (optimizedMatch) {
+            filePathsToDelete.push(`optimized/${optimizedMatch[1]}`);
+          }
+        }
+      }
+
+      // Delete file(s) from Supabase Storage if we have paths
+      if (filePathsToDelete.length > 0) {
+        const { error: deleteError } = await supabaseAdmin.storage
+          .from('vendor-logos')
+          .remove(filePathsToDelete);
+
+        if (deleteError) {
+          console.warn('Error deleting logo file(s) from storage:', deleteError);
+        }
+      }
+    }
+
+    // Delete vendor using admin client
     const { error } = await supabaseAdmin
       .from('vendors')
       .delete()

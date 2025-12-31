@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import sharp from 'sharp';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { mapFormVariantToDbVariant } from '../../../lib/vendors/logoBackgroundVariant';
 import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
@@ -21,17 +22,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const vendorId = formData.get('vendorId')?.toString();
     const backgroundVariant = formData.get('backgroundVariant')?.toString() || 'white';
     
-    // Validate and map background variant to database values: light, neutral, dark, brand
-    const validDbVariants = ['light', 'neutral', 'dark', 'brand'] as const;
-    const variantMap: Record<string, typeof validDbVariants[number]> = {
-      'white': 'light',
-      'light': 'light',
-      'gray': 'neutral',
-      'neutral': 'neutral',
-      'dark': 'dark',
-      'brand': 'brand'
-    };
-    const dbVariant = variantMap[backgroundVariant.toLowerCase()] || 'light';
+    // Map background variant to database values: light, neutral, dark, brand
+    const dbVariant = mapFormVariantToDbVariant(backgroundVariant);
 
     // Validate required fields
     if (!file) {

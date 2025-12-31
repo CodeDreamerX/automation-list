@@ -2,6 +2,7 @@
 import type { CategoryFormOption } from '../../types/category';
 import type { TechnologyFormOption } from '../../types/technology';
 import type { IndustryFormOption } from '../../types/industry';
+import { mapDbVariantToFormVariant } from '../../lib/vendors/logoBackgroundVariant';
 import BasicInfoSection from './BasicInfoSection.astro';
 import ContactSection from './ContactSection.astro';
 import CategorizationSection from './CategorizationSection.astro';
@@ -50,18 +51,6 @@ function parseBackgroundVariantFromLogoUrl(logoUrl: string | null | undefined): 
   
   // Default to white if no variant found
   return 'white';
-}
-
-// Map database values (light, neutral, dark, brand) back to form values (white, light, gray, dark, brand)
-function mapDbVariantToFormVariant(dbVariant: string | null | undefined): string {
-  if (!dbVariant) return 'white';
-  const dbToFormMap: Record<string, string> = {
-    'light': 'white',
-    'neutral': 'gray',
-    'dark': 'dark',
-    'brand': 'brand'
-  };
-  return dbToFormMap[dbVariant.toLowerCase()] || 'white';
 }
 
 // Use stored logo_background_variant if available (mapped from DB to form value), otherwise parse from logo URL, default to 'white'

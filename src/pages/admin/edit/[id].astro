@@ -4,6 +4,7 @@ export const prerender = false;
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { createSupabaseServerClient } from '../../../lib/supabaseServer';
 import { protectAdminRoute } from '../../../lib/admin/authUtils';
+import { mapFormVariantToDbVariant } from '../../../lib/vendors/logoBackgroundVariant';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
 import VendorForm from '../../../components/admin/VendorForm.astro';
 import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
@@ -125,16 +126,7 @@ if (Astro.request.method === 'POST') {
     logo_background_variant: (() => {
       const formVariant = formData.get('logo_background_variant')?.toString() || null;
       if (!formVariant) return null;
-      // Map form values (white, light, gray, dark, brand) to DB values (light, neutral, dark, brand)
-      const variantMap: Record<string, string> = {
-        'white': 'light',
-        'light': 'light',
-        'gray': 'neutral',
-        'neutral': 'neutral',
-        'dark': 'dark',
-        'brand': 'brand'
-      };
-      return variantMap[formVariant.toLowerCase()] || 'light';
+      return mapFormVariantToDbVariant(formVariant);
     })(),
   };
 

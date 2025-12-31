@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
+import { mapFormVariantToDbVariant } from '../../../lib/vendors/logoBackgroundVariant';
 import { successResponse, errorResponse } from '../../../lib/api/responses';
 
 export const prerender = false;
@@ -60,16 +61,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         logo_background_variant: (() => {
           const formVariant = form.get('logo_background_variant')?.toString() || null;
           if (!formVariant) return null;
-          // Map form values (white, light, gray, dark, brand) to DB values (light, neutral, dark, brand)
-          const variantMap: Record<string, string> = {
-            'white': 'light',
-            'light': 'light',
-            'gray': 'neutral',
-            'neutral': 'neutral',
-            'dark': 'dark',
-            'brand': 'brand'
-          };
-          return variantMap[formVariant.toLowerCase()] || 'light';
+          return mapFormVariantToDbVariant(formVariant);
         })(),
       };
     } else {
@@ -108,15 +100,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       insertData.logo_alt = insertData.logo_alt || null;
       // Map form values (white, light, gray, dark, brand) to DB values (light, neutral, dark, brand)
       if (insertData.logo_background_variant) {
-        const variantMap: Record<string, string> = {
-          'white': 'light',
-          'light': 'light',
-          'gray': 'neutral',
-          'neutral': 'neutral',
-          'dark': 'dark',
-          'brand': 'brand'
-        };
-        insertData.logo_background_variant = variantMap[insertData.logo_background_variant.toLowerCase()] || 'light';
+        insertData.logo_background_variant = mapFormVariantToDbVariant(insertData.logo_background_variant);
       } else {
         insertData.logo_background_variant = null;
       }
