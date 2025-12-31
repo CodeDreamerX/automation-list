@@ -2,7 +2,7 @@
 import type { VendorWithRelations } from '../types/vendor';
 import LogoBox from './LogoBox.astro';
 
-interface Props {
+interface FeaturedVendorsProps {
   title?: string;
   vendors: VendorWithRelations[];
   viewAllHref: string;
@@ -81,7 +81,7 @@ const {
   {vendors.length > 0 ? (
     <>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {vendors.map((vendor, i) => {
+        {vendors.map((vendor: VendorWithRelations, i: number) => {
           const vendorIsFeatured = isFeatured(vendor);
           const vendorHref = `${vendorHrefPrefix}/${vendor.slug}`;
           return (

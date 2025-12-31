@@ -105,15 +105,6 @@ normalizedVendor.description_de = vendor.description_de || null;
 normalizedVendor.vendor_technologies = vendor.vendor_technologies || [];
 normalizedVendor.vendor_industries = vendor.vendor_industries || [];
 
-const deNavItems = [
-  { label: "Startseite", href: "/de/" },
-  { label: "Kategorien", href: "/de/categories" },
-  { label: "Technologien", href: "/de/technologies" },
-  { label: "Anbieter", href: "/de/vendors" },
-  { label: "Blog", href: "/de/blog" },
-  { label: "Kontakt", href: "/de/contact" },
-];
-
 const backUrl = "/de/vendors";
 
 // Helper function to split comma-separated values into array
@@ -215,6 +206,93 @@ const breadcrumbSchema = {
 
 const breadcrumbSchemaJson = JSON.stringify(breadcrumbSchema);
 
+// Build contextual breadcrumbs based on referrer or query parameters
+// Check if user came from a technology or industry page
+const referrer = Astro.request.headers.get('referer') || '';
+const fromParam = Astro.url.searchParams.get('from');
+let techSlugParam = Astro.url.searchParams.get('tech');
+let industrySlugParam = Astro.url.searchParams.get('industry');
+
+// Extract slug from referrer URL if not in query params
+if (!techSlugParam && referrer.includes('/technology/')) {
+  const techMatch = referrer.match(/\/technology\/([^\/\?]+)/);
+  if (techMatch) {
+    techSlugParam = techMatch[1];
+  }
+}
+
+if (!industrySlugParam && referrer.includes('/industry/')) {
+  const industryMatch = referrer.match(/\/industry\/([^\/\?]+)/);
+  if (industryMatch) {
+    industrySlugParam = industryMatch[1];
+  }
+}
+
+let breadcrumbs: Array<{ label: string; href: string }> = [];
+
+// Determine context from query params or referrer URL
+const isFromTechnology = fromParam === 'technology' || referrer.includes('/technology/');
+const isFromIndustry = fromParam === 'industry' || referrer.includes('/industry/');
+
+if (isFromTechnology && techSlugParam) {
+  // Fetch technology data for breadcrumb
+  const { data: tech } = await supabase
+    .from('technologies')
+    .select('slug, name_en, name_de')
+    .eq('slug', techSlugParam)
+    .eq('is_active', true)
+    .maybeSingle();
+  
+  if (tech) {
+    const techName = tech.name_de || tech.name_en || techSlugParam;
+    breadcrumbs = [
+      { label: "Startseite", href: "/de/" },
+      { label: "Technologien", href: "/de/technologies" },
+      { label: techName, href: `/de/technology/${techSlugParam}` },
+      { label: normalizedVendor.name, href: `/de/vendor/${slug}` },
+    ];
+  } else {
+    // Fallback to default if technology not found
+    breadcrumbs = [
+      { label: "Startseite", href: "/de/" },
+      { label: "Anbieter", href: "/de/vendors" },
+      { label: normalizedVendor.name, href: `/de/vendor/${slug}` },
+    ];
+  }
+} else if (isFromIndustry && industrySlugParam) {
+  // Fetch industry data for breadcrumb
+  const { data: industry } = await supabase
+    .from('industries')
+    .select('slug, name_en, name_de')
+    .eq('slug', industrySlugParam)
+    .eq('is_active', true)
+    .maybeSingle();
+  
+  if (industry) {
+    const industryName = industry.name_de || industry.name_en || industrySlugParam;
+    breadcrumbs = [
+      { label: "Startseite", href: "/de/" },
+      { label: "Branchen", href: "/de/industries" },
+      { label: industryName, href: `/de/industry/${industrySlugParam}` },
+      { label: normalizedVendor.name, href: `/de/vendor/${slug}` },
+    ];
+  } else {
+    // Fallback to default if industry not found
+    breadcrumbs = [
+      { label: "Startseite", href: "/de/" },
+      { label: "Anbieter", href: "/de/vendors" },
+      { label: normalizedVendor.name, href: `/de/vendor/${slug}` },
+    ];
+  }
+} else {
+  // Default breadcrumbs: Startseite → Anbieter → Vendor
+  breadcrumbs = [
+    { label: "Startseite", href: "/de/" },
+    { label: "Anbieter", href: "/de/vendors" },
+    { label: normalizedVendor.name, href: `/de/vendor/${slug}` },
+  ];
+}
+
 // Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
 const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
 
@@ -252,7 +330,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
   description={pageDescription}
   ogImage={image}
   lang="de"
-  navItems={deNavItems}
+  breadcrumbs={breadcrumbs}
   meta={{ canonical: canonicalUrl }}
 >
   <script slot="head" type="application/ld+json" set:html={organizationSchemaJson} />

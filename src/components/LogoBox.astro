@@ -1,5 +1,5 @@
 ---
-interface Props {
+interface LogoBoxProps {
   src?: string | null;
   alt?: string | null;
   variant?: "light" | "dark" | "neutral" | "brand";
@@ -53,62 +53,33 @@ const maxLogoHeight = sizeConfig.maxHeight;
 {(() => {
   const logoUrl = src && typeof src === 'string' ? src.trim() : null;
   const hasLogo = logoUrl && logoUrl.length > 0;
-  const isSvg = logoUrl?.toLowerCase().endsWith('.svg');
   const imageId = `logo-img-${Math.random().toString(36).substr(2, 9)}`;
   
   return hasLogo ? (
     <>
       <div class={`${containerSize} flex items-center justify-center rounded-lg ${bgClass} p-2`} style="overflow: hidden;">
-        {isSvg ? (
-          <object
-            id={imageId}
-            data={logoUrl}
-            type="image/svg+xml"
-            style={`pointer-events: none; display: block; width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
-            aria-label={alt || "Logo"}
-          >
-            <img
-              src={logoUrl}
-              alt={alt || "Logo"}
-              style={`width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
-            />
-          </object>
-        ) : (
-          <img
-            id={imageId}
-            src={logoUrl}
-            alt={alt || "Logo"}
-            style={`width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
-            loading="lazy"
-            decoding="async"
-          />
-        )}
+        <img
+          id={imageId}
+          src={logoUrl}
+          alt={alt || "Logo"}
+          style={`pointer-events: none; display: block; width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
+          loading="lazy"
+          decoding="async"
+        />
       </div>
-      <script define:vars={{ imageId, logoUrl, isSvg }}>
+      <script define:vars={{ imageId, logoUrl }}>
         (function() {
-          if (isSvg) {
-            const obj = document.getElementById(imageId);
-            if (obj) {
-              obj.addEventListener('error', function() {
-                console.error('SVG logo failed to load:', logoUrl);
-              });
-              obj.addEventListener('load', function() {
-                console.log('SVG logo loaded:', logoUrl);
-              });
-            }
-          } else {
-            const img = document.getElementById(imageId);
-            if (img) {
-              img.addEventListener('error', function() {
-                console.error('Logo image failed to load:', logoUrl);
-                img.style.display = 'none';
-              });
-              img.addEventListener('load', function() {
-                if (img.naturalWidth === 0 || img.naturalHeight === 0) {
-                  console.warn('Logo image loaded but has zero dimensions:', logoUrl);
-                }
-              });
-            }
+          const img = document.getElementById(imageId);
+          if (img) {
+            img.addEventListener('error', function() {
+              console.error('Logo image failed to load:', logoUrl);
+              img.style.display = 'none';
+            });
+            img.addEventListener('load', function() {
+              if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                console.warn('Logo image loaded but has zero dimensions:', logoUrl);
+              }
+            });
           }
         })();
       </script>

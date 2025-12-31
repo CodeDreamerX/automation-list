@@ -1,9 +1,9 @@
 ---
 import { isFeatured } from '../lib/isFeatured';
-import type { VendorWithRelations } from '../types/vendor';
+import type { VendorWithRelations, VendorCategoryRelation } from '../types/vendor';
 import LogoBox from './LogoBox.astro';
 
-interface Props {
+interface VendorCardProps {
   vendor: VendorWithRelations;
   hrefPrefix?: string;
   showFeaturedBadge?: boolean;
@@ -148,7 +148,7 @@ const vendorIsFeatured = isFeatured(vendor);
 
 // Derive category_slugs from vendor_categories if not provided
 const categorySlugs = vendor.category_slugs || 
-  (vendor.vendor_categories?.map((vc) => vc.categories?.slug).filter(Boolean) as string[]) || 
+  (vendor.vendor_categories?.map((vc: VendorCategoryRelation) => vc.categories?.slug).filter(Boolean) as string[]) || 
   [];
 ---
 
@@ -206,7 +206,7 @@ const categorySlugs = vendor.category_slugs ||
         </span>
       )}
       {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
-        vendor.vendor_categories.map((vc) => {
+        vendor.vendor_categories.map((vc: VendorCategoryRelation) => {
           const categoryName = lang === "de" 
             ? (vc.categories?.name_de || vc.categories?.name_en)
             : (vc.categories?.name_en || vc.categories?.name_de);

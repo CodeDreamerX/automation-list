@@ -257,16 +257,17 @@ export function initVendorForm() {
         
         const result = await response.json();
         
-        if (!response.ok) {
+        if (!response.ok || !result.success) {
           throw new Error(result.error || 'Upload failed');
         }
         
-        // Update hidden fields
-        if (logoUrlHidden) logoUrlHidden.value = result.publicUrl || '';
-        if (logoWidthHidden) logoWidthHidden.value = result.width?.toString() || '';
-        if (logoHeightHidden) logoHeightHidden.value = result.height?.toString() || '';
-        if (logoFormatHidden) logoFormatHidden.value = result.format || '';
-        if (logoAltHidden) logoAltHidden.value = result.altText || '';
+        // Update hidden fields - data is now wrapped in result.data after response standardization
+        const uploadData = result.data || result; // Support both formats for backward compatibility
+        if (logoUrlHidden) logoUrlHidden.value = uploadData.publicUrl || '';
+        if (logoWidthHidden) logoWidthHidden.value = uploadData.width?.toString() || '';
+        if (logoHeightHidden) logoHeightHidden.value = uploadData.height?.toString() || '';
+        if (logoFormatHidden) logoFormatHidden.value = uploadData.format || '';
+        if (logoAltHidden) logoAltHidden.value = uploadData.altText || '';
         
         // Update preview with selected variant
         updatePreviewWithVariant(backgroundVariant);
@@ -339,7 +340,7 @@ export function initVendorForm() {
         
         const result = await response.json();
         
-        if (!response.ok) {
+        if (!response.ok || !result.success) {
           throw new Error(result.error || 'Failed to delete logo');
         }
         

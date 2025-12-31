@@ -1,10 +1,12 @@
 ---
-interface Props {
-  benefits?: Array<{
-    title: string;
-    description: string;
-    accent?: "brand" | "orange";
-  }>;
+type Benefit = {
+  title: string;
+  description: string;
+  accent?: "brand" | "orange";
+};
+
+interface BenefitsProps {
+  benefits?: Benefit[];
 }
 
 const {
@@ -34,7 +36,7 @@ const {
       <div class="mx-auto w-16 h-1 bg-orange-500 rounded-full"></div>
     </div>
     <div class="grid md:grid-cols-3 gap-8">
-      {benefits.map((benefit, index) => {
+      {benefits.map((benefit: Benefit, index: number) => {
         const accent = benefit.accent ?? "brand";
         const isOrange = accent === "orange";
 
