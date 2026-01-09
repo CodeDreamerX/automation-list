@@ -55,6 +55,10 @@ if (technology) {
   techIconUrl = '';
 }
 
+// Split description into paragraphs (split on blank lines)
+const techDescriptionText = technology ? (technology.description_en || technology.description_de || '') : '';
+const techDescriptionParagraphs = techDescriptionText ? techDescriptionText.split(/\n\s*\n/).filter((p: string) => p.trim()) : [];
+
 // Get pagination params
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
 const pageSize = 20;
@@ -234,10 +238,14 @@ const breadcrumbs = [
           <h1 class="text-3xl font-bold text-gray-900 mb-2">
             {techName}
           </h1>
-          {techDescription && (
-            <p class="text-gray-600 text-base">
-              {techDescription}
-            </p>
+          {techDescriptionParagraphs.length > 0 && (
+            <div>
+              {techDescriptionParagraphs.map((paragraph: string) => (
+                <p class="mb-4 text-gray-700 leading-relaxed">
+                  {paragraph.trim()}
+                </p>
+              ))}
+            </div>
           )}
         </div>
       </div>

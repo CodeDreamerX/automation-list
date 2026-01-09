@@ -74,6 +74,8 @@ export interface TechnologyBasic {
   name_de?: string | null;
   description_en?: string | null;
   description_de?: string | null;
+  card_description_en?: string | null;
+  card_description_de?: string | null;
   count?: number;
 }
 

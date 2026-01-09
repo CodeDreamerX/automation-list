@@ -7,6 +7,8 @@ export interface Industry {
   slug: string;
   name: string; // Resolved by lang with fallback to name_en
   description?: string; // Optional, resolved by lang
+  card_description_en?: string | null;
+  card_description_de?: string | null;
 }
 
 /**
@@ -46,6 +48,8 @@ export interface IndustryBasic {
   slug: string;
   name: string; // Resolved by lang with fallback to name_en
   description?: string; // Optional, resolved by lang
+  card_description_en?: string | null;
+  card_description_de?: string | null;
 }
 
 

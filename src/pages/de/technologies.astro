@@ -35,7 +35,7 @@ const technologies = (dbTechnologies || []).map(tech => ({
   card_description_en: tech.card_description_en || '',
   card_description_de: tech.card_description_de || '',
   count: tech.id ? (countMap.get(tech.id) || 0) : 0,
-})).filter(tech => tech.slug && (tech.name_en || tech.name_de)); // Filter out technologies without slug or names
+})).filter(tech => tech.slug && (tech.name_en || tech.name_de) && (tech.count || 0) > 0); // Filter out technologies without slug or names, and technologies with 0 vendors
 
 // Generate dynamic description from actual technologies
 const technologyNames = technologies

@@ -128,7 +128,7 @@ function formatTechnologies(vendor: VendorWithRelations): string {
 // Fetch active categories from database
 const { data: dbCategories } = await supabase
   .from("categories")
-  .select("id, slug, name_en, name_de, description_en, description_de, icon_name")
+  .select("id, slug, name_en, name_de, description_en, description_de, card_description_en, card_description_de, icon_name")
   .eq("is_active", true)
   .order("order_index", { ascending: true });
 
@@ -153,6 +153,8 @@ const categories = (dbCategories || []).map(cat => ({
   name_de: cat.name_de || '',
   description_en: cat.description_en || '',
   description_de: cat.description_de || '',
+  card_description_en: cat.card_description_en || '',
+  card_description_de: cat.card_description_de || '',
   count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 

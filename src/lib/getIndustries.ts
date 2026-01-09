@@ -66,6 +66,8 @@ export async function getIndustries({
         name,
         order_index: industry.order_index ?? null,
         ...(description && { description }),
+        card_description_en: industry.card_description_en,
+        card_description_de: industry.card_description_de,
       };
     })
     // Filter out industries without a valid name

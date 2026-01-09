@@ -18,6 +18,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const name_de = body.get("name_de");
     const description_en = body.get("description_en");
     const description_de = body.get("description_de");
+    const card_description_en = body.get("card_description_en");
+    const card_description_de = body.get("card_description_de");
     const order_index = body.get("order_index");
     const is_active = body.get("is_active") ? true : false;
 
@@ -36,10 +38,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       name_de: name_de?.toString().trim() || null,
       description_en: description_en?.toString().trim() || null,
       description_de: description_de?.toString().trim() || null,
+      card_description_en: card_description_en?.toString().trim() || null,
+      card_description_de: card_description_de?.toString().trim() || null,
       order_index: order_index ? parseInt(order_index.toString()) : null,
       is_active: is_active,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     // Create industry using admin client

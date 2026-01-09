@@ -22,14 +22,12 @@ function formatSlugAsName(slug: string): string {
     .join(' ');
 }
 
-// Get name and description based on language with fallbacks
+// Get name and card description based on language with fallbacks for name only
 const name = lang === "de" 
   ? (technology.name_de || technology.name_en || formatSlugAsName(technology.slug))
   : (technology.name_en || technology.name_de || formatSlugAsName(technology.slug));
 
-const description = lang === "de" 
-  ? (technology.description_de || technology.description_en || '')
-  : (technology.description_en || technology.description_de || '');
+const cardText = lang === "de" ? technology.card_description_de : technology.card_description_en;
 
 // Build link using slug
 const link = `/${lang}/technology/${technology.slug}`;
@@ -52,8 +50,8 @@ const iconPath = getTechnologyIconUrl(technology.icon_name);
     </div>
   )}
   <h3 class="text-lg font-semibold text-gray-900">{name}</h3>
-  {description && (
-    <p class="text-sm text-gray-600 mt-2">{description}</p>
+  {cardText?.trim() && (
+    <p class="text-sm text-gray-600 mt-2">{cardText}</p>
   )}
 </a>
 

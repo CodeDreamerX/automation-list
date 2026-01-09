@@ -13,6 +13,9 @@ const {
   index = 0,
 } = Astro.props;
 
+// Get card description based on language (no fallback)
+const cardText = lang === "de" ? industry.card_description_de : industry.card_description_en;
+
 // Build link using slug
 const link = `/${lang}/industry/${industry.slug}`;
 ---
@@ -23,8 +26,8 @@ const link = `/${lang}/industry/${industry.slug}`;
   style={`animation-delay: ${index * 0.05}s`}
 >
   <h3 class="text-lg font-semibold text-gray-900">{industry.name}</h3>
-  {industry.description && (
-    <p class="text-sm text-gray-600 mt-2">{industry.description}</p>
+  {cardText?.trim() && (
+    <p class="text-sm text-gray-600 mt-2">{cardText}</p>
   )}
 </a>
 
