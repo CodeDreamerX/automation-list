@@ -21,7 +21,7 @@ export async function getIndustries({
   // Build query
   let query = supabase
     .from("industries")
-    .select("id, slug, name_en, name_de, description_en, description_de, order_index, is_active");
+    .select("id, slug, name_en, name_de, description_en, description_de, card_description_en, card_description_de, order_index, is_active");
 
   // Filter by active status if requested
   if (activeOnly) {

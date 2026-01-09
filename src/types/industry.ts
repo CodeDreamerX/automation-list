@@ -19,6 +19,8 @@ export interface IndustryDB {
   name_de?: string;
   description_en?: string;
   description_de?: string;
+  card_description_en?: string | null;
+  card_description_de?: string | null;
   order_index?: number | null;
   is_active?: boolean;
 }

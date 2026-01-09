@@ -32,6 +32,8 @@ export interface Category {
   name_de?: string | null;     // German name
   description_en?: string | null; // English description
   description_de?: string | null; // German description
+  card_description_en?: string | null; // English card description
+  card_description_de?: string | null; // German card description
   icon_name?: string | null;   // Icon identifier (e.g., "plcs", "scada-hmi")
   order_index?: number | null; // Display order
   is_active?: boolean | null;         // Whether category is active
