@@ -293,8 +293,8 @@ if (isFromTechnology && techSlugParam) {
   ];
 }
 
-// Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
-const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
+// Determine title: use meta_title if available, otherwise fallback to vendor.name + " – Industrial Automation | Automation List"
+const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} – Industrial Automation | Automation List`;
 
 // Determine description: use meta_description if available, otherwise fallback to truncated vendor.description_en
 const pageDescription = normalizedVendor.meta_description || 

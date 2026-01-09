@@ -134,7 +134,7 @@ if (normalizedVendors.length > 0 && normalizedVendors[0].country) {
 
 // SEO metadata
 const CountryName = displayCountry;
-const metaTitle = `Automation Companies in ${CountryName} | Automation List`;
+const metaTitle = `Industrieautomatisierungsunternehmen in ${CountryName} | Automation List`;
 const metaDescription = `Discover top industrial automation vendors, PLC experts, SCADA integrators, and system integrators in ${CountryName}.`;
 const origin = Astro.url.origin;
 const defaultOg = `${origin}/og/default.png`;
@@ -160,7 +160,7 @@ const breadcrumbs = [
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": `Automation Companies in ${CountryName}`,
+    "name": `Industrieautomatisierungsunternehmen in ${CountryName}`,
     "itemListElement": normalizedVendors.map((v, index) => ({
       "@type": "Organization",
       "position": index + 1,
@@ -173,7 +173,7 @@ const breadcrumbs = [
   })} />
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      Automatisierungsunternehmen in {displayCountry}
+      Industrieautomatisierungsunternehmen in {displayCountry}
     </h1>
 
     <!-- Result Count -->

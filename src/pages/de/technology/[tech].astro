@@ -182,7 +182,7 @@ const normalizedVendors = normalizeVendors(vendors || []);
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // SEO metadata
-const metaTitle = `Top ${techName} Automatisierungsunternehmen | Automation List`;
+const metaTitle = `Unternehmen für Industrieautomatisierung mit ${techName} | Automation List`;
 const metaDescription = (techDescription && techDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${techName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
 const origin = Astro.url.origin;
 const defaultOgImage = `${origin}/og/default.png`;
@@ -208,7 +208,7 @@ const breadcrumbs = [
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": `Automatisierungsunternehmen für ${techName}`,
+    "name": `Unternehmen für Industrieautomatisierung mit ${techName}`,
     "itemListElement": normalizedVendors.map((v, index) => ({
       "@type": "Organization",
       "position": index + 1,

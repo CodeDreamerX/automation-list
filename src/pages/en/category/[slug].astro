@@ -141,7 +141,7 @@ const normalizedVendors = normalizeVendors(vendors || []);
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // SEO metadata
-const metaTitle = `${categoryName} Automation Vendors | Automation List`;
+const metaTitle = `Industrial Automation ${categoryName} | Automation List`;
 const metaDescription = (categoryDescription && categoryDescription.trim()) || `Discover top ${categoryName} automation vendors, integrators, and solution providers.`;
 const origin = Astro.url.origin;
 const defaultOg = `${origin}/og/default.png`;
@@ -167,7 +167,7 @@ const breadcrumbs = [
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": `${categoryName} Automation Vendors`,
+    "name": `Industrial Automation ${categoryName}`,
     "description": metaDescription,
     "itemListElement": normalizedVendors.map((v, index) => ({
       "@type": "Organization",
@@ -181,7 +181,7 @@ const breadcrumbs = [
   })} />
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      {categoryName} Automation Vendors
+      {categoryName} in Industrial Automation
     </h1>
 
     {categoryDescription && (

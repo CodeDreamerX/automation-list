@@ -141,7 +141,7 @@ const normalizedVendors = normalizeVendors(vendors || []);
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // SEO metadata
-const metaTitle = `${categoryName} Automatisierungsanbieter | Automation List`;
+const metaTitle = `${categoryName} für Industrieautomatisierung | Automation List`;
 const metaDescription = (categoryDescription && categoryDescription.trim()) || `Entdecken Sie führende ${categoryName} Automatisierungsanbieter, Integratoren und Lösungsanbieter.`;
 const origin = Astro.url.origin;
 const defaultOg = `${origin}/og/default.png`;
@@ -167,7 +167,7 @@ const breadcrumbs = [
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": `${categoryName} Automatisierungsanbieter`,
+    "name": `${categoryName} für Industrieautomatisierung`,
     "description": metaDescription,
     "itemListElement": normalizedVendors.map((v, index) => ({
       "@type": "Organization",
@@ -181,7 +181,7 @@ const breadcrumbs = [
   })} />
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      {categoryName} Automatisierungsanbieter
+      {categoryName} für industrielle Automatisierung
     </h1>
 
     {categoryDescription && (

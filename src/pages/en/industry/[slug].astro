@@ -151,7 +151,7 @@ const normalizedVendors = normalizeVendors(vendors || []);
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // SEO metadata
-const metaTitle = `Top ${industryName} Automation Companies | Automation List`;
+const metaTitle = `Industrial Automation Companies for ${industryName} | Automation List`;
 const metaDescription = (industryDescription && industryDescription.trim()) || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${industryName}. Browse verified automation vendors worldwide.`;
 const origin = Astro.url.origin;
 const defaultOgImage = `${origin}/og/default.png`;
@@ -203,7 +203,7 @@ const breadcrumbSchema = {
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": `Automation Companies for ${industryName}`,
+    "name": `Industrial Automation Companies for ${industryName}`,
     "itemListElement": normalizedVendors.map((v, index) => ({
       "@type": "Organization",
       "position": index + 1,
