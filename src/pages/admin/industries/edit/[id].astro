@@ -1,1 +1,62 @@
+---
+export const prerender = false;
 
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import IndustryForm from '../../../../components/admin/IndustryForm.astro';
+
+// Handle logout first (before auth check)
+if (Astro.url.searchParams.get('logout') === 'true') {
+  return Astro.redirect('/api/admin/logout');
+}
+
+// Check authentication and redirect if not logged in
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const { id } = Astro.params;
+
+// Fetch industry by ID
+const { data: industry, error } = await supabaseAdmin
+  .from('industries')
+  .select('*')
+  .eq('id', id)
+  .maybeSingle();
+
+if (error) {
+  console.error('Error fetching industry:', error);
+}
+
+if (!industry) {
+  return Astro.redirect('/admin/industries');
+}
+
+---
+
+<AdminLayout title={`Edit Industry: ${industry.name_en || industry.slug} - Admin Panel`} currentPath="/admin/industries">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Edit Industry</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          {industry.name_en || industry.slug || 'Industry'}
+        </p>
+      </div>
+      <a
+        href="/admin/industries"
+        class="text-sm text-gray-600 hover:text-gray-900"
+      >
+        ← Back to Industries
+      </a>
+    </div>
+
+    <!-- INDUSTRY FORM -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <IndustryForm industry={industry} />
+    </div>
+  </div>
+</AdminLayout>
