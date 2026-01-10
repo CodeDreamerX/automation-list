@@ -170,18 +170,20 @@ const allIndustries = await getIndustries({ lang: "en", activeOnly: true });
 const industries = allIndustries.slice(0, 12);
 
 // Build WebSite structured data with SearchAction
+// Use production domain for schema.org URLs
 const origin = Astro.url.origin;
+const productionOrigin = "https://www.automation-list.com";
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "url": `${origin}/en/`,
+  "url": `${productionOrigin}/en/`,
   "name": "Automation List",
-  "description": "Discover the best automation tools and workflows for your productivity needs.",
+  "description": "Vendor-neutral directory of industrial automation companies. Compare system integrators, OEMs, and automation experts worldwide.",
   "potentialAction": {
     "@type": "SearchAction",
     "target": {
       "@type": "EntryPoint",
-      "urlTemplate": `${origin}/en/vendors?q={search_term_string}`
+      "urlTemplate": `${productionOrigin}/en/vendors?q={search_term_string}`
     },
     "query-input": "required name=search_term_string"
   }
@@ -192,14 +194,17 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
 ---
 
 <BaseLayout 
-  title="Automation List"
-  description="Discover the best automation tools and workflows for your productivity needs."
+  title="Industrial Automation Vendors Directory | Automation List"
+  description="Vendor-neutral directory of industrial automation companies. Compare system integrators, OEMs, and automation experts worldwide."
+  canonical="https://www.automation-list.com/en/"
+  ogUrl="https://www.automation-list.com/en/"
+  ogImage="https://www.automation-list.com/og/default.png"
   lang="en"
 >
   <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
   <PageHero
-    title="Find Vendors for Industrial Automation"
-    description="Compare system integrators, OEMs, and automation experts – vendor-neutral and created by automation engineers."
+    title="Industrial Automation Vendors Directory"
+    description="Compare system integrators, OEMs, and automation experts – vendor-neutral and built by automation engineers."
     vendorCount={totalVendorCount}
     vendorCountLabel="verified automation vendors listed"
     primaryButtonText="Browse Directory →"

@@ -62,49 +62,86 @@ const normalizeOrigin = (urlOrigin: string): string => {
   return normalized;
 };
 
-// Determine canonical URL: use meta.canonical if provided, otherwise use canonical prop, otherwise generate from normalized origin
-const canonicalUrl = meta?.canonical || canonical || (normalizeOrigin(Astro.url.origin) + Astro.url.pathname + Astro.url.search);
-
-// Extract origin from canonical URL if provided, otherwise normalize Astro.url.origin
+// Extract origin from normalized Astro.url.origin
 // This ensures hreflang URLs match the canonical URL's domain format
-let origin: string;
+const origin = normalizeOrigin(Astro.url.origin);
+
+// Check if we're on a vendor page with query parameters (for SEO handling)
+const currentPath = Astro.url.pathname;
+const isVendorPage = currentPath === "/en/vendors" || currentPath === "/de/vendors";
+const hasQueryParams = Astro.url.searchParams.toString().length > 0;
+
+// Determine canonical URL: use meta.canonical if provided, otherwise use canonical prop, otherwise generate from normalized origin
+// For vendor pages with query params, canonical MUST always point to base vendor page (without query params)
+// This ensures filtered/paginated vendor pages don't create duplicate content issues
+let canonicalUrl: string;
+if (isVendorPage && hasQueryParams) {
+  // Always override canonical for vendor pages with query params to point to base vendor page
+  canonicalUrl = origin + currentPath;
+} else if (meta?.canonical || canonical) {
+  // Use explicit canonical if provided (for non-filtered vendor pages or other pages)
+  canonicalUrl = meta?.canonical || canonical || "";
+} else {
+  // For other pages, use pathname only (no query params in canonical)
+  canonicalUrl = origin + currentPath;
+}
+
+// Extract origin from canonical URL if provided explicitly, otherwise use already normalized origin
+// This ensures hreflang URLs match the canonical URL's domain format
+let originForHreflang: string;
 if (canonicalUrl && (meta?.canonical || canonical)) {
   // Extract origin from the canonical URL and normalize it
   try {
     const canonicalUrlObj = new URL(canonicalUrl);
-    origin = normalizeOrigin(canonicalUrlObj.origin);
+    originForHreflang = normalizeOrigin(canonicalUrlObj.origin);
   } catch {
     // Fallback to normalized origin if URL parsing fails
-    origin = normalizeOrigin(Astro.url.origin);
+    originForHreflang = origin;
   }
 } else {
   // Use normalized origin
-  origin = normalizeOrigin(Astro.url.origin);
+  originForHreflang = origin;
 }
 
 // Generate hreflang URLs
-const currentPath = Astro.url.pathname;
+// For vendor pages with query params, hreflang must point to base vendor pages (without query params)
+let enHreflangPath: string;
+let deHreflangPath: string;
+
+if (isVendorPage && hasQueryParams) {
+  // Use base vendor paths (no query params) for hreflang
+  enHreflangPath = "/en/vendors";
+  deHreflangPath = "/de/vendors";
+} else {
+  // Use current path for hreflang (without query params)
+  enHreflangPath = currentPath.startsWith("/de/") 
+    ? currentPath.replace(/^\/de/, "/en")
+    : currentPath.startsWith("/en/")
+    ? currentPath
+    : "/en" + currentPath;
+  
+  deHreflangPath = currentPath.startsWith("/en/")
+    ? currentPath.replace(/^\/en/, "/de")
+    : currentPath.startsWith("/de/")
+    ? currentPath
+    : "/de" + currentPath;
+}
 
 // Generate English and German alternate URLs
 let enUrl: string;
 let deUrl: string;
 
-if (currentPath.startsWith("/de/")) {
-  // Currently on German page
-  enUrl = origin + currentPath.replace(/^\/de/, "/en");
-  deUrl = origin + currentPath;
-} else if (currentPath.startsWith("/en/")) {
-  // Currently on English page
-  enUrl = origin + currentPath;
-  deUrl = origin + currentPath.replace(/^\/en/, "/de");
-} else {
-  // Fallback for root or other paths
-  enUrl = origin + "/en" + currentPath;
-  deUrl = origin + "/de" + currentPath;
-}
+enUrl = originForHreflang + enHreflangPath;
+deUrl = originForHreflang + deHreflangPath;
 
 // x-default points to English version
 const xDefaultUrl = enUrl;
+
+// Determine robots meta tag
+// For vendor pages without query params: index, follow
+// For vendor pages with query params: noindex, follow
+// For other pages: index, follow (default)
+const robotsContent = isVendorPage && hasQueryParams ? "noindex, follow" : "index, follow";
 
 // Determine OG locale based on language
 const ogLocale = lang === "de" ? "de_DE" : "en_US";
@@ -252,6 +289,7 @@ if (isGerman) {
     <meta charset="UTF-8" />
     {description && <meta name="description" content={description} />}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content={robotsContent} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>

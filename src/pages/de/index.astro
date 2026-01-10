@@ -173,18 +173,20 @@ const allIndustries = await getIndustries({ lang: "de", activeOnly: true });
 const industries = allIndustries.slice(0, 12);
 
 // Build WebSite structured data with SearchAction
+// Use production domain for schema.org URLs
 const origin = Astro.url.origin;
+const productionOrigin = "https://www.automation-list.com";
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "url": `${origin}/de/`,
+  "url": `${productionOrigin}/de/`,
   "name": "Automation List",
-  "description": "Entdecken Sie die besten Automatisierungstools und Workflows für Ihre Produktivitätsbedürfnisse.",
+  "description": "Herstellerneutrales Verzeichnis für Industrieautomatisierung. Systemintegratoren, OEMs und Automatisierungsanbieter vergleichen.",
   "potentialAction": {
     "@type": "SearchAction",
     "target": {
       "@type": "EntryPoint",
-      "urlTemplate": `${origin}/de/vendors?q={search_term_string}`
+      "urlTemplate": `${productionOrigin}/de/vendors?q={search_term_string}`
     },
     "query-input": "required name=search_term_string"
   }
@@ -195,13 +197,16 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
 ---
 
 <BaseLayout 
-  title="Automation List"
-  description="Entdecken Sie die besten Automatisierungstools und Workflows für Ihre Produktivitätsbedürfnisse."
+  title="Industrieautomatisierung Anbieter Verzeichnis | Automation List"
+  description="Herstellerneutrales Verzeichnis für Industrieautomatisierung. Systemintegratoren, OEMs und Automatisierungsanbieter vergleichen."
+  canonical="https://www.automation-list.com/de/"
+  ogUrl="https://www.automation-list.com/de/"
+  ogImage="https://www.automation-list.com/og/default.png"
   lang="de"
 >
   <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
   <PageHero
-    title="Anbieter für Industrieautomatisierung finden"
+    title="Anbieterverzeichnis für Industrieautomatisierung"
     description="Vergleichen Sie Systemintegratoren, OEMs und Automatisierungsexperten – anbieterneutral und von Automatisierungsingenieuren erstellt."
     vendorCount={totalVendorCount}
     vendorCountLabel="gelistete geprüfte Automatisierungsanbieter"
