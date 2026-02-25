@@ -309,9 +309,9 @@ function buildCountQuery() {
     }
   }
 
-  // Apply search filter if present (filter by vendor name)
+  // Apply search filter if present (search across name, descriptions, and tags)
   if (searchQuery) {
-    query = query.ilike('name', `%${searchQuery}%`);
+    query = query.or(`name.ilike.%${searchQuery}%,description_en.ilike.%${searchQuery}%,description_de.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
   }
 
   // Apply country filter if present (use case-insensitive matching)
@@ -370,9 +370,9 @@ function buildBaseQuery() {
     }
   }
 
-  // Apply search filter if present (filter by vendor name)
+  // Apply search filter if present (search across name, descriptions, and tags)
   if (searchQuery) {
-    query = query.ilike('name', `%${searchQuery}%`);
+    query = query.or(`name.ilike.%${searchQuery}%,description_en.ilike.%${searchQuery}%,description_de.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
   }
 
   // Apply country filter if present (use case-insensitive matching)
@@ -471,40 +471,6 @@ const categoryList = (dbCategories || []).map(cat => ({
     <p class="text-lg md:text-xl text-gray-600 mb-8 max-w-3xl">{description}</p>
   )}
 
-  <!-- Category Filter Badges -->
-  {categoryList.length > 0 && (
-    <div class="mb-6 flex flex-wrap gap-2">
-      {categoryList.map(cat => {
-        // Build URL preserving existing query params but updating category
-        const url = new URL(Astro.url);
-        if (cat.slug === activeCategory) {
-          // If clicking active category, remove it (clear filter)
-          url.searchParams.delete('category');
-        } else {
-          // Set new category
-          url.searchParams.set('category', cat.slug);
-        }
-        // Preserve other filters (search, country, technology, industries)
-        if (searchQuery) url.searchParams.set('q', searchQuery);
-        if (countryFilter) url.searchParams.set('country', countryFilter);
-        if (technologyFilter) url.searchParams.set('technology', technologyFilter);
-        if (industriesFilter) url.searchParams.set('industries', industriesFilter);
-        // Reset to page 1 when filter changes
-        url.searchParams.set('page', '1');
-        return (
-          <a
-            href={url.toString()}
-            class={`px-3 py-1 rounded-md text-sm cursor-pointer ${
-              cat.slug === activeCategory ? "bg-black text-white" : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {cat.name}
-          </a>
-        );
-      })}
-    </div>
-  )}
-
   <!-- Search and Filter Form -->
   <div class="border border-gray-200 rounded-lg p-4 mb-8 bg-white shadow-sm">
     <form method="GET" action={Astro.url.pathname}>
@@ -517,7 +483,7 @@ const categoryList = (dbCategories || []).map(cat => ({
             type="text"
             name="q"
             value={searchQuery}
-            placeholder={lang === "de" ? "Suchen..." : "Search..."}
+            placeholder={lang === "de" ? "Name, Fähigkeit, Stichwort..." : "Name, capability, keyword..."}
             class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
           />
         </div>

@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Pricing | Automation List"
+  description="Simple, transparent pricing for industrial automation vendors. Free listing included — upgrade to Pro for a complete profile."
+  canonical="https://www.automation-list.com/en/pricing"
+  lang="en"
+>
+  <div class="mx-auto max-w-4xl px-4 py-16">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h1>
+      <p class="text-lg text-gray-600 max-w-xl mx-auto">
+        Get listed for free. Upgrade to Pro when you're ready to stand out.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+      <!-- Free Tier -->
+      <div class="border border-gray-200 rounded-xl p-8 flex flex-col">
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-1">Free</h2>
+          <p class="text-4xl font-bold text-gray-900 mt-3">€0</p>
+          <p class="text-sm text-gray-500 mt-1">forever</p>
+        </div>
+        <ul class="space-y-3 text-sm text-gray-600 mb-8 flex-1">
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Basic company listing with name and description
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Appear in directory search results
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Categorised by industry and technology
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-gray-300 mt-0.5">✗</span>
+            <span class="text-gray-400">Full description visible</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-gray-300 mt-0.5">✗</span>
+            <span class="text-gray-400">Technologies, certifications, languages</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-gray-300 mt-0.5">✗</span>
+            <span class="text-gray-400">Company facts (founded, team size, rate)</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-gray-300 mt-0.5">✗</span>
+            <span class="text-gray-400">Contact information visible</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-gray-300 mt-0.5">✗</span>
+            <span class="text-gray-400">Priority ranking in results</span>
+          </li>
+        </ul>
+        <a
+          href="/en/contact"
+          class="block text-center px-6 py-3 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+        >
+          Get listed free →
+        </a>
+      </div>
+
+      <!-- Pro Tier -->
+      <div class="border-2 border-black rounded-xl p-8 flex flex-col relative">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span class="bg-black text-white text-xs font-semibold px-3 py-1 rounded-full">Most popular</span>
+        </div>
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-1">Pro</h2>
+          <p class="text-4xl font-bold text-gray-900 mt-3">€49</p>
+          <p class="text-sm text-gray-500 mt-1">per month</p>
+        </div>
+        <ul class="space-y-3 text-sm text-gray-600 mb-8 flex-1">
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Everything in Free
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Full description visible to buyers
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Technologies, certifications &amp; languages
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Company facts (founded, team size, hourly rate)
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Contact information (email, phone, address)
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Priority ranking in search results
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-green-500 mt-0.5">✓</span>
+            Featured badge on vendor card
+          </li>
+        </ul>
+        <a
+          href="/en/contact"
+          class="block text-center px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900 transition"
+        >
+          Get started →
+        </a>
+      </div>
+    </div>
+
+    <p class="text-center text-sm text-gray-500 mt-8">
+      No credit card required to get listed. Pricing in EUR, excl. VAT.
+      <a href="/en/contact" class="underline hover:text-gray-700">Questions? Contact us.</a>
+    </p>
+  </div>
+</BaseLayout>

@@ -304,22 +304,20 @@ const pageDescription = normalizedVendor.meta_description ||
 const origin = Astro.url.origin;
 const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
 
-// Prepare technologies data (Pro Members only)
-const technologiesToShow = isPro && normalizedVendor.vendor_technologies && normalizedVendor.vendor_technologies.length > 0
-  ? normalizedVendor.vendor_technologies
-  : [];
+// Prepare technologies data
+const allTechnologies = normalizedVendor.vendor_technologies || [];
 
 // Prepare certifications data
-const certifications = isPro && normalizedVendor.certifications ? splitValue(normalizedVendor.certifications) : [];
+const certifications = normalizedVendor.certifications ? splitValue(normalizedVendor.certifications) : [];
 
 // Prepare languages data
-const languages = isPro && normalizedVendor.languages ? splitValue(normalizedVendor.languages) : [];
+const languages = normalizedVendor.languages ? splitValue(normalizedVendor.languages) : [];
 
-// Prepare industries data (Pro Members only)
-const industries = isPro && normalizedVendor.vendor_industries ? normalizedVendor.vendor_industries : [];
+// Prepare industries data
+const allIndustries = normalizedVendor.vendor_industries || [];
 
 // Prepare tags data
-const tags = isPro && normalizedVendor.tags ? splitValue(normalizedVendor.tags) : [];
+const tags = normalizedVendor.tags ? splitValue(normalizedVendor.tags) : [];
 
 // Prepare categories data (show everywhere, not just for Pro)
 const allCategories = normalizedVendor.vendor_categories || [];
@@ -404,41 +402,63 @@ const allCategories = normalizedVendor.vendor_categories || [];
 
     <!-- SECTION 2 — DESCRIPTION -->
     {normalizedVendor.description_en && (
-      <div class="mb-8">
+      <div class="mb-4">
         <h2 class="text-xl font-semibold text-gray-900 mb-3">About</h2>
-        <p class="text-gray-700 text-sm leading-relaxed">
-          {isFree ? truncateDescription(normalizedVendor.description_en, 300) : normalizedVendor.description_en}
-        </p>
-        {isFree && (
-          <p class="text-sm text-gray-500 italic mt-3 p-3 bg-gray-50 rounded border border-gray-200">
-            This is a free vendor listing. Upgrade to Pro to unlock full profile.
-          </p>
-        )}
+        <p class="text-gray-700 text-sm leading-relaxed">{normalizedVendor.description_en}</p>
+      </div>
+    )}
+
+    {normalizedVendor.specialization_text && (
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-3">What Makes Us Different</h2>
+        <p class="text-gray-700 text-sm leading-relaxed italic">{normalizedVendor.specialization_text}</p>
       </div>
     )}
 
     <!-- SECTION 3 — GRID BLOCKS -->
-    {(technologiesToShow.length > 0 || certifications.length > 0 || languages.length > 0 || industries.length > 0 || tags.length > 0 || allCategories.length > 0) && (
+    {(allTechnologies.length > 0 || certifications.length > 0 || languages.length > 0 || allIndustries.length > 0 || tags.length > 0 || allCategories.length > 0) && (
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- Technologies -->
-        {technologiesToShow.length > 0 && (
+        {allTechnologies.length > 0 && (
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Technologies</h3>
-            <div class="flex flex-wrap gap-2">
-              {technologiesToShow.map((vt: any) => {
-                const tech = vt.technologies;
+            <div class="flex flex-wrap items-start gap-2">
+              {(() => {
+                const vt = allTechnologies[0];
+                const tech = vt?.technologies;
                 const techName = tech?.name_en || tech?.name_de;
                 const techSlug = tech?.slug;
-                if (!techName || !techSlug) return null;
-                return (
-                  <a 
+                return techName && techSlug ? (
+                  <a
                     href={`/en/technology/${techSlug}`}
                     class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                   >
                     {techName}
                   </a>
-                );
-              })}
+                ) : null;
+              })()}
+              {isPro ? (
+                allTechnologies.slice(1).map((vt: any) => {
+                  const tech = vt.technologies;
+                  const techName = tech?.name_en || tech?.name_de;
+                  const techSlug = tech?.slug;
+                  if (!techName || !techSlug) return null;
+                  return (
+                    <a
+                      href={`/en/technology/${techSlug}`}
+                      class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                    >
+                      {techName}
+                    </a>
+                  );
+                })
+              ) : (
+                allTechnologies.slice(1).map((_: any, i: number) => (
+                  <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
+                    🔒 Pro only
+                  </span>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -448,11 +468,19 @@ const allCategories = normalizedVendor.vendor_categories || [];
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Certifications</h3>
             <div class="flex flex-wrap gap-2">
-              {certifications.map((cert) => (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {cert}
-                </span>
-              ))}
+              {isPro ? (
+                certifications.map((cert) => (
+                  <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                    {cert}
+                  </span>
+                ))
+              ) : (
+                certifications.map((_: string, i: number) => (
+                  <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
+                    🔒 Pro only
+                  </span>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -462,34 +490,64 @@ const allCategories = normalizedVendor.vendor_categories || [];
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Languages</h3>
             <div class="flex flex-wrap gap-2">
-              {languages.map((lang) => (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {lang}
-                </span>
-              ))}
+              {isPro ? (
+                languages.map((lang) => (
+                  <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                    {lang}
+                  </span>
+                ))
+              ) : (
+                languages.map((_: string, i: number) => (
+                  <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
+                    🔒 Pro only
+                  </span>
+                ))
+              )}
             </div>
           </div>
         )}
 
         <!-- Industries -->
-        {industries.length > 0 && (
+        {allIndustries.length > 0 && (
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Industries</h3>
-            <div class="flex flex-wrap gap-2">
-              {industries.map((vi: any) => {
-                const industry = vi.industries;
+            <div class="flex flex-wrap items-start gap-2">
+              {(() => {
+                const vi = allIndustries[0];
+                const industry = vi?.industries;
                 const industryName = industry?.name_en || industry?.name_de;
                 const industrySlug = industry?.slug;
-                if (!industryName || !industrySlug) return null;
-                return (
-                  <a 
+                return industryName && industrySlug ? (
+                  <a
                     href={`/en/industry/${industrySlug}`}
                     class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                   >
                     {industryName}
                   </a>
-                );
-              })}
+                ) : null;
+              })()}
+              {isPro ? (
+                allIndustries.slice(1).map((vi: any) => {
+                  const industry = vi.industries;
+                  const industryName = industry?.name_en || industry?.name_de;
+                  const industrySlug = industry?.slug;
+                  if (!industryName || !industrySlug) return null;
+                  return (
+                    <a
+                      href={`/en/industry/${industrySlug}`}
+                      class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                    >
+                      {industryName}
+                    </a>
+                  );
+                })
+              ) : (
+                allIndustries.slice(1).map((_: any, i: number) => (
+                  <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
+                    🔒 Pro only
+                  </span>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -499,11 +557,19 @@ const allCategories = normalizedVendor.vendor_categories || [];
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Tags</h3>
             <div class="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                  {tag}
-                </span>
-              ))}
+              {isPro ? (
+                tags.map((tag) => (
+                  <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                    {tag}
+                  </span>
+                ))
+              ) : (
+                tags.map((_: string, i: number) => (
+                  <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
+                    🔒 Pro only
+                  </span>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -512,13 +578,13 @@ const allCategories = normalizedVendor.vendor_categories || [];
         {allCategories.length > 0 && (
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Categories</h3>
-            <div class="flex flex-wrap gap-2">
-              {allCategories.map((vc: any) => {
+            <div class="flex flex-wrap items-start gap-2">
+              {allCategories.slice(0, 2).map((vc: any) => {
                 const categoryName = vc.categories?.name_en || vc.categories?.name_de;
                 const categorySlug = vc.categories?.slug;
                 if (!categoryName || !categorySlug) return null;
                 return (
-                  <a 
+                  <a
                     href={`/en/category/${categorySlug}`}
                     class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                   >
@@ -526,70 +592,149 @@ const allCategories = normalizedVendor.vendor_categories || [];
                   </a>
                 );
               })}
+              {isPro ? (
+                allCategories.slice(2).map((vc: any) => {
+                  const categoryName = vc.categories?.name_en || vc.categories?.name_de;
+                  const categorySlug = vc.categories?.slug;
+                  if (!categoryName || !categorySlug) return null;
+                  return (
+                    <a
+                      href={`/en/category/${categorySlug}`}
+                      class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                    >
+                      {categoryName}
+                    </a>
+                  );
+                })
+              ) : (
+                allCategories.slice(2).map((_: any, i: number) => (
+                  <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
+                    🔒 Pro only
+                  </span>
+                ))
+              )}
             </div>
           </div>
         )}
       </div>
     )}
 
-    <!-- SECTION 4 — COMPANY FACTS (pro/featured only) -->
-    {isPro && (normalizedVendor.year_founded || normalizedVendor.employee_count || normalizedVendor.hourly_rate || normalizedVendor.region || normalizedVendor.country) && (
-      <div class="border border-gray-200 rounded-lg p-6 mb-8 bg-gray-50">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4">Company Facts</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {normalizedVendor.year_founded && (
-            <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Year Founded</p>
+    <!-- SECTION 4 — COMPANY FACTS (always visible, values locked for free) -->
+    <div class="border border-gray-200 rounded-lg p-6 mb-8 bg-gray-50">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Company Facts</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {normalizedVendor.year_founded && (
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Year Founded</p>
+            {isPro ? (
               <p class="text-sm font-medium text-gray-900">{normalizedVendor.year_founded}</p>
-            </div>
-          )}
-          {normalizedVendor.employee_count && (
-            <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Employees</p>
+            ) : (
+              <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+            )}
+          </div>
+        )}
+        {normalizedVendor.employee_count && (
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Employees</p>
+            {isPro ? (
               <p class="text-sm font-medium text-gray-900">{normalizedVendor.employee_count}</p>
-            </div>
-          )}
-          {normalizedVendor.hourly_rate && (
-            <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Hourly Rate</p>
+            ) : (
+              <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+            )}
+          </div>
+        )}
+        {normalizedVendor.hourly_rate && (
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Hourly Rate</p>
+            {isPro ? (
               <p class="text-sm font-medium text-gray-900">{normalizedVendor.hourly_rate}</p>
-            </div>
-          )}
-          {(normalizedVendor.region || normalizedVendor.country) && (
-            <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Location</p>
-              <p class="text-sm font-medium text-gray-900">{location}</p>
-            </div>
-          )}
-        </div>
+            ) : (
+              <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+            )}
+          </div>
+        )}
+        {normalizedVendor.countries_served && (
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Countries Served</p>
+            {isPro ? (
+              <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
+            ) : (
+              <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+            )}
+          </div>
+        )}
+        {normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined && (
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Taking New Projects</p>
+            {isPro ? (
+              normalizedVendor.taking_new_projects ? (
+                <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 font-medium">Yes</span>
+              ) : (
+                <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 font-medium">Not currently</span>
+              )
+            ) : (
+              <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+            )}
+          </div>
+        )}
+        {(normalizedVendor.region || normalizedVendor.country) && (
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Location</p>
+            <p class="text-sm font-medium text-gray-900">{location}</p>
+          </div>
+        )}
       </div>
-    )}
+    </div>
 
-    <!-- SECTION 5 — CONTACT CARD (pro/featured only) -->
-    {isPro && (normalizedVendor.email || normalizedVendor.phone || normalizedVendor.address) && (
+    <!-- SECTION 5 — CONTACT CARD (always visible, values locked for free) -->
+    {(normalizedVendor.email || normalizedVendor.phone || normalizedVendor.address || normalizedVendor.linkedin_url) && (
       <div class="border border-gray-200 rounded-lg p-6 mb-8">
         <h2 class="text-xl font-semibold text-gray-900 mb-4">Contact</h2>
         <div class="space-y-3">
           {normalizedVendor.email && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Email</p>
-              <a href={`mailto:${normalizedVendor.email}`} class="text-sm text-brand-700 hover:text-brand-800">
-                {normalizedVendor.email}
-              </a>
+              {isPro ? (
+                <a href={`mailto:${normalizedVendor.email}`} class="text-sm text-brand-700 hover:text-brand-800">
+                  {normalizedVendor.email}
+                </a>
+              ) : (
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+              )}
             </div>
           )}
           {normalizedVendor.phone && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Phone</p>
-              <a href={`tel:${normalizedVendor.phone}`} class="text-sm text-brand-700 hover:text-brand-800">
-                {normalizedVendor.phone}
-              </a>
+              {isPro ? (
+                <a href={`tel:${normalizedVendor.phone}`} class="text-sm text-brand-700 hover:text-brand-800">
+                  {normalizedVendor.phone}
+                </a>
+              ) : (
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+              )}
             </div>
           )}
           {normalizedVendor.address && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Address</p>
-              <p class="text-sm text-gray-900">{normalizedVendor.address}</p>
+              {isPro ? (
+                <p class="text-sm text-gray-900">{normalizedVendor.address}</p>
+              ) : (
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+              )}
+            </div>
+          )}
+          {normalizedVendor.linkedin_url && (
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">LinkedIn</p>
+              {isPro ? (
+                <a href={normalizedVendor.linkedin_url} target="_blank" rel="noopener noreferrer" class="text-sm text-brand-700 hover:text-brand-800">
+                  View LinkedIn Profile →
+                </a>
+              ) : (
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+              )}
             </div>
           )}
         </div>
@@ -598,18 +743,23 @@ const allCategories = normalizedVendor.vendor_categories || [];
 
     <!-- SECTION 6 — UPGRADE CTA (free only) -->
     {isFree && (
-      <div class="border-2 border-orange-200 rounded-lg p-6 bg-orange-50 text-center">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Want to unlock full profile?</h3>
-        <p class="text-sm text-gray-600 mb-4">
-          Contact us to upgrade to Pro and showcase your complete vendor profile.
+      <div class="border border-gray-200 rounded-lg p-8 mb-8 text-center">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Unlock the full profile</h3>
+        <p class="text-sm text-gray-500 mb-6">
+          Get access to all technologies, industries, and company details.
         </p>
-        <a 
-          href="/en/contact" 
-          class="inline-block px-6 py-2 bg-orange-600 text-white rounded-md text-sm font-medium hover:bg-orange-700 transition"
+        <a
+          href="/en/pricing"
+          class="inline-block px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900 transition"
         >
-          Contact Us to Upgrade
+          Upgrade to Pro — CHF 99/year
         </a>
       </div>
+    )}
+    {normalizedVendor.updated_at && (
+      <p class="text-xs text-gray-400 mt-8 text-center">
+        Profile last updated: {new Date(normalizedVendor.updated_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+      </p>
     )}
   </div>
 </BaseLayout>

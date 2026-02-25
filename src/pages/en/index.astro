@@ -204,19 +204,19 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
   <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
   <PageHero
     title="Industrial Automation Vendors Directory"
-    description="Compare system integrators, OEMs, and automation experts – vendor-neutral and built by automation engineers."
+    description="The vendor-neutral automation directory built by engineers — not agencies. Find and compare system integrators, OEMs, and specialists worldwide."
     vendorCount={totalVendorCount}
     vendorCountLabel="verified automation vendors listed"
     primaryButtonText="Browse Directory →"
     primaryButtonHref="/en/vendors"
     secondaryButtonText="Add Your Company for Free →"
     secondaryButtonHref="/en/contact"
-    secondaryMicroCopy="Free during MVP phase"
+    secondaryMicroCopy="No credit card required"
   />
 
-  <SearchForm 
+  <SearchForm
     action="/en/vendors"
-    placeholder="Search vendors by name"
+    placeholder="Search by name, capability, or keyword"
   />
 
   <CategoryGrid categories={categories} lang="en" />
@@ -240,7 +240,7 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
 
   <VendorBenefits 
     ctaText="Add Your Company for Free →"
-    microCopy="Free during MVP phase"
+    microCopy="No credit card required"
   />
 
   <ExploreCTA />

@@ -207,20 +207,20 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
   <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
   <PageHero
     title="Anbieterverzeichnis für Industrieautomatisierung"
-    description="Vergleichen Sie Systemintegratoren, OEMs und Automatisierungsexperten – anbieterneutral und von Automatisierungsingenieuren erstellt."
+    description="Das anbieterneutrale Automatisierungsverzeichnis – von Ingenieuren erstellt, nicht von Agenturen. Finden und vergleichen Sie Systemintegratoren, OEMs und Spezialisten weltweit."
     vendorCount={totalVendorCount}
     vendorCountLabel="gelistete geprüfte Automatisierungsanbieter"
     primaryButtonText="Verzeichnis durchsuchen →"
     primaryButtonHref="/de/vendors"
     secondaryButtonText="Unternehmen kostenlos eintragen →"
     secondaryButtonHref="/de/contact"
-    secondaryMicroCopy="Kostenlos während der MVP-Phase"
+    secondaryMicroCopy="Keine Kreditkarte erforderlich"
   />
 
-  <SearchForm 
+  <SearchForm
     title="Verzeichnis durchsuchen"
     action="/de/vendors"
-    placeholder="Nach Anbietername suchen"
+    placeholder="Name, Fähigkeit oder Stichwort suchen"
     buttonText="Suchen"
   />
 
@@ -299,7 +299,7 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     ]}
     ctaText="Ihr Unternehmen kostenlos eintragen →"
     ctaHref="/de/contact"
-    microCopy="Kostenlos während der MVP-Phase"
+    microCopy="Keine Kreditkarte erforderlich"
   />
 
   <ExploreCTA 

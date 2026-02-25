@@ -74,8 +74,14 @@ export interface Vendor {
   
   // Company details
   year_founded?: number | null;  // integer
-  employee_count?: number | null; // integer (not text!)
+  employee_count?: string | null; // text (supports ranges like "50-100")
   hourly_rate?: string | null;   // text (e.g., "€50-100")
+
+  // New profile fields
+  countries_served?: string | null;     // comma-separated (e.g., "Germany, Austria, Switzerland")
+  taking_new_projects?: boolean | null; // availability flag
+  linkedin_url?: string | null;         // LinkedIn company page URL
+  specialization_text?: string | null;  // "What makes us different" free text
   
   // Categorization (stored as comma-separated strings)
   languages?: string | null;     // Comma-separated, e.g., "English, German, French"

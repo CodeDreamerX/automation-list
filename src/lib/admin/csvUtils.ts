@@ -14,11 +14,14 @@ export const allowedFields = [
   "email",
   "phone",
   "description",
+  "description_en",
+  "description_de",
   "technologies",
   "languages",
   "certifications",
   "tags",
   "industries",
+  "industry_slugs",
   "year_founded",
   "employee_count",
   "hourly_rate",
@@ -26,8 +29,22 @@ export const allowedFields = [
   "featured",
   "priority",
   "og_member",
+  "featured_until",
+  "meta_title",
+  "meta_description",
+  "canonical_url",
+  "logo_url",
+  "logo_width",
+  "logo_height",
+  "logo_format",
+  "logo_alt",
+  "logo_background_variant",
   "category_slugs",
   "technology_slugs",
+  "countries_served",
+  "taking_new_projects",
+  "linkedin_url",
+  "specialization_text",
 ];
 
 export const REQUIRED_FIELDS = ['name', 'slug', 'country', 'category_slugs'];
@@ -67,17 +84,26 @@ export function normalizeRow(row: any): { normalized: any; unknownColumns: strin
       const rawValue = row[key];
       
       // Convert boolean fields from "true"/"false" strings to boolean
-      if (schemaField === 'featured' || schemaField === 'og_member') {
+      if (schemaField === 'featured' || schemaField === 'og_member' || schemaField === 'taking_new_projects') {
         const strValue = String(rawValue || '').trim().toLowerCase();
         normalized[schemaField] = strValue === 'true' || strValue === '1' || strValue === 'yes';
       }
       // Convert number fields to numbers
-      else if (schemaField === 'priority' || schemaField === 'year_founded' || schemaField === 'employee_count' || schemaField === 'hourly_rate') {
+      else if (
+        schemaField === 'priority' ||
+        schemaField === 'year_founded' ||
+        schemaField === 'logo_width' ||
+        schemaField === 'logo_height'
+      ) {
         const numValue = Number(rawValue);
         normalized[schemaField] = isNaN(numValue) ? null : numValue;
       }
-      // Handle category_slugs and technology_slugs with semicolon separator
-      else if (schemaField === 'category_slugs' || schemaField === 'technology_slugs') {
+      // Handle slug list fields with semicolon separator
+      else if (
+        schemaField === 'category_slugs' ||
+        schemaField === 'technology_slugs' ||
+        schemaField === 'industry_slugs'
+      ) {
         const value = String(rawValue || '');
         normalized[schemaField] = value; // Store as-is, will be processed separately
       }
@@ -97,35 +123,25 @@ export function normalizeRow(row: any): { normalized: any; unknownColumns: strin
     }
   }
   
-  // Process category slugs: split by semicolon, lowercase, trim, filter empty
-  if (normalized.category_slugs) {
-    const processed = String(normalized.category_slugs)
-      .split(';')
-      .map((s: string) => s.trim().toLowerCase())
-      .filter(Boolean);
-    normalized._categorySlugs = processed;
-    // If processing resulted in empty array, set category_slugs to null for consistent validation
-    if (processed.length === 0) {
-      normalized.category_slugs = null;
+  // Process semicolon-separated slug lists
+  const processSlugList = (field: 'category_slugs' | 'technology_slugs' | 'industry_slugs', outputKey: string) => {
+    if (normalized[field]) {
+      const processed = String(normalized[field])
+        .split(';')
+        .map((s: string) => s.trim().toLowerCase())
+        .filter(Boolean);
+      normalized[outputKey] = processed;
+      if (processed.length === 0) {
+        normalized[field] = null;
+      }
+    } else {
+      normalized[outputKey] = [];
     }
-  } else {
-    normalized._categorySlugs = [];
-  }
-  
-  // Process technology slugs: split by semicolon, lowercase, trim, filter empty
-  if (normalized.technology_slugs) {
-    const processed = String(normalized.technology_slugs)
-      .split(';')
-      .map((s: string) => s.trim().toLowerCase())
-      .filter(Boolean);
-    normalized._technologySlugs = processed;
-    // If processing resulted in empty array, set technology_slugs to null
-    if (processed.length === 0) {
-      normalized.technology_slugs = null;
-    }
-  } else {
-    normalized._technologySlugs = [];
-  }
+  };
+
+  processSlugList('category_slugs', '_categorySlugs');
+  processSlugList('technology_slugs', '_technologySlugs');
+  processSlugList('industry_slugs', '_industrySlugs');
   
   return { normalized, unknownColumns };
 }
@@ -204,5 +220,4 @@ export function generateCSV(data: any[], headers: string[] = allowedFields): str
   
   return csvRows.join('\n');
 }
-
 

@@ -16,16 +16,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const contentType = request.headers.get('content-type') || '';
     let insertData: any;
     let categorySlugs: string[] = [];
-    
+    let technologySlugs: string[] = [];
+    let industrySlugs: string[] = [];
+
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
       const form = await request.formData();
-      
-      // Extract category slugs from form data
+
+      // Extract M2M slug arrays from form data
       categorySlugs = form.getAll("category_slugs")
         .map((slug) => String(slug).trim())
         .filter((slug) => slug.length > 0);
+      technologySlugs = form.getAll("technology_slugs")
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+      industrySlugs = form.getAll("industry_slugs")
+        .map((s) => String(s).trim())
+        .filter(Boolean);
       
+      // NOTE: Field list must stay in sync with /src/pages/admin/new.astro
       // Build insertData from form fields
       insertData = {
         name: form.get('name')?.toString() || null,
@@ -43,8 +52,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         certifications: form.get('certifications')?.toString() || null,
         tags: form.get('tags')?.toString() || null,
         year_founded: form.get('year_founded')?.toString() ? Number(form.get('year_founded')!.toString()) : null,
-        employee_count: form.get('employee_count')?.toString() ? Number(form.get('employee_count')!.toString()) : null,
-        hourly_rate: form.get('hourly_rate')?.toString() ? Number(form.get('hourly_rate')!.toString()) : null,
+        employee_count: form.get('employee_count')?.toString() || null,
+        hourly_rate: form.get('hourly_rate')?.toString() || null,
         plan: form.get('plan')?.toString() || 'free',
         priority: form.get('priority')?.toString() ? Number(form.get('priority')!.toString()) || 5 : 5,
         featured: form.get('featured') === 'on' || form.get('featured') === 'true' || form.get('featured') === '1',
@@ -58,6 +67,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         logo_height: form.get('logo_height')?.toString() ? Number(form.get('logo_height')!.toString()) : null,
         logo_format: form.get('logo_format')?.toString() || null,
         logo_alt: form.get('logo_alt')?.toString() || null,
+        countries_served: form.get('countries_served')?.toString() || null,
+        taking_new_projects: form.get('taking_new_projects') === 'on',
+        linkedin_url: form.get('linkedin_url')?.toString() || null,
+        specialization_text: form.get('specialization_text')?.toString() || null,
         logo_background_variant: (() => {
           const formVariant = form.get('logo_background_variant')?.toString() || null;
           if (!formVariant) return null;
@@ -67,19 +80,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle JSON (backward compatibility)
       const body = await request.json();
-      const { category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
+      const { category_slugs, technology_slugs, industry_slugs, ...rest } = body;
       insertData = { ...rest };
-      
+
       // Normalize types for JSON requests
       if (insertData.year_founded !== null && insertData.year_founded !== undefined) {
         insertData.year_founded = Number(insertData.year_founded) || null;
       }
-      if (insertData.employee_count !== null && insertData.employee_count !== undefined) {
-        insertData.employee_count = Number(insertData.employee_count) || null;
-      }
-      if (insertData.hourly_rate !== null && insertData.hourly_rate !== undefined) {
-        insertData.hourly_rate = Number(insertData.hourly_rate) || null;
-      }
+      // employee_count and hourly_rate are text fields, pass through as-is
       if (insertData.priority !== null && insertData.priority !== undefined) {
         insertData.priority = Number(insertData.priority) || 5;
       }
@@ -98,21 +106,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       insertData.logo_height = insertData.logo_height ? Number(insertData.logo_height) : null;
       insertData.logo_format = insertData.logo_format || null;
       insertData.logo_alt = insertData.logo_alt || null;
-      // Map form values (white, light, gray, dark, brand) to DB values (light, neutral, dark, brand)
       if (insertData.logo_background_variant) {
         insertData.logo_background_variant = mapFormVariantToDbVariant(insertData.logo_background_variant);
       } else {
         insertData.logo_background_variant = null;
       }
-      
-      // Extract category slugs from JSON if present
-      if (body.category_slugs && Array.isArray(body.category_slugs)) {
-        categorySlugs = body.category_slugs
-          .map((slug: any) => String(slug).trim())
-          .filter((slug: string) => slug.length > 0);
-      } else if (body.category_slugs) {
-        categorySlugs = [String(body.category_slugs).trim()].filter((slug: string) => slug.length > 0);
-      }
+
+      // Extract M2M slug arrays from JSON
+      if (body.category_slugs) categorySlugs = [body.category_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
+      if (body.technology_slugs) technologySlugs = [body.technology_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
+      if (body.industry_slugs) industrySlugs = [body.industry_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
     }
 
     // Normalize website URL: add https:// if missing
@@ -151,10 +154,41 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (cat?.id) {
           await supabaseAdmin
             .from("vendor_categories")
-            .insert({
-              vendor_id: vendor.id,
-              category_id: cat.id
-            });
+            .insert({ vendor_id: vendor.id, category_id: cat.id });
+        }
+      }
+    }
+
+    // Insert vendor_technologies entries
+    if (technologySlugs.length > 0 && vendor?.id) {
+      for (const slug of technologySlugs) {
+        const { data: tech } = await supabaseAdmin
+          .from("technologies")
+          .select("id")
+          .eq("slug", slug)
+          .single();
+
+        if (tech?.id) {
+          await supabaseAdmin
+            .from("vendor_technologies")
+            .insert({ vendor_id: vendor.id, technology_id: tech.id });
+        }
+      }
+    }
+
+    // Insert vendor_industries entries
+    if (industrySlugs.length > 0 && vendor?.id) {
+      for (const slug of industrySlugs) {
+        const { data: ind } = await supabaseAdmin
+          .from("industries")
+          .select("id")
+          .eq("slug", slug)
+          .single();
+
+        if (ind?.id) {
+          await supabaseAdmin
+            .from("vendor_industries")
+            .insert({ vendor_id: vendor.id, industry_id: ind.id });
         }
       }
     }

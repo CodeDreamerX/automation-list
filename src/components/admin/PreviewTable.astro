@@ -21,8 +21,11 @@ const displayFields = [
   'email',
   'phone',
   'description',
+  'description_en',
+  'description_de',
   'category_slugs', // Will be displayed as _categorySlugs
   'technology_slugs', // Will be displayed as _technologySlugs
+  'industry_slugs', // Will be displayed as _industrySlugs
   'industries',
   'technologies',
   'languages',
@@ -35,6 +38,16 @@ const displayFields = [
   'featured',
   'priority',
   'og_member',
+  'featured_until',
+  'meta_title',
+  'meta_description',
+  'canonical_url',
+  'logo_url',
+  'logo_width',
+  'logo_height',
+  'logo_format',
+  'logo_alt',
+  'logo_background_variant',
 ];
 ---
 
@@ -49,7 +62,13 @@ const displayFields = [
           {displayFields.map((key) => (
             <th class="px-3 py-2 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-b border-gray-300 max-w-xs">
               <div class="truncate" title={key}>
-                {key === 'category_slugs' ? 'categories' : key === 'technology_slugs' ? 'technologies' : key}
+                {key === 'category_slugs'
+                  ? 'categories'
+                  : key === 'technology_slugs'
+                    ? 'technologies'
+                    : key === 'industry_slugs'
+                      ? 'industry slugs'
+                      : key}
                 {REQUIRED_FIELDS.includes(key) && (
                   <span class="text-red-600 ml-1">*</span>
                 )}
@@ -75,7 +94,7 @@ const displayFields = [
           return (
             <tr class={`${rowClass} border-b border-gray-200`}>
               {displayFields.map((field) => {
-                // Handle category_slugs and technology_slugs specially - use arrays
+                // Handle semicolon-separated slug lists specially - use parsed arrays
                 let value;
                 if (field === 'category_slugs') {
                   value = row._categorySlugs && row._categorySlugs.length > 0 
@@ -84,6 +103,10 @@ const displayFields = [
                 } else if (field === 'technology_slugs') {
                   value = row._technologySlugs && row._technologySlugs.length > 0 
                     ? row._technologySlugs.join(", ") 
+                    : null;
+                } else if (field === 'industry_slugs') {
+                  value = row._industrySlugs && row._industrySlugs.length > 0
+                    ? row._industrySlugs.join(", ")
                     : null;
                 } else {
                   value = row[field];
@@ -110,7 +133,13 @@ const displayFields = [
                   maxWidthClass = 'max-w-md';
                 } else if (field === 'name' || field === 'address') {
                   maxWidthClass = 'max-w-sm';
-                } else if (field === 'category_slugs' || field === 'technology_slugs' || field === 'technologies' || field === 'tags') {
+                } else if (
+                  field === 'category_slugs' ||
+                  field === 'technology_slugs' ||
+                  field === 'industry_slugs' ||
+                  field === 'technologies' ||
+                  field === 'tags'
+                ) {
                   maxWidthClass = 'max-w-xs';
                 } else if (['email', 'website', 'phone'].includes(field)) {
                   maxWidthClass = 'max-w-xs';

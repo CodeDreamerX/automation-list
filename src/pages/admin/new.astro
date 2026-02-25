@@ -95,6 +95,7 @@ if (Astro.request.method === 'POST') {
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
   
+  // NOTE: Field list must stay in sync with /src/pages/api/admin/create-vendor.ts
   // Build insertData from form fields
   const insertData: any = {
     name: formData.get('name')?.toString() || null,
@@ -112,8 +113,12 @@ if (Astro.request.method === 'POST') {
     certifications: formData.get('certifications')?.toString() || null,
     tags: formData.get('tags')?.toString() || null,
     year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
-    employee_count: formData.get('employee_count')?.toString() ? Number(formData.get('employee_count')!.toString()) : null,
+    employee_count: formData.get('employee_count')?.toString() || null,
     hourly_rate: formData.get('hourly_rate')?.toString() || null,
+    countries_served: formData.get('countries_served')?.toString() || null,
+    taking_new_projects: formData.get('taking_new_projects') === 'on',
+    linkedin_url: formData.get('linkedin_url')?.toString() || null,
+    specialization_text: formData.get('specialization_text')?.toString() || null,
     plan: formData.get('plan')?.toString() || 'free',
     priority: formData.get('priority')?.toString() ? parseInt(formData.get('priority')!.toString()) : null,
     featured: formData.get('featured') === 'on',

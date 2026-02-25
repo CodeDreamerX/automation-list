@@ -2,7 +2,7 @@
 import { isFeatured } from '../lib/isFeatured';
 import type { VendorWithRelations, VendorCategoryRelation } from '../types/vendor';
 import LogoBox from './LogoBox.astro';
-import { formatTechnologies, truncateDescription } from '../lib/vendors/vendorFormatters';
+import { formatTechnologies } from '../lib/vendors/vendorFormatters';
 
 interface VendorCardProps {
   vendor: VendorWithRelations;
@@ -142,6 +142,7 @@ function getLogoVariant(vendor: VendorWithRelations): "light" | "dark" | "neutra
 
 const vendorHref = `${hrefPrefix}/${vendor.slug}`;
 const vendorIsFeatured = isFeatured(vendor);
+const vendorIsPro = vendor.plan === 'pro' || vendorIsFeatured;
 
 // Derive category_slugs from vendor_categories if not provided
 const categorySlugs = vendor.category_slugs || 
@@ -158,6 +159,8 @@ const categorySlugs = vendor.category_slugs ||
     class={`relative bg-white rounded-lg border p-4 transition-all flex flex-col items-center text-center ${
       vendorIsFeatured
         ? 'bg-yellow-50/30 border-yellow-300 hover:border-yellow-400 hover:shadow-md active:bg-yellow-100/50 md:hover:bg-yellow-50/50'
+        : vendorIsPro
+          ? 'bg-blue-50/20 border-blue-200 hover:border-blue-300 hover:shadow-md active:bg-blue-100/30 md:hover:bg-blue-50/40'
         : 'border-gray-200 hover:border-gray-300 hover:shadow-md active:bg-gray-50 md:hover:bg-gray-50'
     }`}
   >
@@ -165,6 +168,11 @@ const categorySlugs = vendor.category_slugs ||
     {vendorIsFeatured && showFeaturedBadge && (
       <span class="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">
         Featured
+      </span>
+    )}
+    {!vendorIsFeatured && vendorIsPro && (
+      <span class="absolute top-3 right-3 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-medium">
+        Pro
       </span>
     )}
 
@@ -189,8 +197,8 @@ const categorySlugs = vendor.category_slugs ||
     {(() => {
       const vendorDescription = getVendorDescription(vendor, lang);
       return vendorDescription ? (
-        <p class="text-sm text-gray-600 text-center mt-2">
-          {truncateDescription(vendorDescription, compact ? 100 : 120)}
+        <p class="text-sm text-gray-600 text-center mt-2 line-clamp-2">
+          {vendorDescription}
         </p>
       ) : null;
     })()}
@@ -198,8 +206,8 @@ const categorySlugs = vendor.category_slugs ||
     <!-- Country + Category Pills -->
     <div class="flex flex-wrap gap-2 justify-center mt-3">
       {vendor.country && (
-        <span class="text-xs bg-gray-200 px-2 py-0.5 rounded">
-          {getCountryFlag(vendor.country)} {vendor.country}
+        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+          {getCountryFlag(vendor.country)} {lang === "de" ? "Aktiv in:" : "Active in:"} {vendor.country}
         </span>
       )}
       {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (

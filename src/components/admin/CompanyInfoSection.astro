@@ -1,6 +1,7 @@
 ---
 import FormInput from './FormInput.astro';
 import FormSection from './FormSection.astro';
+import FormTextarea from './FormTextarea.astro';
 
 interface CompanyInfoSectionProps {
   vendor: any;
@@ -20,7 +21,7 @@ const { vendor } = Astro.props;
       min="1800"
       max="2100"
     />
-    
+
     <FormInput
       id="employee_count"
       name="employee_count"
@@ -28,7 +29,7 @@ const { vendor } = Astro.props;
       value={vendor?.employee_count || ''}
       placeholder="e.g., 50-100"
     />
-    
+
     <FormInput
       id="hourly_rate"
       name="hourly_rate"
@@ -37,5 +38,33 @@ const { vendor } = Astro.props;
       placeholder="e.g., €50-100"
     />
   </div>
-</FormSection>
 
+  <FormInput
+    id="countries_served"
+    name="countries_served"
+    label="Countries Served"
+    value={vendor?.countries_served || ''}
+    placeholder="e.g., Germany, Austria, Switzerland"
+  />
+
+  <FormTextarea
+    id="specialization_text"
+    name="specialization_text"
+    label="What Makes Us Different"
+    value={vendor?.specialization_text || ''}
+    rows={3}
+  />
+
+  <div class="flex items-center">
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        id="taking_new_projects"
+        name="taking_new_projects"
+        checked={vendor?.taking_new_projects === true}
+        class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+      />
+      <span class="text-sm font-medium text-gray-700">Taking New Projects</span>
+    </label>
+  </div>
+</FormSection>

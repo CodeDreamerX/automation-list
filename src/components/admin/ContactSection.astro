@@ -18,7 +18,7 @@ const { vendor } = Astro.props;
       type="email"
       value={vendor?.email || ''}
     />
-    
+
     <FormInput
       id="phone"
       name="phone"
@@ -27,6 +27,14 @@ const { vendor } = Astro.props;
       value={vendor?.phone || ''}
     />
   </div>
+
+  <FormInput
+    id="linkedin_url"
+    name="linkedin_url"
+    label="LinkedIn URL"
+    value={vendor?.linkedin_url || ''}
+    placeholder="https://www.linkedin.com/company/..."
+  />
   
   <FormInput
     id="address"

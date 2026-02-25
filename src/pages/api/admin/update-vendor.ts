@@ -17,22 +17,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let updateData: any;
     let id: string;
     let categorySlugs: string[] = [];
-    
+    let technologySlugs: string[] = [];
+    let industrySlugs: string[] = [];
+
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
       const form = await request.formData();
-      
+
       id = form.get('id')?.toString() || '';
-      
+
       if (!id) {
         return errorResponse('Vendor ID is required', 400);
       }
-      
-      // Extract category slugs from form data
+
+      // Extract M2M slug arrays from form data
       categorySlugs = form.getAll("category_slugs")
         .map((slug) => String(slug).trim())
         .filter((slug) => slug.length > 0);
+      technologySlugs = form.getAll("technology_slugs")
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+      industrySlugs = form.getAll("industry_slugs")
+        .map((s) => String(s).trim())
+        .filter(Boolean);
       
+      // NOTE: Field list must stay in sync with /src/pages/admin/edit/[id].astro
       // Build updateData from form fields
       updateData = {
         name: form.get('name')?.toString() || null,
@@ -50,7 +59,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         certifications: form.get('certifications')?.toString() || null,
         tags: form.get('tags')?.toString() || null,
         year_founded: form.get('year_founded')?.toString() || null,
-        employee_count: form.get('employee_count')?.toString() ? Number(form.get('employee_count')!.toString()) : null,
+        employee_count: form.get('employee_count')?.toString() || null,
         hourly_rate: form.get('hourly_rate')?.toString() || null,
         plan: form.get('plan')?.toString() || 'free',
         priority: form.get('priority')?.toString() ? parseInt(form.get('priority')!.toString()) : null,
@@ -65,6 +74,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         logo_height: form.get('logo_height')?.toString() ? Number(form.get('logo_height')!.toString()) : null,
         logo_format: form.get('logo_format')?.toString() || null,
         logo_alt: form.get('logo_alt')?.toString() || null,
+        countries_served: form.get('countries_served')?.toString() || null,
+        taking_new_projects: form.get('taking_new_projects') === 'on',
+        linkedin_url: form.get('linkedin_url')?.toString() || null,
+        specialization_text: form.get('specialization_text')?.toString() || null,
         logo_background_variant: (() => {
           const formVariant = form.get('logo_background_variant')?.toString() || null;
           if (!formVariant) return null;
@@ -75,35 +88,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Handle JSON (backward compatibility)
       const body = await request.json();
       id = body.id;
-      
+
       if (!id) {
         return errorResponse('Vendor ID is required', 400);
       }
-      
-      const { id: _, category_slugs, ...rest } = body; // Extract category_slugs separately, use rest for vendor data
+
+      const { id: _, category_slugs, technology_slugs, industry_slugs, ...rest } = body;
       updateData = rest;
-      
+
       // Normalize logo fields for JSON requests
       updateData.logo_url = updateData.logo_url || null;
       updateData.logo_width = updateData.logo_width ? Number(updateData.logo_width) : null;
       updateData.logo_height = updateData.logo_height ? Number(updateData.logo_height) : null;
       updateData.logo_format = updateData.logo_format || null;
       updateData.logo_alt = updateData.logo_alt || null;
-      // Map form values (white, light, gray, dark, brand) to DB values (light, neutral, dark, brand)
       if (updateData.logo_background_variant) {
         updateData.logo_background_variant = mapFormVariantToDbVariant(updateData.logo_background_variant);
       } else {
         updateData.logo_background_variant = null;
       }
-      
-      // Extract category slugs from JSON if present
-      if (body.category_slugs && Array.isArray(body.category_slugs)) {
-        categorySlugs = body.category_slugs
-          .map((slug: any) => String(slug).trim())
-          .filter((slug: string) => slug.length > 0);
-      } else if (body.category_slugs) {
-        categorySlugs = [String(body.category_slugs).trim()].filter((slug: string) => slug.length > 0);
-      }
+
+      // Extract M2M slug arrays from JSON
+      if (body.category_slugs) categorySlugs = [body.category_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
+      if (body.technology_slugs) technologySlugs = [body.technology_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
+      if (body.industry_slugs) industrySlugs = [body.industry_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
     }
 
     // Normalize website URL: add https:// if missing
@@ -129,30 +137,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Update vendor_categories: delete all existing entries and reinsert new ones
-    // Delete all existing vendor_categories rows for this vendor
-    await supabaseAdmin
-      .from('vendor_categories')
-      .delete()
-      .eq('vendor_id', id);
+    await supabaseAdmin.from('vendor_categories').delete().eq('vendor_id', id);
+    for (const slug of categorySlugs) {
+      const { data: cat } = await supabaseAdmin.from("categories").select("id").eq("slug", slug).single();
+      if (cat?.id) await supabaseAdmin.from("vendor_categories").insert({ vendor_id: id, category_id: cat.id });
+    }
 
-    // Insert new vendor_categories entries if category slugs were provided
-    if (categorySlugs.length > 0) {
-      for (const slug of categorySlugs) {
-        const { data: cat } = await supabaseAdmin
-          .from("categories")
-          .select("id")
-          .eq("slug", slug)
-          .single();
+    // Update vendor_technologies: delete all existing entries and reinsert new ones
+    await supabaseAdmin.from('vendor_technologies').delete().eq('vendor_id', id);
+    for (const slug of technologySlugs) {
+      const { data: tech } = await supabaseAdmin.from("technologies").select("id").eq("slug", slug).single();
+      if (tech?.id) await supabaseAdmin.from("vendor_technologies").insert({ vendor_id: id, technology_id: tech.id });
+    }
 
-        if (cat?.id) {
-          await supabaseAdmin
-            .from("vendor_categories")
-            .insert({
-              vendor_id: id,
-              category_id: cat.id
-            });
-        }
-      }
+    // Update vendor_industries: delete all existing entries and reinsert new ones
+    await supabaseAdmin.from('vendor_industries').delete().eq('vendor_id', id);
+    for (const slug of industrySlugs) {
+      const { data: ind } = await supabaseAdmin.from("industries").select("id").eq("slug", slug).single();
+      if (ind?.id) await supabaseAdmin.from("vendor_industries").insert({ vendor_id: id, industry_id: ind.id });
     }
 
     return successResponse();
