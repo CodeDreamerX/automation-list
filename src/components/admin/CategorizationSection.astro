@@ -2,6 +2,7 @@
 import type { CategoryFormOption } from '../../types/category';
 import type { TechnologyFormOption } from '../../types/technology';
 import type { IndustryFormOption } from '../../types/industry';
+import type { CertificationFormOption } from '../../types/certification';
 import FormInput from './FormInput.astro';
 import FormSection from './FormSection.astro';
 
@@ -10,16 +11,25 @@ interface CategorizationSectionProps {
   categories?: CategoryFormOption[];
   technologies?: TechnologyFormOption[];
   industries?: IndustryFormOption[];
+  certifications?: CertificationFormOption[];
 }
 
-const { vendor, categories = [], technologies = [], industries = [] } = Astro.props;
+const { vendor, categories = [], technologies = [], industries = [], certifications = [] } = Astro.props;
+
+// Group certifications by category
+const certificationsByCategory = certifications.reduce((acc: Record<string, CertificationFormOption[]>, cert: CertificationFormOption) => {
+  const cat = cert.category || 'Other';
+  if (!acc[cat]) acc[cat] = [];
+  acc[cat].push(cert);
+  return acc;
+}, {});
 ---
 
 <FormSection title="Categorization">
   <div>
     <h2 class="text-lg font-semibold mb-2">Categories</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {categories.map(cat => {
+      {categories.map((cat: CategoryFormOption) => {
         const checked = vendor?.category_slugs?.includes(cat.slug);
         return (
           <label class="flex items-center gap-2 cursor-pointer">
@@ -34,7 +44,7 @@ const { vendor, categories = [], technologies = [], industries = [] } = Astro.pr
   <div>
     <h2 class="text-lg font-semibold mb-2">Technologies</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {technologies.map(tech => {
+      {technologies.map((tech: TechnologyFormOption) => {
         const checked = vendor?.technology_slugs?.includes(tech.slug);
         return (
           <label class="flex items-center gap-2 cursor-pointer">
@@ -54,13 +64,29 @@ const { vendor, categories = [], technologies = [], industries = [] } = Astro.pr
     placeholder="English, German, French"
   />
   
-  <FormInput
-    id="certifications"
-    name="certifications"
-    label="Certifications (comma-separated)"
-    value={vendor?.certifications || ''}
-    placeholder="Certification 1, Certification 2"
-  />
+  <div>
+    <h2 class="text-lg font-semibold mb-2">Certifications</h2>
+    {certifications.length === 0 ? (
+      <p class="text-sm text-gray-500">No certifications available. Run DB migration to populate.</p>
+    ) : (
+      Object.entries(certificationsByCategory).map(([categoryName, certs]) => (
+        <div class="mb-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{categoryName}</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {certs.map(cert => {
+              const checked = vendor?.certification_slugs?.includes(cert.slug);
+              return (
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" name="certification_slugs" value={cert.slug} checked={checked} class="w-4 h-4" />
+                  <span class="text-sm">{cert.name}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      ))
+    )}
+  </div>
   
   <FormInput
     id="tags"
@@ -73,7 +99,7 @@ const { vendor, categories = [], technologies = [], industries = [] } = Astro.pr
   <div>
     <h2 class="text-lg font-semibold mb-2">Industries</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {industries.map(industry => {
+      {industries.map((industry: IndustryFormOption) => {
         const checked = vendor?.industry_slugs?.includes(industry.slug);
         return (
           <label class="flex items-center gap-2 cursor-pointer">

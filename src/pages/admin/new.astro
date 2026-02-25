@@ -42,6 +42,14 @@ const { data: industries } = await supabaseAdmin
   .select('id, slug, name_en, name_de')
   .order('name_en', { ascending: true });
 
+// Fetch all certifications from Supabase
+const { data: certificationOptions } = await supabaseAdmin
+  .from('certifications')
+  .select('id, slug, name, reference_url, category')
+  .eq('is_active', true)
+  .order('category', { ascending: true })
+  .order('name', { ascending: true });
+
 // Handle form submission
 if (Astro.request.method === 'POST') {
   // Verify authentication
@@ -94,7 +102,12 @@ if (Astro.request.method === 'POST') {
   const industrySlugs = formData.getAll("industry_slugs")
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
-  
+
+  // Extract certification slugs from form data
+  const certificationSlugs = formData.getAll("certification_slugs")
+    .map((slug) => String(slug).trim())
+    .filter((slug) => slug.length > 0);
+
   // NOTE: Field list must stay in sync with /src/pages/api/admin/create-vendor.ts
   // Build insertData from form fields
   const insertData: any = {
@@ -110,7 +123,6 @@ if (Astro.request.method === 'POST') {
     region: formData.get('region')?.toString() || null,
     country: formData.get('country')?.toString() || null,
     languages: formData.get('languages')?.toString() || null,
-    certifications: formData.get('certifications')?.toString() || null,
     tags: formData.get('tags')?.toString() || null,
     year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
     employee_count: formData.get('employee_count')?.toString() || null,
@@ -224,6 +236,26 @@ if (Astro.request.method === 'POST') {
     }
   }
 
+  // Insert vendor_certifications entries if certification slugs were provided
+  if (certificationSlugs.length > 0 && vendor?.id) {
+    for (const slug of certificationSlugs) {
+      const { data: cert } = await supabaseAdmin
+        .from("certifications")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (cert?.id) {
+        await supabaseAdmin
+          .from("vendor_certifications")
+          .insert({
+            vendor_id: vendor.id,
+            certification_id: cert.id
+          });
+      }
+    }
+  }
+
   // Redirect to edit page of the newly created vendor
   if (vendor?.id) {
     return Astro.redirect(`/admin/edit/${vendor.id}`);
@@ -272,7 +304,7 @@ if (error === 'slug_exists') {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={emptyVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} />
+      <VendorForm vendor={emptyVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} certifications={certificationOptions || []} />
     </div>
   </div>
 </AdminLayout>

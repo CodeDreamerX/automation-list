@@ -150,45 +150,48 @@ export interface VendorIndustryRelation {
 }
 
 /**
+ * Certification relation structure (from vendor_certifications join table)
+ */
+export interface VendorCertificationRelation {
+  certifications?: {
+    id: string;
+    slug: string;
+    name: string;
+    reference_url?: string | null;
+    category?: string | null;
+  } | null;
+}
+
+/**
  * Vendor with all relationships loaded from join tables
- * 
- * This interface extends Vendor with the related entities:
- * - vendor_categories: Categories associated with the vendor
- * - vendor_technologies: Technologies used by the vendor
- * - vendor_industries: Industries served by the vendor
- * 
- * Also includes normalized arrays for easier access:
- * - category_slugs: Array of category slugs
- * - technology_slugs: Array of technology slugs
- * - industry_slugs: Array of industry slugs
  */
 export interface VendorWithRelations extends Vendor {
   // Categories (many-to-many via vendor_categories)
   vendor_categories?: VendorCategoryRelation[] | null;
-  
+
   // Technologies (many-to-many via vendor_technologies)
   vendor_technologies?: VendorTechnologyRelation[] | null;
-  
+
   // Industries (many-to-many via vendor_industries)
   vendor_industries?: VendorIndustryRelation[] | null;
-  
+
+  // Certifications (many-to-many via vendor_certifications)
+  vendor_certifications?: VendorCertificationRelation[] | null;
+
   // Normalized arrays (computed from relationships)
-  category_slugs?: string[];     // Array of category slugs
-  technology_slugs?: string[];   // Array of technology slugs
-  industry_slugs?: string[];     // Array of industry slugs
+  category_slugs?: string[];
+  technology_slugs?: string[];
+  industry_slugs?: string[];
+  certification_slugs?: string[];
 }
 
 /**
  * Vendor form data structure for create/update operations
- * 
- * This interface represents the data structure used in forms,
- * which may include additional fields like slug arrays for
- * easier form handling.
  */
 export interface VendorFormData extends Partial<Vendor> {
-  // Slug arrays for form handling (not stored in database directly)
-  category_slugs?: string[];   // Array of category slugs
-  technology_slugs?: string[]; // Array of technology slugs
-  industry_slugs?: string[];  // Array of industry slugs
+  category_slugs?: string[];
+  technology_slugs?: string[];
+  industry_slugs?: string[];
+  certification_slugs?: string[];
 }
 

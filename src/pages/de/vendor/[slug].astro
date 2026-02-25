@@ -96,6 +96,15 @@ const { data: vendor, error } = await supabase
         name_en,
         name_de
       )
+    ),
+    vendor_certifications (
+      certifications:certifications (
+        id,
+        slug,
+        name,
+        reference_url,
+        category
+      )
     )
   `)
   .eq('slug', slug)
@@ -118,9 +127,10 @@ const normalizedVendor = normalizeVendor(vendor, {
 // Use language-specific description (DE: description_de, fallback to description_en if missing)
 normalizedVendor.description_en = vendor.description_en || null;
 normalizedVendor.description_de = vendor.description_de || null;
-// Keep technologies and industries as arrays with slug and name for linking
+// Keep technologies, industries, and certifications as arrays for display
 normalizedVendor.vendor_technologies = vendor.vendor_technologies || [];
 normalizedVendor.vendor_industries = vendor.vendor_industries || [];
+normalizedVendor.vendor_certifications = vendor.vendor_certifications || [];
 
 const backUrl = "/de/vendors";
 
@@ -318,8 +328,8 @@ const image = normalizedVendor.logo_url || `${origin}/og/default.png`;
 // Prepare technologies data
 const allTechnologies = normalizedVendor.vendor_technologies || [];
 
-// Prepare certifications data
-const certifications = normalizedVendor.certifications ? splitValue(normalizedVendor.certifications) : [];
+// Prepare certifications data (M2M)
+const allCertifications = normalizedVendor.vendor_certifications || [];
 
 // Prepare languages data
 const languages = normalizedVendor.languages ? splitValue(normalizedVendor.languages) : [];
@@ -427,7 +437,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
     )}
 
     <!-- SECTION 3 — GRID BLOCKS -->
-    {(allTechnologies.length > 0 || certifications.length > 0 || languages.length > 0 || allIndustries.length > 0 || tags.length > 0 || allCategories.length > 0) && (
+    {(allTechnologies.length > 0 || allCertifications.length > 0 || languages.length > 0 || allIndustries.length > 0 || tags.length > 0 || allCategories.length > 0) && (
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- Technologies -->
         {allTechnologies.length > 0 && (
@@ -475,18 +485,31 @@ const allCategories = normalizedVendor.vendor_categories || [];
         )}
 
         <!-- Certifications -->
-        {certifications.length > 0 && (
+        {allCertifications.length > 0 && (
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Zertifizierungen</h3>
             <div class="flex flex-wrap gap-2">
               {isPro ? (
-                certifications.map((cert) => (
-                  <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                    {cert}
-                  </span>
-                ))
+                allCertifications.map((vc: any) => {
+                  const cert = vc.certifications;
+                  if (!cert?.name) return null;
+                  return cert.reference_url ? (
+                    <a
+                      href={cert.reference_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                    >
+                      {cert.name}
+                    </a>
+                  ) : (
+                    <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                      {cert.name}
+                    </span>
+                  );
+                })
               ) : (
-                certifications.map((_: string, i: number) => (
+                allCertifications.map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
                     🔒 Nur Pro
                   </span>

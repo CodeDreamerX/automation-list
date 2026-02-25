@@ -2,6 +2,7 @@
 import type { CategoryFormOption } from '../../types/category';
 import type { TechnologyFormOption } from '../../types/technology';
 import type { IndustryFormOption } from '../../types/industry';
+import type { CertificationFormOption } from '../../types/certification';
 import { mapDbVariantToFormVariant } from '../../lib/vendors/logoBackgroundVariant';
 import BasicInfoSection from './BasicInfoSection.astro';
 import ContactSection from './ContactSection.astro';
@@ -16,9 +17,10 @@ interface VendorFormProps {
   categories?: CategoryFormOption[];
   technologies?: TechnologyFormOption[];
   industries?: IndustryFormOption[];
+  certifications?: CertificationFormOption[];
 }
 
-const { vendor, categories = [], technologies = [], industries = [] } = Astro.props;
+const { vendor, categories = [], technologies = [], industries = [], certifications = [] } = Astro.props;
 const isNewVendor = !vendor || !vendor.id;
 
 // Map form variant values to LogoBox variant values
@@ -68,11 +70,12 @@ const defaultLogoBoxVariant = mapVariantToLogoBox(defaultBackgroundVariant);
   
   <BasicInfoSection vendor={vendor} />
   <ContactSection vendor={vendor} />
-  <CategorizationSection 
-    vendor={vendor} 
+  <CategorizationSection
+    vendor={vendor}
     categories={categories}
     technologies={technologies}
     industries={industries}
+    certifications={certifications}
   />
   <CompanyInfoSection vendor={vendor} />
   <PlanSection vendor={vendor} />

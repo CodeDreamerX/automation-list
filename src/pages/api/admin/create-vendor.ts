@@ -18,6 +18,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let categorySlugs: string[] = [];
     let technologySlugs: string[] = [];
     let industrySlugs: string[] = [];
+    let certificationSlugs: string[] = [];
 
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
@@ -33,7 +34,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       industrySlugs = form.getAll("industry_slugs")
         .map((s) => String(s).trim())
         .filter(Boolean);
-      
+      certificationSlugs = form.getAll("certification_slugs")
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+
       // NOTE: Field list must stay in sync with /src/pages/admin/new.astro
       // Build insertData from form fields
       insertData = {
@@ -49,7 +53,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         region: form.get('region')?.toString() || null,
         country: form.get('country')?.toString() || null,
         languages: form.get('languages')?.toString() || null,
-        certifications: form.get('certifications')?.toString() || null,
         tags: form.get('tags')?.toString() || null,
         year_founded: form.get('year_founded')?.toString() ? Number(form.get('year_founded')!.toString()) : null,
         employee_count: form.get('employee_count')?.toString() || null,
@@ -80,7 +83,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle JSON (backward compatibility)
       const body = await request.json();
-      const { category_slugs, technology_slugs, industry_slugs, ...rest } = body;
+      const { category_slugs, technology_slugs, industry_slugs, certification_slugs, ...rest } = body;
       insertData = { ...rest };
 
       // Normalize types for JSON requests
@@ -116,6 +119,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (body.category_slugs) categorySlugs = [body.category_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
       if (body.technology_slugs) technologySlugs = [body.technology_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
       if (body.industry_slugs) industrySlugs = [body.industry_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
+      if (body.certification_slugs) certificationSlugs = [body.certification_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
     }
 
     // Normalize website URL: add https:// if missing
@@ -189,6 +193,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           await supabaseAdmin
             .from("vendor_industries")
             .insert({ vendor_id: vendor.id, industry_id: ind.id });
+        }
+      }
+    }
+
+    // Insert vendor_certifications entries
+    if (certificationSlugs.length > 0 && vendor?.id) {
+      for (const slug of certificationSlugs) {
+        const { data: cert } = await supabaseAdmin
+          .from("certifications")
+          .select("id")
+          .eq("slug", slug)
+          .single();
+
+        if (cert?.id) {
+          await supabaseAdmin
+            .from("vendor_certifications")
+            .insert({ vendor_id: vendor.id, certification_id: cert.id });
         }
       }
     }
