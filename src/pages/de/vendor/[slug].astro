@@ -9,6 +9,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import LogoBox from '../../../components/LogoBox.astro';
 import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
 import { truncateDescription } from '../../../lib/vendors/vendorFormatters';
+import { getBooleanEnvVar } from '../../../lib/env';
 
 // Helper function to parse logo background variant from logo URL
 // Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
@@ -154,8 +155,11 @@ function formatValue(value: string | string[] | null | undefined): string {
 // Determine plan status
 const plan = normalizedVendor.plan || 'free';
 const isFeatured = normalizedVendor.featured === true || plan === 'featured';
-const isPro = plan === 'pro' || isFeatured;
+const disableProPaywall = getBooleanEnvVar('DISABLE_PRO_PAYWALL', false);
+const hasPaidPlan = plan === 'pro' || isFeatured;
+const hasProAccess = disableProPaywall || hasPaidPlan;
 const isFree = plan === 'free' && !isFeatured;
+const showUpgradeCta = isFree && !disableProPaywall;
 const isOgMember = normalizedVendor.og_member === true;
 
 // Build location string
@@ -354,7 +358,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
 >
   <script slot="head" type="application/ld+json" set:html={organizationSchemaJson} />
   <script slot="head" type="application/ld+json" set:html={breadcrumbSchemaJson} />
-  <div class="container-px mx-auto max-w-4xl px-4 py-10">
+  <div class={`container-px mx-auto max-w-4xl px-4 py-10 ${showUpgradeCta ? 'pb-28' : ''}`}>
     <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
       ← Zurück zu Anbietern
     </a>
@@ -381,7 +385,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
             Featured Vendor
           </span>
         )}
-        {isPro && !isFeatured && (
+        {hasPaidPlan && !isFeatured && (
           <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
             Pro
           </span>
@@ -458,7 +462,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
                   </a>
                 ) : null;
               })()}
-              {isPro ? (
+              {hasProAccess ? (
                 allTechnologies.slice(1).map((vt: any) => {
                   const tech = vt.technologies;
                   const techName = tech?.name_de || tech?.name_en;
@@ -489,7 +493,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Zertifizierungen</h3>
             <div class="flex flex-wrap gap-2">
-              {isPro ? (
+              {hasProAccess ? (
                 allCertifications.map((vc: any) => {
                   const cert = vc.certifications;
                   if (!cert?.name) return null;
@@ -524,7 +528,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Sprachen</h3>
             <div class="flex flex-wrap gap-2">
-              {isPro ? (
+              {hasProAccess ? (
                 languages.map((lang) => (
                   <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
                     {lang}
@@ -560,7 +564,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
                   </a>
                 ) : null;
               })()}
-              {isPro ? (
+              {hasProAccess ? (
                 allIndustries.slice(1).map((vi: any) => {
                   const industry = vi.industries;
                   const industryName = industry?.name_de || industry?.name_en;
@@ -591,7 +595,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Tags</h3>
             <div class="flex flex-wrap gap-2">
-              {isPro ? (
+              {hasProAccess ? (
                 tags.map((tag) => (
                   <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
                     {tag}
@@ -626,7 +630,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
                   </a>
                 );
               })}
-              {isPro ? (
+              {hasProAccess ? (
                 allCategories.slice(2).map((vc: any) => {
                   const categoryName = vc.categories?.name_de || vc.categories?.name_en;
                   const categorySlug = vc.categories?.slug;
@@ -661,7 +665,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.year_founded && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Gründungsjahr</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.year_founded}</p>
               ) : (
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
@@ -671,7 +675,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.employee_count && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Mitarbeiter</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.employee_count}</p>
               ) : (
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
@@ -681,7 +685,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.hourly_rate && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Stundensatz</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.hourly_rate}</p>
               ) : (
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
@@ -691,7 +695,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.countries_served && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Tätigkeitsländer</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
               ) : (
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
@@ -701,7 +705,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Neue Projekte</p>
-              {isPro ? (
+              {hasProAccess ? (
                 normalizedVendor.taking_new_projects ? (
                   <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 font-medium">Ja</span>
                 ) : (
@@ -730,7 +734,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.email && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">E-Mail</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <a href={`mailto:${normalizedVendor.email}`} class="text-sm text-brand-700 hover:text-brand-800">
                   {normalizedVendor.email}
                 </a>
@@ -742,7 +746,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.phone && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Telefon</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <a href={`tel:${normalizedVendor.phone}`} class="text-sm text-brand-700 hover:text-brand-800">
                   {normalizedVendor.phone}
                 </a>
@@ -754,7 +758,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.address && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Adresse</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <p class="text-sm text-gray-900">{normalizedVendor.address}</p>
               ) : (
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
@@ -764,7 +768,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           {normalizedVendor.linkedin_url && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">LinkedIn</p>
-              {isPro ? (
+              {hasProAccess ? (
                 <a href={normalizedVendor.linkedin_url} target="_blank" rel="noopener noreferrer" class="text-sm text-brand-700 hover:text-brand-800">
                   LinkedIn-Profil ansehen →
                 </a>
@@ -778,15 +782,15 @@ const allCategories = normalizedVendor.vendor_categories || [];
     )}
 
     <!-- SECTION 6 — UPGRADE CTA (free only) -->
-    {isFree && (
-      <div class="border border-gray-200 rounded-lg p-8 mb-8 text-center">
+    {showUpgradeCta && (
+      <div id="upgrade-cta" class="border border-gray-200 rounded-lg p-8 mb-8 text-center transition-all duration-300">
         <h3 class="text-lg font-semibold text-gray-900 mb-2">Vollständiges Profil freischalten</h3>
         <p class="text-sm text-gray-500 mb-6">
           Erhalten Sie Zugang zu allen Technologien, Branchen und Unternehmensdetails.
         </p>
         <a
           href="/de/pricing"
-          class="inline-block px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900 transition"
+          class="inline-block rounded-md bg-orange-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-orange-600"
         >
           Auf Pro upgraden — CHF 99/Jahr
         </a>
@@ -798,4 +802,53 @@ const allCategories = normalizedVendor.vendor_categories || [];
       </p>
     )}
   </div>
+  {showUpgradeCta && (
+    <div class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-[0_-4px_12px_rgba(15,23,42,0.08)] backdrop-blur">
+      <div class="mx-auto flex h-14 max-w-4xl items-center justify-between gap-3 px-4">
+        <p class="flex items-center gap-2 text-xs text-gray-700 sm:text-sm">
+          <span aria-hidden="true">🔒</span>
+          <span class="sm:hidden">Mit Pro freischalten →</span>
+          <span class="hidden sm:inline">Ausgeblendete Details gibt es mit Pro.</span>
+        </p>
+        <a
+          href="/de/pricing"
+          class="inline-block rounded-md bg-orange-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-orange-600 sm:px-4 sm:text-sm"
+        >
+          Upgrade
+        </a>
+      </div>
+    </div>
+  )}
+  {showUpgradeCta && (
+    <script>
+      const cta = document.getElementById('upgrade-cta');
+      const lockNodes = Array.from(document.querySelectorAll('span')).filter((node) =>
+        (node.textContent || '').trim().startsWith('🔒')
+      );
+
+      const focusUpgradeCta = () => {
+        if (!cta) return;
+        cta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        cta.classList.add('ring-2', 'ring-black', 'ring-offset-2');
+        window.setTimeout(() => {
+          cta.classList.remove('ring-2', 'ring-black', 'ring-offset-2');
+        }, 1400);
+      };
+
+      lockNodes.forEach((node) => {
+        node.classList.add('cursor-pointer');
+        node.setAttribute('role', 'button');
+        node.setAttribute('tabindex', '0');
+        node.setAttribute('aria-label', 'Upgrade-Optionen anzeigen');
+        node.addEventListener('click', focusUpgradeCta);
+        node.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            focusUpgradeCta();
+          }
+        });
+      });
+    </script>
+  )}
 </BaseLayout>
+

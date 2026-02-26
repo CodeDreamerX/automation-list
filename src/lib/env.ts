@@ -18,3 +18,16 @@ export function getRequiredEnvVar(name: string): string {
 
   return value;
 }
+
+export function getBooleanEnvVar(name: string, defaultValue = false): boolean {
+  const processValue =
+    typeof process !== "undefined" && process.env ? process.env[name] : undefined;
+  const metaValue = import.meta.env[name];
+  const rawValue = (processValue ?? metaValue ?? "").toString().trim().toLowerCase();
+
+  if (!rawValue) {
+    return defaultValue;
+  }
+
+  return rawValue === "1" || rawValue === "true" || rawValue === "yes" || rawValue === "on";
+}

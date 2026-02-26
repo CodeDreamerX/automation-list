@@ -16,6 +16,28 @@ interface CategorizationSectionProps {
 
 const { vendor, categories = [], technologies = [], industries = [], certifications = [] } = Astro.props;
 
+const LANGUAGE_OPTIONS = [
+  'English',
+  'German',
+  'French',
+  'Spanish',
+  'Italian',
+  'Portuguese',
+  'Dutch',
+  'Polish',
+  'Czech',
+  'Turkish',
+  'Chinese',
+  'Japanese',
+];
+
+const selectedLanguages = new Set(
+  String(vendor?.languages || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+);
+
 // Group certifications by category
 const certificationsByCategory = certifications.reduce((acc: Record<string, CertificationFormOption[]>, cert: CertificationFormOption) => {
   const cat = cert.category || 'Other';
@@ -56,13 +78,20 @@ const certificationsByCategory = certifications.reduce((acc: Record<string, Cert
     </div>
   </div>
   
-  <FormInput
-    id="languages"
-    name="languages"
-    label="Languages (comma-separated)"
-    value={vendor?.languages || ''}
-    placeholder="English, German, French"
-  />
+  <div>
+    <h2 class="text-lg font-semibold mb-2">Languages</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {LANGUAGE_OPTIONS.map((language) => {
+        const checked = selectedLanguages.has(language);
+        return (
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="languages" value={language} checked={checked} />
+            <span>{language}</span>
+          </label>
+        );
+      })}
+    </div>
+  </div>
   
   <div>
     <h2 class="text-lg font-semibold mb-2">Certifications</h2>

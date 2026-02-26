@@ -108,6 +108,11 @@ if (Astro.request.method === 'POST') {
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
 
+  // Extract languages from form data
+  const selectedLanguages = formData.getAll("languages")
+    .map((language) => String(language).trim())
+    .filter((language) => language.length > 0);
+
   // NOTE: Field list must stay in sync with /src/pages/api/admin/create-vendor.ts
   // Build insertData from form fields
   const insertData: any = {
@@ -122,7 +127,7 @@ if (Astro.request.method === 'POST') {
     city: formData.get('city')?.toString() || null,
     region: formData.get('region')?.toString() || null,
     country: formData.get('country')?.toString() || null,
-    languages: formData.get('languages')?.toString() || null,
+    languages: selectedLanguages.length > 0 ? selectedLanguages.join(', ') : null,
     tags: formData.get('tags')?.toString() || null,
     year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
     employee_count: formData.get('employee_count')?.toString() || null,

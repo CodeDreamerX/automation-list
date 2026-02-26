@@ -44,6 +44,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       certificationSlugs = form.getAll("certification_slugs")
         .map((s) => String(s).trim())
         .filter(Boolean);
+      const selectedLanguages = form.getAll("languages")
+        .map((s) => String(s).trim())
+        .filter(Boolean);
 
       // NOTE: Field list must stay in sync with /src/pages/admin/edit/[id].astro
       // Build updateData from form fields
@@ -59,7 +62,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         city: form.get('city')?.toString() || null,
         region: form.get('region')?.toString() || null,
         country: form.get('country')?.toString() || null,
-        languages: form.get('languages')?.toString() || null,
+        languages: selectedLanguages.length > 0 ? selectedLanguages.join(', ') : null,
         tags: form.get('tags')?.toString() || null,
         year_founded: form.get('year_founded')?.toString() || null,
         employee_count: form.get('employee_count')?.toString() || null,
