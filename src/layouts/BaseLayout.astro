@@ -369,11 +369,25 @@ if (isGerman) {
     <!-- HEADER -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-orange-500 shadow-sm">
       <nav class="container-px mx-auto max-w-7xl">
-        <div class="flex items-center justify-between h-12">
+        <div class="flex items-center justify-between h-16">
           <!-- LOGO -->
           <div class="flex-shrink-0">
-            <a href={isGerman ? "/de/" : isEnglish ? "/en/" : "/en/"} class="text-lg font-bold text-gray-900 hover:text-brand-600 transition-colors">
-              Automation List
+            <a href={isGerman ? "/de/" : isEnglish ? "/en/" : "/en/"} class="nav-brand" aria-label="Automation List home">
+              <svg class="nav-brand__icon" viewBox="0 0 64 48" role="img" aria-hidden="true">
+                <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+                  <line x1="12" y1="8" x2="56" y2="8" />
+                  <line x1="12" y1="24" x2="56" y2="24" />
+                  <line x1="12" y1="40" x2="56" y2="40" />
+                </g>
+                <g fill="currentColor">
+                  <circle cx="8" cy="8" r="5" />
+                  <circle cx="8" cy="24" r="5" />
+                  <circle cx="8" cy="40" r="5" />
+                </g>
+              </svg>
+              <span class="nav-brand__text">
+                <span class="nav-brand__title">AUTOMATIONLIST</span>
+              </span>
             </a>
           </div>
 
@@ -450,7 +464,21 @@ if (isGerman) {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mb-8">
           <!-- Column 1: Brand -->
           <div class="flex flex-col space-y-4">
-            <h3 class="text-lg font-bold text-gray-900">Automation List</h3>
+            <a href={isGerman ? "/de/" : isEnglish ? "/en/" : "/en/"} class="footer-brand" aria-label="Automation List home">
+              <svg class="footer-brand__icon" viewBox="0 0 64 48" role="img" aria-hidden="true">
+                <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+                  <line x1="12" y1="8" x2="56" y2="8" />
+                  <line x1="12" y1="24" x2="56" y2="24" />
+                  <line x1="12" y1="40" x2="56" y2="40" />
+                </g>
+                <g fill="currentColor">
+                  <circle cx="8" cy="8" r="5" />
+                  <circle cx="8" cy="24" r="5" />
+                  <circle cx="8" cy="40" r="5" />
+                </g>
+              </svg>
+              <span class="footer-brand__text">AUTOMATIONLIST</span>
+            </a>
             <p class="text-sm text-[#6B7280]">
               {isGerman 
                 ? "Entdecken Sie die besten Automatisierungstools und Workflows für Ihre Produktivitätsbedürfnisse."
@@ -556,6 +584,72 @@ if (isGerman) {
         mobileMenu?.classList.toggle("hidden");
       });
     </script>
+    <style>
+      .nav-brand {
+        --brand-accent: #e44a2f;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        color: var(--brand-accent);
+        text-decoration: none;
+      }
+
+      .nav-brand__icon {
+        width: 1.9rem;
+        height: auto;
+        flex: 0 0 auto;
+      }
+
+      .nav-brand__text {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        color: #111827;
+        font-weight: 700;
+      }
+
+      .nav-brand__title {
+        color: inherit;
+        font-size: 1rem;
+        letter-spacing: 0.16em;
+      }
+
+      @media (max-width: 640px) {
+        .nav-brand__title {
+          font-size: 0.9rem;
+        }
+      }
+
+      .footer-brand {
+        --brand-accent: #e44a2f;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        color: var(--brand-accent);
+        text-decoration: none;
+        width: fit-content;
+      }
+
+      .footer-brand__icon {
+        width: 1.9rem;
+        height: auto;
+        flex: 0 0 auto;
+      }
+
+      .footer-brand__text {
+        color: #111827;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        line-height: 1;
+      }
+
+      @media (max-width: 640px) {
+        .footer-brand__text {
+          font-size: 0.9rem;
+        }
+      }
+    </style>
   </body>
 </html>
 

@@ -1,0 +1,226 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import JsonPreviewTable from '../../../../components/admin/JsonPreviewTable.astro';
+import { normalizeJsonRow, validateRow, type ValidationResult, type ValidSlugSets } from '../../../../lib/admin/jsonUtils';
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const sessionId = Astro.cookies.get('json_upload_session')?.value;
+const filename = Astro.cookies.get('json_upload_filename')?.value || 'uploaded-file.json';
+
+if (!sessionId) {
+  return Astro.redirect('/admin/vendors/json/upload?error=no_session');
+}
+
+// Fetch JSON content from Supabase
+const { data: sessionRow, error: sessionError } = await supabaseAdmin
+  .from('import_sessions')
+  .select('content')
+  .eq('id', sessionId)
+  .maybeSingle();
+
+if (sessionError || !sessionRow) {
+  return Astro.redirect('/admin/vendors/json/upload?error=file_not_found');
+}
+
+// Parse JSON
+let parsedData: any[];
+try {
+  parsedData = JSON.parse(sessionRow.content);
+  if (!Array.isArray(parsedData) || parsedData.length === 0) {
+    return Astro.redirect('/admin/vendors/json/upload?error=empty_file');
+  }
+} catch {
+  return Astro.redirect('/admin/vendors/json/upload?error=invalid_json');
+}
+
+// Batch-fetch valid slugs for all 4 M2M types (parallel)
+const [
+  { data: categoriesData },
+  { data: technologiesData },
+  { data: industriesData },
+  { data: certificationsData },
+] = await Promise.all([
+  supabaseAdmin.from('categories').select('slug'),
+  supabaseAdmin.from('technologies').select('slug'),
+  supabaseAdmin.from('industries').select('slug'),
+  supabaseAdmin.from('certifications').select('slug'),
+]);
+
+const validSlugs: ValidSlugSets = {
+  categories: new Set((categoriesData || []).map((r: any) => r.slug)),
+  technologies: new Set((technologiesData || []).map((r: any) => r.slug)),
+  industries: new Set((industriesData || []).map((r: any) => r.slug)),
+  certifications: new Set((certificationsData || []).map((r: any) => r.slug)),
+};
+
+// Normalize all rows
+const normalizedData: any[] = [];
+const allSlugs: string[] = [];
+
+for (const row of parsedData) {
+  const normalized = normalizeJsonRow(row);
+  normalizedData.push(normalized);
+  if (normalized.slug) {
+    allSlugs.push(normalized.slug);
+  }
+}
+
+// Validate all rows (includes slug existence check)
+const validationResults: ValidationResult[] = normalizedData.map((row, index) =>
+  validateRow(row, index, allSlugs, validSlugs)
+);
+
+const rowCount = normalizedData.length;
+const totalRowsWithErrors = validationResults.filter(r => r.missingRequired.length > 0).length;
+const totalRowsWithWarnings = validationResults.filter(r =>
+  r.invalidEmail || r.invalidWebsite || r.duplicateSlug ||
+  r.unknownCategories.length > 0 || r.unknownTechnologies.length > 0 ||
+  r.unknownIndustries.length > 0 || r.unknownCertifications.length > 0
+).length;
+---
+
+<AdminLayout title="JSON Preview - Admin Panel" currentPath="/admin/vendors/json">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">JSON Preview</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Review the parsed data from: <strong>{filename}</strong>
+        </p>
+      </div>
+      <a
+        href="/admin/vendors/json"
+        class="text-sm text-gray-600 hover:text-gray-900"
+      >
+        ← Back to JSON Import
+      </a>
+    </div>
+
+    <!-- STATISTICS -->
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Preview Statistics</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-3 rounded border border-gray-200">
+          <div class="text-sm text-gray-600">Total Vendors</div>
+          <div class="text-2xl font-bold text-gray-900">{rowCount}</div>
+        </div>
+        <div class={`p-3 rounded border ${totalRowsWithErrors > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
+          <div class="text-sm text-gray-600">Rows with Errors</div>
+          <div class={`text-2xl font-bold ${totalRowsWithErrors > 0 ? 'text-red-700' : 'text-gray-900'}`}>{totalRowsWithErrors}</div>
+        </div>
+        <div class={`p-3 rounded border ${totalRowsWithWarnings > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`}>
+          <div class="text-sm text-gray-600">Rows with Warnings</div>
+          <div class={`text-2xl font-bold ${totalRowsWithWarnings > 0 ? 'text-yellow-700' : 'text-gray-900'}`}>{totalRowsWithWarnings}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREVIEW TABLE -->
+    <JsonPreviewTable
+      normalizedData={normalizedData}
+      validationResults={validationResults}
+      rowCount={rowCount}
+    />
+
+    <!-- IMPORT FORM -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Ready to Import?</h2>
+      <p class="text-sm text-gray-600 mb-6">
+        {totalRowsWithErrors > 0 ? (
+          <span class="text-red-600 font-medium">
+            Warning: {totalRowsWithErrors} row{totalRowsWithErrors !== 1 ? 's' : ''} have errors and will be skipped during import.
+          </span>
+        ) : (
+          <span>All rows are valid and ready to import.</span>
+        )}
+      </p>
+
+      <form id="import-form" class="space-y-4">
+        <input type="hidden" name="sessionId" value={sessionId} />
+
+        <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
+          <button
+            type="submit"
+            class="btn-primary"
+            id="import-button"
+          >
+            Import {rowCount} Vendor{rowCount !== 1 ? 's' : ''}
+          </button>
+          <a
+            href="/admin/vendors/json/upload"
+            class="btn-secondary"
+          >
+            Upload Different File
+          </a>
+        </div>
+      </form>
+
+      <script>
+        const form = document.getElementById('import-form') as HTMLFormElement | null;
+        const importButton = document.getElementById('import-button') as HTMLButtonElement | null;
+
+        if (form && importButton) {
+          const originalButtonText = importButton.textContent;
+
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            importButton.setAttribute('disabled', 'true');
+            importButton.textContent = 'Importing...';
+
+            try {
+              const formData = new FormData(form);
+              const response = await fetch('/admin/vendors/json/import', {
+                method: 'POST',
+                body: formData,
+              });
+
+              if (!response.ok) {
+                throw new Error('Import failed');
+              }
+
+              const results = await response.json();
+
+              sessionStorage.setItem('jsonImportResults', JSON.stringify(results));
+
+              const params = new URLSearchParams({
+                imported: results.imported?.toString() || '0',
+                failed: results.failed?.toString() || '0',
+                skipped: results.skipped?.toString() || '0',
+                warningsCount: results.warnings?.length?.toString() || '0',
+                errorsCount: results.errors?.length?.toString() || '0',
+              });
+
+              window.location.href = `/admin/vendors/json/results?${params.toString()}`;
+            } catch (error) {
+              console.error('Import error:', error);
+              alert('An error occurred during import. Please try again.');
+              importButton.removeAttribute('disabled');
+              importButton.textContent = originalButtonText;
+            }
+          });
+        }
+      </script>
+    </div>
+
+    <!-- VALIDATION NOTES -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h3 class="text-sm font-semibold text-gray-900 mb-2">Validation Notes</h3>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• <span class="bg-red-200 px-1 rounded">Red background</span> indicates missing required fields — row will be skipped</li>
+        <li>• <span class="bg-yellow-200 px-1 rounded">Yellow background</span> indicates warnings (invalid email, website format, or duplicate slug)</li>
+        <li>• Required fields: <code class="bg-gray-100 px-1 rounded">name</code>, <code class="bg-gray-100 px-1 rounded">slug</code>, <code class="bg-gray-100 px-1 rounded">country</code>, <code class="bg-gray-100 px-1 rounded">category_slugs</code></li>
+        <li>• Vendors with slugs already in the database are skipped automatically</li>
+      </ul>
+    </div>
+  </div>
+</AdminLayout>

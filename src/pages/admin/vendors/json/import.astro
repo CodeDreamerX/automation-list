@@ -1,0 +1,256 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import { supabase } from '../../../../lib/supabaseClient';
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+import { normalizeJsonRow, validateRow } from '../../../../lib/admin/jsonUtils';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const sessionId = formData.get('sessionId')?.toString();
+
+  if (!sessionId) {
+    return Astro.redirect('/admin/vendors/json/upload?error=no_session');
+  }
+
+  // Fetch JSON content from Supabase
+  const { data: sessionRow, error: sessionError } = await supabaseAdmin
+    .from('import_sessions')
+    .select('content')
+    .eq('id', sessionId)
+    .maybeSingle();
+
+  if (sessionError || !sessionRow) {
+    return Astro.redirect('/admin/vendors/json/upload?error=file_not_found');
+  }
+
+  // Parse JSON
+  let parsedData: any[];
+  try {
+    parsedData = JSON.parse(sessionRow.content);
+    if (!Array.isArray(parsedData) || parsedData.length === 0) {
+      return Astro.redirect('/admin/vendors/json/upload?error=empty_file');
+    }
+  } catch {
+    return Astro.redirect('/admin/vendors/json/upload?error=invalid_json');
+  }
+
+  // Batch-fetch slug→id Maps for all 4 M2M types (4 queries, not N×M)
+  const [
+    { data: allCategories },
+    { data: allTechnologies },
+    { data: allIndustries },
+    { data: allCertifications },
+  ] = await Promise.all([
+    supabaseAdmin.from('categories').select('id, slug'),
+    supabaseAdmin.from('technologies').select('id, slug'),
+    supabaseAdmin.from('industries').select('id, slug'),
+    supabaseAdmin.from('certifications').select('id, slug'),
+  ]);
+
+  const categoryMap = new Map((allCategories || []).map((r: any) => [r.slug, r.id]));
+  const technologyMap = new Map((allTechnologies || []).map((r: any) => [r.slug, r.id]));
+  const industryMap = new Map((allIndustries || []).map((r: any) => [r.slug, r.id]));
+  const certificationMap = new Map((allCertifications || []).map((r: any) => [r.slug, r.id]));
+
+  // Normalize all rows
+  const normalizedData: any[] = [];
+  const allSlugs: string[] = [];
+
+  for (const row of parsedData) {
+    const normalized = normalizeJsonRow(row);
+    normalizedData.push(normalized);
+    if (normalized.slug) {
+      allSlugs.push(normalized.slug);
+    }
+  }
+
+  const results = {
+    success: 0,
+    skipped: 0,
+    errors: 0,
+    warnings: [] as string[],
+    errorsList: [] as string[],
+  };
+
+  for (let i = 0; i < normalizedData.length; i++) {
+    const row = normalizedData[i];
+    const rowNum = i + 1;
+
+    try {
+      // Validate required fields
+      const validation = validateRow(row, i, allSlugs);
+      if (validation.missingRequired.length > 0) {
+        results.skipped++;
+        results.errorsList.push(`Row ${rowNum} (${row.name || 'unnamed'}): Missing required fields: ${validation.missingRequired.join(', ')}`);
+        continue;
+      }
+
+      // Skip if slug already exists
+      const { data: existingVendor } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('slug', row.slug)
+        .maybeSingle();
+
+      if (existingVendor) {
+        results.skipped++;
+        results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Slug "${row.slug}" already exists, skipped`);
+        continue;
+      }
+
+      const vendorData = {
+        name: row.name,
+        slug: row.slug,
+        country: row.country,
+        region: row.region || null,
+        city: row.city || null,
+        address: row.address || null,
+        website: row.website || null,
+        email: row.email || null,
+        phone: row.phone || null,
+        description_en: row.description_en || null,
+        description_de: row.description_de || null,
+        languages: row.languages || null,
+        tags: row.tags || null,
+        countries_served: row.countries_served || null,
+        year_founded: row.year_founded || null,
+        employee_count: row.employee_count || null,
+        hourly_rate: row.hourly_rate || null,
+        plan: row.plan || 'free',
+        featured: row.featured === true,
+        priority: typeof row.priority === 'number' ? row.priority : 5,
+        og_member: row.og_member === true,
+        featured_until: row.featured_until || null,
+        taking_new_projects: row.taking_new_projects ?? null,
+        linkedin_url: row.linkedin_url || null,
+        specialization_text: row.specialization_text || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // logo_* and meta_* fields intentionally omitted
+      };
+
+      // Normalize website URL
+      if (vendorData.website && typeof vendorData.website === 'string') {
+        const website = vendorData.website.trim();
+        if (website && !website.match(/^https?:\/\//i)) {
+          vendorData.website = 'https://' + website;
+        }
+      }
+
+      // Insert vendor
+      const { data: vendor, error: vendorError } = await supabaseAdmin
+        .from('vendors')
+        .insert([vendorData])
+        .select('id')
+        .single();
+
+      if (vendorError || !vendor) {
+        results.errors++;
+        results.errorsList.push(`Row ${rowNum} (${row.name || 'unnamed'}): ${vendorError?.message || 'Failed to create vendor'}`);
+        continue;
+      }
+
+      const vendorId = vendor.id;
+
+      // Insert vendor_categories
+      for (const slug of row._categorySlugs) {
+        const categoryId = categoryMap.get(slug);
+        if (categoryId) {
+          const { error: err } = await supabaseAdmin
+            .from('vendor_categories')
+            .insert({ vendor_id: vendorId, category_id: categoryId, is_primary: false });
+          if (err) {
+            results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Failed to link category "${slug}": ${err.message}`);
+          }
+        } else {
+          results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Unknown category slug: ${slug}`);
+        }
+      }
+
+      // Insert vendor_technologies
+      for (const slug of row._technologySlugs || []) {
+        const technologyId = technologyMap.get(slug);
+        if (technologyId) {
+          const { error: err } = await supabaseAdmin
+            .from('vendor_technologies')
+            .insert({ vendor_id: vendorId, technology_id: technologyId });
+          if (err) {
+            results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Failed to link technology "${slug}": ${err.message}`);
+          }
+        } else {
+          results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Unknown technology slug: ${slug}`);
+        }
+      }
+
+      // Insert vendor_industries
+      for (const slug of row._industrySlugs || []) {
+        const industryId = industryMap.get(slug);
+        if (industryId) {
+          const { error: err } = await supabaseAdmin
+            .from('vendor_industries')
+            .insert({ vendor_id: vendorId, industry_id: industryId });
+          if (err) {
+            results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Failed to link industry "${slug}": ${err.message}`);
+          }
+        } else {
+          results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Unknown industry slug: ${slug}`);
+        }
+      }
+
+      // Insert vendor_certifications
+      for (const slug of row._certificationSlugs || []) {
+        const certificationId = certificationMap.get(slug);
+        if (certificationId) {
+          const { error: err } = await supabaseAdmin
+            .from('vendor_certifications')
+            .insert({ vendor_id: vendorId, certification_id: certificationId });
+          if (err) {
+            results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Failed to link certification "${slug}": ${err.message}`);
+          }
+        } else {
+          results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Unknown certification slug: ${slug}`);
+        }
+      }
+
+      results.success++;
+
+    } catch (error: any) {
+      results.errors++;
+      results.errorsList.push(`Row ${rowNum} (${row.name || 'unnamed'}): ${error.message || 'Unexpected error'}`);
+    }
+  }
+
+  // Clean up session from Supabase
+  await supabaseAdmin
+    .from('import_sessions')
+    .delete()
+    .eq('id', sessionId);
+
+  Astro.cookies.delete('json_upload_session', { path: '/' });
+  Astro.cookies.delete('json_upload_filename', { path: '/' });
+
+  return new Response(
+    JSON.stringify({
+      imported: results.success,
+      failed: results.errors,
+      warnings: results.warnings,
+      errors: results.errorsList,
+      skipped: results.skipped,
+    }),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+}
+
+// If not POST, redirect to upload
+return Astro.redirect('/admin/vendors/json/upload');
+---

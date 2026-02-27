@@ -4,13 +4,11 @@ export const prerender = false;
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
 
-// Check authentication and redirect if not logged in
 const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }
 
-// Get results from query parameters (passed from client-side after JSON response)
 const imported = parseInt(Astro.url.searchParams.get('imported') || '0');
 const failed = parseInt(Astro.url.searchParams.get('failed') || '0');
 const skipped = parseInt(Astro.url.searchParams.get('skipped') || '0');
@@ -18,37 +16,35 @@ const warningsCount = parseInt(Astro.url.searchParams.get('warningsCount') || '0
 const errorsCount = parseInt(Astro.url.searchParams.get('errorsCount') || '0');
 ---
 
-<AdminLayout title="CSV Import Results - Admin Panel" currentPath="/admin/vendors/csv">
+<AdminLayout title="JSON Import Results - Admin Panel" currentPath="/admin/vendors/json">
   <div class="space-y-6">
     <!-- HEADER -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">CSV Import Results</h1>
+        <h1 class="text-2xl font-bold text-gray-900">JSON Import Results</h1>
         <p class="mt-1 text-sm text-gray-600">
-          Summary of the CSV import operation
+          Summary of the JSON import operation
         </p>
       </div>
       <a
-        href="/admin/vendors/csv"
+        href="/admin/vendors/json"
         class="text-sm text-gray-600 hover:text-gray-900"
       >
-        ← Back to CSV Import
+        ← Back to JSON Import
       </a>
     </div>
 
     <!-- SUMMARY STATISTICS -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Import Summary</h2>
-      
+
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Imported -->
         <div class="bg-green-50 border border-green-200 rounded-md p-4">
           <div class="text-sm font-medium text-green-900 mb-1">Successfully Imported</div>
           <div class="text-2xl font-bold text-green-700">{imported}</div>
           <div class="text-xs text-green-600 mt-1">vendor{imported !== 1 ? 's' : ''}</div>
         </div>
 
-        <!-- Failed -->
         {failed > 0 && (
           <div class="bg-red-50 border border-red-200 rounded-md p-4">
             <div class="text-sm font-medium text-red-900 mb-1">Failed</div>
@@ -57,7 +53,6 @@ const errorsCount = parseInt(Astro.url.searchParams.get('errorsCount') || '0');
           </div>
         )}
 
-        <!-- Skipped -->
         {skipped > 0 && (
           <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
             <div class="text-sm font-medium text-yellow-900 mb-1">Skipped</div>
@@ -102,10 +97,10 @@ const errorsCount = parseInt(Astro.url.searchParams.get('errorsCount') || '0');
           View All Vendors
         </a>
         <a
-          href="/admin/vendors/csv"
+          href="/admin/vendors/json"
           class="btn-secondary"
         >
-          Import Another CSV
+          Import Another File
         </a>
       </div>
     </div>
@@ -113,46 +108,41 @@ const errorsCount = parseInt(Astro.url.searchParams.get('errorsCount') || '0');
 </AdminLayout>
 
 <script>
-  // Retrieve results from sessionStorage and display them
-  const resultsData = sessionStorage.getItem('csvImportResults');
-  
+  const resultsData = sessionStorage.getItem('jsonImportResults');
+
   if (resultsData) {
     try {
       const results = JSON.parse(resultsData);
-      
-      // Display warnings (with XSS protection via textContent)
+
       if (results.warnings && results.warnings.length > 0) {
         const warningsList = document.getElementById('warnings-list');
         if (warningsList) {
-          warningsList.innerHTML = ''; // Clear loading message
-          results.warnings.forEach((warning) => {
+          warningsList.innerHTML = '';
+          results.warnings.forEach((warning: string) => {
             const div = document.createElement('div');
             div.className = 'text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2';
-            div.textContent = warning; // Use textContent to prevent XSS
+            div.textContent = warning;
             warningsList.appendChild(div);
           });
         }
       }
-      
-      // Display errors (with XSS protection via textContent)
+
       if (results.errors && results.errors.length > 0) {
         const errorsList = document.getElementById('errors-list');
         if (errorsList) {
-          errorsList.innerHTML = ''; // Clear loading message
-          results.errors.forEach((error) => {
+          errorsList.innerHTML = '';
+          results.errors.forEach((error: string) => {
             const div = document.createElement('div');
             div.className = 'text-sm text-red-800 bg-red-50 border border-red-200 rounded px-3 py-2';
-            div.textContent = error; // Use textContent to prevent XSS
+            div.textContent = error;
             errorsList.appendChild(div);
           });
         }
       }
-      
-      // Clear sessionStorage after displaying
-      sessionStorage.removeItem('csvImportResults');
+
+      sessionStorage.removeItem('jsonImportResults');
     } catch (e) {
       console.error('Error parsing results:', e);
     }
   }
 </script>
-

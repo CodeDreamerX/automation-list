@@ -1,0 +1,198 @@
+---
+import { REQUIRED_FIELDS, type ValidationResult } from '../../lib/admin/jsonUtils';
+
+interface Props {
+  normalizedData: any[];
+  validationResults: ValidationResult[];
+  rowCount: number;
+}
+
+const { normalizedData, validationResults, rowCount } = Astro.props;
+
+const displayFields = [
+  'name',
+  'slug',
+  'country',
+  'region',
+  'city',
+  'website',
+  'email',
+  'description_en',
+  'category_slugs',
+  'technology_slugs',
+  'industry_slugs',
+  'certification_slugs',
+  'languages',
+  'tags',
+  'countries_served',
+  'year_founded',
+  'employee_count',
+  'plan',
+  'featured',
+  'priority',
+  'og_member',
+  'linkedin_url',
+  'taking_new_projects',
+  'specialization_text',
+];
+
+const slugFields = ['category_slugs', 'technology_slugs', 'industry_slugs', 'certification_slugs'] as const;
+type SlugField = typeof slugFields[number];
+
+function getSlugArray(row: any, field: SlugField): string[] {
+  if (field === 'category_slugs') return row._categorySlugs || [];
+  if (field === 'technology_slugs') return row._technologySlugs || [];
+  if (field === 'industry_slugs') return row._industrySlugs || [];
+  return row._certificationSlugs || [];
+}
+
+function getUnknownSet(validation: ValidationResult, field: SlugField): string[] {
+  if (field === 'category_slugs') return validation.unknownCategories;
+  if (field === 'technology_slugs') return validation.unknownTechnologies;
+  if (field === 'industry_slugs') return validation.unknownIndustries;
+  return validation.unknownCertifications;
+}
+---
+
+<div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+  <h2 class="text-xl font-semibold text-gray-900 mb-4">
+    Preview (First 10 Rows)
+  </h2>
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-300">
+      <thead class="bg-gray-100">
+        <tr>
+          {displayFields.map((key) => (
+            <th class="px-3 py-2 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-b border-gray-300 max-w-xs">
+              <div class="truncate" title={key}>
+                {key === 'category_slugs'
+                  ? 'categories'
+                  : key === 'technology_slugs'
+                    ? 'technologies'
+                    : key === 'industry_slugs'
+                      ? 'industries'
+                      : key === 'certification_slugs'
+                        ? 'certifications'
+                        : key}
+                {REQUIRED_FIELDS.includes(key) && (
+                  <span class="text-red-600 ml-1">*</span>
+                )}
+              </div>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {normalizedData.slice(0, 10).map((row, idx) => {
+          const validation = validationResults[idx];
+          const hasErrors = validation.missingRequired.length > 0;
+          const hasWarnings =
+            validation.invalidEmail || validation.invalidWebsite || validation.duplicateSlug ||
+            validation.unknownCategories.length > 0 || validation.unknownTechnologies.length > 0 ||
+            validation.unknownIndustries.length > 0 || validation.unknownCertifications.length > 0;
+
+          let rowClass = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+          if (hasErrors) {
+            rowClass = idx % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
+          } else if (hasWarnings) {
+            rowClass = idx % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
+          }
+
+          return (
+            <tr class={`${rowClass} border-b border-gray-200`}>
+              {displayFields.map((field) => {
+                // Slug M2M fields — render per-slug spans
+                if ((slugFields as readonly string[]).includes(field)) {
+                  const slugField = field as SlugField;
+                  const slugs = getSlugArray(row, slugField);
+                  const unknownSet = new Set(getUnknownSet(validation, slugField));
+                  const hasUnknown = unknownSet.size > 0;
+
+                  let cellClass = 'px-3 py-2 text-xs text-left max-w-xs';
+                  const isRequired = REQUIRED_FIELDS.includes(field);
+                  const isMissing = isRequired && slugs.length === 0;
+                  if (isMissing) {
+                    cellClass += ' bg-red-200';
+                  } else if (hasUnknown) {
+                    cellClass += ' bg-yellow-200';
+                  }
+
+                  return (
+                    <td class={cellClass}>
+                      {slugs.length > 0 ? (
+                        <div class="flex flex-wrap gap-1">
+                          {slugs.map((slug: string) => (
+                            <span
+                              class={unknownSet.has(slug)
+                                ? 'text-red-600 line-through'
+                                : 'text-gray-900'}
+                              title={unknownSet.has(slug) ? `Unknown slug: ${slug}` : slug}
+                            >
+                              {slug}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span class="text-gray-400 italic">(empty)</span>
+                      )}
+                    </td>
+                  );
+                }
+
+                // All other fields
+                const value = row[field];
+                const isRequired = REQUIRED_FIELDS.includes(field);
+                const isMissing = isRequired && (!value || value === null);
+
+                let cellClass = 'px-3 py-2 text-xs text-gray-900 text-left';
+                if (isMissing) {
+                  cellClass += ' bg-red-200';
+                } else if (field === 'email' && validation.invalidEmail) {
+                  cellClass += ' bg-yellow-200';
+                } else if (field === 'website' && validation.invalidWebsite) {
+                  cellClass += ' bg-yellow-200';
+                } else if (field === 'slug' && validation.duplicateSlug) {
+                  cellClass += ' bg-yellow-200';
+                }
+
+                let maxWidthClass = 'max-w-xs';
+                if (field === 'description_en' || field === 'specialization_text') {
+                  maxWidthClass = 'max-w-md';
+                } else if (field === 'name') {
+                  maxWidthClass = 'max-w-sm';
+                } else if (['email', 'website', 'linkedin_url'].includes(field)) {
+                  maxWidthClass = 'max-w-xs';
+                } else {
+                  maxWidthClass = 'max-w-32';
+                }
+
+                let displayValue = value;
+                if (field === 'featured' || field === 'og_member' || field === 'taking_new_projects') {
+                  if (value === true) displayValue = 'Yes';
+                  else if (value === false) displayValue = 'No';
+                  else displayValue = null;
+                }
+
+                return (
+                  <td class={`${cellClass} ${maxWidthClass}`}>
+                    <div class="truncate" title={typeof displayValue === 'string' ? displayValue : displayValue?.toString()}>
+                      {displayValue !== null && displayValue !== undefined
+                        ? displayValue.toString()
+                        : <span class="text-gray-400 italic">(empty)</span>}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  {rowCount > 10 && (
+    <p class="mt-4 text-sm text-gray-600">
+      Showing first 10 of {rowCount} rows
+    </p>
+  )}
+</div>
