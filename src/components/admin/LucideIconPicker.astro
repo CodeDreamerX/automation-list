@@ -1,0 +1,242 @@
+---
+/**
+ * Searchable Lucide icon picker for admin forms.
+ * Renders a search input + scrollable icon grid.
+ * Clicking an icon stores its kebab-case name (e.g. 'cpu') in a hidden input.
+ */
+interface Props {
+  selectedIconName?: string | null;
+  fieldName?: string;
+}
+
+const { selectedIconName, fieldName = 'icon_name' } = Astro.props;
+const currentIcon = selectedIconName ?? '';
+---
+
+<div class="lucide-icon-picker">
+  <!-- Hidden input submitted with the form -->
+  <input
+    type="hidden"
+    name={fieldName}
+    id="icon-picker-value"
+    value={currentIcon}
+  />
+
+  <!-- Current selection preview -->
+  <div class="flex items-center gap-3 mb-3 p-3 border border-gray-200 rounded-md bg-gray-50 min-h-[52px]">
+    <div id="icon-preview" class="text-gray-700 flex-shrink-0">
+      <!-- Populated by script on load -->
+    </div>
+    <div>
+      <p class="text-xs text-gray-500">Selected icon</p>
+      <p id="icon-preview-label" class="text-sm font-medium text-gray-800">
+        {currentIcon || 'None'}
+      </p>
+    </div>
+  </div>
+
+  <!-- Search input -->
+  <div class="relative mb-2">
+    <input
+      type="text"
+      id="icon-search"
+      placeholder="Search icons… (e.g. 'cpu', 'chart', 'settings')"
+      autocomplete="off"
+      class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+    />
+    <p class="text-xs text-gray-500 mt-1">Showing first 60 icons. Type to filter all ~1400 Lucide icons.</p>
+  </div>
+
+  <!-- Icon grid -->
+  <div
+    id="icon-grid"
+    class="h-72 overflow-y-auto grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 border border-gray-300 rounded-md p-3"
+  >
+    <!-- Populated by script -->
+  </div>
+</div>
+
+<script>
+  import { icons } from 'lucide';
+
+  // Build sorted list: { storeName (kebab), pascalName, nodes }
+  const allIcons = Object.entries(icons)
+    .map(([key, nodes]) => ({
+      storeName: key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase(),
+      nodes: nodes as [string, Record<string, string>][],
+    }))
+    .sort((a, b) => a.storeName.localeCompare(b.storeName));
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function createSvgEl(nodes: [string, Record<string, string>][], size = 20): SVGElement {
+    const svg = document.createElementNS(SVG_NS, 'svg') as SVGSVGElement;
+    svg.setAttribute('width', String(size));
+    svg.setAttribute('height', String(size));
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    for (const [tag, attrs] of nodes) {
+      const el = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        el.setAttribute(k, String(v));
+      }
+      svg.appendChild(el);
+    }
+    return svg;
+  }
+
+  const hiddenInput = document.getElementById('icon-picker-value') as HTMLInputElement;
+  const searchInput = document.getElementById('icon-search') as HTMLInputElement;
+  const grid = document.getElementById('icon-grid') as HTMLDivElement;
+  const previewContainer = document.getElementById('icon-preview') as HTMLDivElement;
+  const previewLabel = document.getElementById('icon-preview-label') as HTMLParagraphElement;
+
+  function updatePreview(name: string, nodes?: [string, Record<string, string>][]) {
+    previewContainer.innerHTML = '';
+    if (name && nodes && nodes.length > 0) {
+      previewContainer.appendChild(createSvgEl(nodes, 24));
+    }
+    previewLabel.textContent = name || 'None';
+  }
+
+  function selectIcon(name: string, nodes: [string, Record<string, string>][]) {
+    hiddenInput.value = name;
+    updatePreview(name, nodes);
+    // Refresh highlight states in the grid
+    grid.querySelectorAll<HTMLButtonElement>('button[data-icon-name]').forEach((btn) => {
+      const selected = btn.dataset.iconName === name;
+      btn.classList.toggle('border-black', selected);
+      btn.classList.toggle('bg-gray-50', selected);
+      btn.classList.toggle('ring-1', selected);
+      btn.classList.toggle('ring-black', selected);
+      btn.classList.toggle('border-gray-200', !selected);
+    });
+  }
+
+  function renderGrid(list: typeof allIcons) {
+    grid.innerHTML = '';
+    const currentValue = hiddenInput.value;
+    for (const { storeName, nodes } of list) {
+      const isSelected = storeName === currentValue;
+      const btn = document.createElement('button');
+      btn.type = 'button'; // critical: prevent form submit
+      btn.dataset.iconName = storeName;
+      btn.title = storeName;
+      btn.className = [
+        'flex flex-col items-center gap-1 p-2 rounded-md cursor-pointer',
+        'border transition-colors hover:border-gray-400',
+        isSelected
+          ? 'border-black bg-gray-50 ring-1 ring-black'
+          : 'border-gray-200',
+      ].join(' ');
+
+      btn.appendChild(createSvgEl(nodes));
+
+      const label = document.createElement('span');
+      label.textContent = storeName;
+      label.className = 'text-[9px] text-gray-500 text-center leading-tight break-all w-full';
+      btn.appendChild(label);
+
+      btn.addEventListener('click', () => selectIcon(storeName, nodes));
+      grid.appendChild(btn);
+    }
+
+    if (list.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'col-span-full text-sm text-gray-400 text-center py-8';
+      empty.textContent = 'No icons match your search.';
+      grid.appendChild(empty);
+    }
+  }
+
+  // Initialise preview with the currently saved icon (if any)
+  const savedName = hiddenInput.value;
+  if (savedName) {
+    const saved = allIcons.find((i) => i.storeName === savedName);
+    if (saved) updatePreview(savedName, saved.nodes);
+  }
+
+  // Initial grid: first 60 icons, but if there's a saved value show icons
+  // starting from alphabetically near that saved value so it's visible
+  function initialList(): typeof allIcons {
+    if (!savedName) return allIcons.slice(0, 60);
+    const idx = allIcons.findIndex((i) => i.storeName === savedName);
+    const start = Math.max(0, idx - 10);
+    return allIcons.slice(start, start + 60);
+  }
+
+  renderGrid(initialList());
+
+  // Alias map: common search terms → icon name fragments they should match
+  const aliases: Record<string, string[]> = {
+    robot: ['bot'],
+    ai: ['bot', 'brain', 'cpu', 'sparkle', 'wand', 'zap'],
+    email: ['mail'],
+    picture: ['image', 'photo'],
+    photo: ['image', 'camera'],
+    money: ['dollar', 'euro', 'coin', 'wallet', 'credit'],
+    phone: ['phone', 'mobile'],
+    delete: ['trash', 'x', 'remove'],
+    remove: ['trash', 'x', 'minus'],
+    add: ['plus', 'circle-plus', 'square-plus'],
+    edit: ['pencil', 'pen', 'square-pen'],
+    user: ['user', 'person', 'contact'],
+    person: ['user', 'contact'],
+    link: ['link', 'chain', 'external'],
+    arrow: ['arrow', 'chevron', 'move'],
+    warning: ['alert', 'triangle'],
+    error: ['alert', 'x-circle', 'ban'],
+    success: ['check', 'circle-check'],
+    search: ['search', 'magnify'],
+    filter: ['filter', 'funnel', 'sliders'],
+    sort: ['sort', 'arrow-up-down'],
+    download: ['download', 'arrow-down'],
+    upload: ['upload', 'arrow-up'],
+    share: ['share', 'send', 'forward'],
+    copy: ['copy', 'clipboard'],
+    lock: ['lock', 'key', 'shield'],
+    unlock: ['unlock', 'key'],
+    star: ['star', 'bookmark', 'heart'],
+    favourite: ['star', 'heart', 'bookmark'],
+    home: ['home', 'house'],
+    settings: ['settings', 'cog', 'gear', 'sliders'],
+    config: ['settings', 'cog', 'sliders'],
+    notification: ['bell', 'alert'],
+    tag: ['tag', 'label', 'badge'],
+    calendar: ['calendar', 'clock', 'date'],
+    time: ['clock', 'timer', 'hourglass'],
+  };
+
+  // Live search
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    if (!q) {
+      renderGrid(allIcons.slice(0, 60));
+      return;
+    }
+
+    // Expand query via aliases
+    const expandedTerms = new Set([q, ...(aliases[q] ?? [])]);
+
+    function scoreIcon(name: string): number | null {
+      for (const term of expandedTerms) {
+        if (name === term) return 0;               // exact match
+        if (name.startsWith(term + '-') || name.startsWith(term)) return 1; // prefix
+        if (name.includes('-' + term) || name.includes(term)) return 2;     // substring
+      }
+      return null;
+    }
+
+    const scored = allIcons
+      .map((i) => ({ icon: i, score: scoreIcon(i.storeName) }))
+      .filter((x) => x.score !== null)
+      .sort((a, b) => a.score! - b.score!);
+
+    renderGrid(scored.map((x) => x.icon).slice(0, 120));
+  });
+</script>

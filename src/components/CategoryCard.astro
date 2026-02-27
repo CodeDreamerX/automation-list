@@ -1,6 +1,6 @@
 ---
 import type { CategoryBasic } from '../types/category';
-import { getIconUrl } from '../lib/iconUtils';
+import LucideIcon from './LucideIcon.astro';
 
 interface CategoryCardProps {
   category: CategoryBasic;
@@ -22,8 +22,6 @@ const cardText = lang === "de" ? category.card_description_de : category.card_de
 // Build link using slug
 const link = `/${lang}/category/${category.slug}`;
 
-// Build icon path
-const iconPath = getIconUrl(category.icon_name);
 ---
 
 <a
@@ -34,9 +32,9 @@ const iconPath = getIconUrl(category.icon_name);
   {category.count !== undefined && category.count > 0 && (
     <span class="absolute top-3 right-3 bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">{category.count}</span>
   )}
-  {iconPath && (
-    <div class="flex justify-center mb-4">
-      <img src={iconPath} class="w-7 h-7" alt={category.name_en || name || ""} />
+  {category.icon_name && (
+    <div class="flex justify-center mb-4 text-gray-700">
+      <LucideIcon name={category.icon_name} size={28} />
     </div>
   )}
   <h3 class="text-lg font-semibold text-gray-900">{name}</h3>

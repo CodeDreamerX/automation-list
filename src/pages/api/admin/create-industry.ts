@@ -20,6 +20,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const description_de = body.get("description_de");
     const card_description_en = body.get("card_description_en");
     const card_description_de = body.get("card_description_de");
+    const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
     const is_active = body.get("is_active") ? true : false;
 
@@ -40,6 +41,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       description_de: description_de?.toString().trim() || null,
       card_description_en: card_description_en?.toString().trim() || null,
       card_description_de: card_description_de?.toString().trim() || null,
+      icon_name: icon_name?.toString().trim() || null,
       order_index: order_index ? parseInt(order_index.toString()) : null,
       is_active: is_active,
     };

@@ -1,4 +1,6 @@
 ---
+import LucideIconPicker from './LucideIconPicker.astro';
+
 interface IndustryFormProps {
   industry: any | null;
 }
@@ -124,6 +126,14 @@ const formAction = isNewIndustry
         <p class="text-xs text-gray-500 mt-1">Short keyword line for grid cards (max ~60 chars)</p>
       </div>
     </div>
+  </section>
+
+  <!-- ICON SELECTION -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      Icon Selection
+    </h2>
+    <LucideIconPicker selectedIconName={industry?.icon_name} fieldName="icon_name" />
   </section>
 
   <!-- SETTINGS -->

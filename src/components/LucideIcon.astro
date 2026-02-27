@@ -1,0 +1,33 @@
+---
+/**
+ * Dynamic Lucide icon renderer for server-side (SSR) use.
+ * Pass the stored kebab-case icon name (e.g. 'cpu', 'layout-dashboard')
+ * and it renders the matching Lucide SVG at server time.
+ * Renders nothing if the name is unknown or missing.
+ */
+import { icons } from 'lucide';
+import { Icon } from '@lucide/astro';
+
+interface Props {
+  name: string | null | undefined;
+  size?: number;
+  class?: string;
+  'stroke-width'?: number;
+  color?: string;
+}
+
+const { name, size = 24, class: className, 'stroke-width': strokeWidth = 2, color = 'currentColor' } = Astro.props;
+
+let iconNode: any[] = [];
+if (name) {
+  // Convert kebab-case → PascalCase: 'layout-dashboard' → 'LayoutDashboard'
+  const pascalName = name
+    .split('-')
+    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('');
+  iconNode = (icons as any)[pascalName] ?? [];
+}
+---
+{iconNode.length > 0 && (
+  <Icon iconNode={iconNode} size={size} class={className} stroke-width={strokeWidth} color={color} />
+)}

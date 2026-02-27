@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls -la /d/Projects/automationlist/*.md)"
+      "Bash(ls -la /d/Projects/automationlist/*.md)",
+      "Bash(npm install lucide lucide-astro)",
+      "Bash(npm uninstall lucide-astro)",
+      "Bash(npm install @lucide/astro)"
     ]
   }
 }

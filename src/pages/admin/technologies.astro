@@ -4,7 +4,7 @@ export const prerender = false;
 import { supabaseAdmin } from '../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
-import { getTechnologyIconUrl } from '../../lib/iconUtils';
+import LucideIcon from '../../components/LucideIcon.astro';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
@@ -83,24 +83,13 @@ if (error) {
             {technologies && technologies.length > 0 ? (
               technologies.map((technology) => {
                 const displayName = technology.name_en || technology.name_de || '-';
-                const iconUrl = getTechnologyIconUrl(technology.icon_name);
-                
+
                 return (
                   <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
-                      {iconUrl ? (
-                        <div class="relative">
-                          <img 
-                            src={iconUrl} 
-                            alt={displayName} 
-                            class="w-8 h-8"
-                            onerror={`this.style.display='none'; this.nextElementSibling.style.display='flex';`}
-                          />
-                          <div class="hidden items-center justify-center w-8 h-8 text-gray-400 text-xs">—</div>
-                        </div>
-                      ) : (
-                        <div class="flex items-center justify-center w-8 h-8 text-gray-400 text-xs">—</div>
-                      )}
+                      <div class="flex items-center justify-center w-8 h-8 text-gray-700">
+                        <LucideIcon name={technology.icon_name} size={20} />
+                      </div>
                     </td>
                     <td class="px-6 py-4">
                       <div class="text-sm font-medium text-gray-900">{displayName}</div>
@@ -141,8 +130,8 @@ if (error) {
                         <button
                           type="button"
                           class="text-red-600 hover:text-red-800 px-3 py-1 rounded-md hover:bg-red-50 transition-colors"
-                          disabled
-                          title="Delete action not implemented yet"
+                          data-delete-technology-id={technology.id}
+                          data-delete-technology-name={displayName}
                         >
                           Delete
                         </button>
@@ -163,4 +152,17 @@ if (error) {
       </div>
     </div>
   </div>
+
+  <script>
+    import { initAdminDeleteButtons } from '../../components/admin/admin-delete';
+
+    initAdminDeleteButtons({
+      buttonSelector: '[data-delete-technology-id]',
+      idAttribute: 'data-delete-technology-id',
+      nameAttribute: 'data-delete-technology-name',
+      endpoint: '/api/admin/delete-technology',
+      entityFallbackName: 'this technology',
+      errorFallbackMessage: 'Failed to delete technology',
+    });
+  </script>
 </AdminLayout>

@@ -9,6 +9,7 @@ export interface Industry {
   description?: string; // Optional, resolved by lang
   card_description_en?: string | null;
   card_description_de?: string | null;
+  icon_name?: string | null;
 }
 
 /**
@@ -23,6 +24,7 @@ export interface IndustryDB {
   description_de?: string;
   card_description_en?: string | null;
   card_description_de?: string | null;
+  icon_name?: string | null;
   order_index?: number | null;
   is_active?: boolean;
 }
@@ -50,6 +52,7 @@ export interface IndustryBasic {
   description?: string; // Optional, resolved by lang
   card_description_en?: string | null;
   card_description_de?: string | null;
+  icon_name?: string | null;
 }
 
 

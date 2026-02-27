@@ -1,5 +1,6 @@
 ---
 import type { IndustryBasic } from '../types/industry';
+import LucideIcon from './LucideIcon.astro';
 
 interface IndustryCardProps {
   industry: IndustryBasic;
@@ -25,6 +26,11 @@ const link = `/${lang}/industry/${industry.slug}`;
   class="fade-in-up relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition flex flex-col items-center text-center"
   style={`animation-delay: ${index * 0.05}s`}
 >
+  {industry.icon_name && (
+    <div class="flex justify-center mb-4 text-gray-700">
+      <LucideIcon name={industry.icon_name} size={28} />
+    </div>
+  )}
   <h3 class="text-lg font-semibold text-gray-900">{industry.name}</h3>
   {cardText?.trim() && (
     <p class="text-sm text-gray-600 mt-2">{cardText}</p>

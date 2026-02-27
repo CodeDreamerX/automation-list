@@ -9,7 +9,7 @@ import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
-import { getTechnologyIconUrl } from "../../../lib/iconUtils";
+import LucideIcon from "../../../components/LucideIcon.astro";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 
 
@@ -37,13 +37,11 @@ if (techError) {
 // This allows pages to work even if technologies aren't in the technologies table yet
 let techName: string;
 let techDescription: string;
-let techIconUrl: string;
 
 if (technology) {
   // Technology found in database - use its data
   techName = technology.name_de || technology.name_en || techSlug;
   techDescription = technology.description_de || technology.description_en || '';
-  techIconUrl = getTechnologyIconUrl(technology.icon_name);
 } else {
   // Fallback: convert slug to readable name (replace hyphens with spaces, title case)
   techName = techSlug
@@ -52,7 +50,6 @@ if (technology) {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
   techDescription = '';
-  techIconUrl = '';
 }
 
 // Split description into paragraphs (split on blank lines)
@@ -227,12 +224,10 @@ const breadcrumbs = [
     <!-- Technology Header -->
     <div class="mb-8">
       <div class="flex items-center gap-4 mb-4">
-        {techIconUrl && (
-          <img 
-            src={techIconUrl} 
-            alt={techName}
-            class="w-16 h-16"
-          />
+        {technology?.icon_name && (
+          <div class="text-gray-700">
+            <LucideIcon name={technology.icon_name} size={56} />
+          </div>
         )}
         <div>
           <h1 class="text-3xl font-bold text-gray-900 mb-2">

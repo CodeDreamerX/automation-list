@@ -1,6 +1,6 @@
 ---
 import type { TechnologyBasic } from '../types/technology';
-import { getTechnologyIconUrl } from '../lib/iconUtils';
+import LucideIcon from './LucideIcon.astro';
 
 interface TechnologyCardProps {
   technology: TechnologyBasic;
@@ -32,8 +32,6 @@ const cardText = lang === "de" ? technology.card_description_de : technology.car
 // Build link using slug
 const link = `/${lang}/technology/${technology.slug}`;
 
-// Build icon path
-const iconPath = getTechnologyIconUrl(technology.icon_name);
 ---
 
 <a
@@ -44,9 +42,9 @@ const iconPath = getTechnologyIconUrl(technology.icon_name);
   {technology.count !== undefined && technology.count > 0 && (
     <span class="absolute top-3 right-3 bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">{technology.count}</span>
   )}
-  {iconPath && (
-    <div class="flex justify-center mb-4">
-      <img src={iconPath} class="w-7 h-7" alt={technology.name_en || name || ""} />
+  {technology.icon_name && (
+    <div class="flex justify-center mb-4 text-gray-700">
+      <LucideIcon name={technology.icon_name} size={28} />
     </div>
   )}
   <h3 class="text-lg font-semibold text-gray-900">{name}</h3>

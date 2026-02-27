@@ -4,7 +4,7 @@ export const prerender = false;
 import { supabase } from '../../lib/supabaseClient';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
-import { getIconUrl } from '../../lib/iconUtils';
+import LucideIcon from '../../components/LucideIcon.astro';
 
 // Check authentication and redirect if not logged in
 const redirectResponse = await protectAdminRoute(Astro.locals);
@@ -74,24 +74,13 @@ if (error) {
             {categories && categories.length > 0 ? (
               categories.map((category) => {
                 const displayName = category.name_en || category.name_de || '-';
-                const bilingualName = category.name_en && category.name_de 
-                  ? `${category.name_en} / ${category.name_de}`
-                  : displayName;
-                const iconUrl = getIconUrl(category.icon_name);
-                
+
                 return (
                   <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
-                      {iconUrl ? (
-                        <img 
-                          src={iconUrl} 
-                          alt={displayName} 
-                          class="w-8 h-8"
-                          onerror="this.style.display='none'; this.nextElementSibling?.remove(); this.insertAdjacentHTML('afterend', '<div class=\\'flex items-center justify-center w-8 h-8 text-gray-400 text-xs\\'>—</div>');"
-                        />
-                      ) : (
-                        <div class="flex items-center justify-center w-8 h-8 text-gray-400 text-xs">—</div>
-                      )}
+                      <div class="flex items-center justify-center w-8 h-8 text-gray-700">
+                        <LucideIcon name={category.icon_name} size={20} />
+                      </div>
                     </td>
                     <td class="px-6 py-4">
                       <div class="text-sm font-medium text-gray-900">{displayName}</div>
@@ -116,8 +105,8 @@ if (error) {
                         <button
                           type="button"
                           class="text-red-600 hover:text-red-800 px-3 py-1 rounded-md hover:bg-red-50 transition-colors"
-                          disabled
-                          title="Delete action not implemented yet"
+                          data-delete-category-id={category.id}
+                          data-delete-category-name={displayName}
                         >
                           Delete
                         </button>
@@ -138,5 +127,17 @@ if (error) {
       </div>
     </div>
   </div>
-</AdminLayout>
 
+  <script>
+    import { initAdminDeleteButtons } from '../../components/admin/admin-delete';
+
+    initAdminDeleteButtons({
+      buttonSelector: '[data-delete-category-id]',
+      idAttribute: 'data-delete-category-id',
+      nameAttribute: 'data-delete-category-name',
+      endpoint: '/api/admin/delete-category',
+      entityFallbackName: 'this category',
+      errorFallbackMessage: 'Failed to delete category',
+    });
+  </script>
+</AdminLayout>

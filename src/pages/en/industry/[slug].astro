@@ -10,6 +10,7 @@ import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
+import LucideIcon from "../../../components/LucideIcon.astro";
 
 
 // Get industry slug from URL param
@@ -23,7 +24,7 @@ if (!industrySlug) {
 // Fetch industry from database
 const { data: industry, error: industryError } = await supabase
   .from('industries')
-  .select('id, slug, name_en, name_de, description_en, description_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, icon_name')
   .eq('slug', industrySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -222,7 +223,12 @@ const breadcrumbSchema = {
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
     <!-- Industry Header -->
     <div class="mb-8">
-      <div class="mb-4">
+      <div class="flex items-center gap-4 mb-4">
+        {industry.icon_name && (
+          <div class="text-gray-700">
+            <LucideIcon name={industry.icon_name} size={56} />
+          </div>
+        )}
         <div>
           <h1 class="text-3xl font-bold text-gray-900 mb-2">
             {industryName}
