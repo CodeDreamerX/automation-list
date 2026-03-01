@@ -72,7 +72,7 @@ export function initVendorForm() {
   const nameInput = document.getElementById('name') as HTMLInputElement;
   const slugInput = document.getElementById('slug') as HTMLInputElement;
   const websiteInput = document.getElementById('website') as HTMLInputElement;
-  
+
   if (!nameInput || !slugInput || !websiteInput) return;
   
   // Track if slug was manually edited
@@ -119,12 +119,12 @@ export function initVendorForm() {
   // Also handle on form submit to ensure it's always prefixed
   const form = document.getElementById('vendor-form');
   if (form) {
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', function() {
       let url = websiteInput.value.trim();
       if (url && !url.match(/^https?:\/\//i)) {
         websiteInput.value = 'https://' + url;
       }
-      
+
       // Sync manual logo URL override if provided
       const logoUrlManual = document.getElementById('logo_url_manual') as HTMLInputElement;
       const logoUrlHidden = document.getElementById('logo_url') as HTMLInputElement;

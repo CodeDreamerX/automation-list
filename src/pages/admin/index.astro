@@ -386,6 +386,19 @@ const normalizedVendors = normalizeVendors(vendors || [], {
   </div>
 
   <script is:inline>
+    // Live search: auto-submit form after 300 ms of inactivity
+    (function () {
+      var searchForm = document.querySelector('form[action="/admin"]');
+      var searchInput = searchForm ? searchForm.querySelector('input[name="q"]') : null;
+      if (searchInput) {
+        var searchTimer;
+        searchInput.addEventListener('input', function () {
+          clearTimeout(searchTimer);
+          searchTimer = setTimeout(function () { searchForm.submit(); }, 300);
+        });
+      }
+    })();
+
     document.addEventListener('DOMContentLoaded', function() {
       const refreshBtn = document.getElementById('refresh-vendor-counts-btn');
       if (refreshBtn) {
