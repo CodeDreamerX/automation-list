@@ -1,0 +1,622 @@
+---
+export const prerender = false;
+
+import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
+import { protectAdminRoute } from '../../../lib/admin/authUtils';
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import slugRef from '../../../data/slug-reference.json';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) return redirectResponse;
+
+const { id } = Astro.params;
+
+const { data: listing, error } = await supabaseAdmin
+  .from('pending_listings')
+  .select('*')
+  .eq('id', id)
+  .single();
+
+if (error || !listing) {
+  return Astro.redirect('/admin/listings');
+}
+
+type SlugItem = { slug: string; name: string };
+const { categories, technologies, industries, certifications } = slugRef as {
+  categories: SlugItem[];
+  technologies: SlugItem[];
+  industries: SlugItem[];
+  certifications: SlugItem[];
+};
+
+const LANGUAGES = [
+  'English', 'German', 'French', 'Italian', 'Spanish',
+  'Dutch', 'Polish', 'Czech', 'Romanian', 'Hungarian', 'Portuguese',
+];
+
+// Auto-generate initial slug from company name
+function nameToSlug(name: string) {
+  return name
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+const initialSlug = nameToSlug(listing.name || '');
+const categorySlugs     = (listing.category_slugs     || []) as string[];
+const technologySlugs   = (listing.technology_slugs   || []) as string[];
+const industrySlugs     = (listing.industry_slugs     || []) as string[];
+const certificationSlugs= (listing.certification_slugs|| []) as string[];
+const selectedLanguages = (listing.languages          || []) as string[];
+const initialCountriesServed = (listing.countries_served || []) as string[];
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+---
+
+<AdminLayout
+  title={`Review: ${listing.name} — Admin`}
+  currentPath="/admin/listings"
+>
+  <div class="max-w-3xl space-y-6">
+
+    <!-- Back + meta bar -->
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <a href="/admin/listings" class="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1 mb-2">
+          ← Back to listings
+        </a>
+        <h1 class="text-xl font-bold text-gray-900">{listing.name}</h1>
+        <p class="text-sm text-gray-500 mt-0.5">
+          Submitted {fmtDate(listing.created_at)}
+          {listing.is_suspect && (
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">⚠ Suspect submission</span>
+          )}
+          {listing.status === 'rejected' && (
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Rejected</span>
+          )}
+        </p>
+      </div>
+
+      <!-- Action buttons (top) -->
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          id="delete-btn-top"
+          class="px-4 py-2 text-sm font-medium border border-gray-300 text-gray-500 rounded-md hover:bg-gray-100 hover:text-red-600 hover:border-red-300 transition-colors"
+          title="Permanently delete this submission"
+        >
+          Delete
+        </button>
+        <button
+          type="button"
+          id="reject-btn-top"
+          class="px-4 py-2 text-sm font-medium border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition-colors"
+        >
+          Reject
+        </button>
+        <button
+          type="button"
+          id="approve-btn-top"
+          class="px-5 py-2 text-sm font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+        >
+          Approve listing
+        </button>
+      </div>
+    </div>
+
+    <!-- Status banner (existing reject_reason) -->
+    {listing.status === 'rejected' && listing.reject_reason && (
+      <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+        <strong>Previously rejected:</strong> {listing.reject_reason}
+      </div>
+    )}
+
+    <!-- Result banner (shown after actions) -->
+    <div id="action-banner" class="hidden px-4 py-3 rounded-lg text-sm font-medium"></div>
+
+    <!-- ====== FORM ====== -->
+    <form id="listing-form" novalidate class="space-y-6">
+
+      <!-- Slug (required for approval) -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Vendor URL Slug <span class="text-red-500">*</span></h2>
+        <div>
+          <label for="slug" class="block text-xs font-medium text-gray-600 mb-1">
+            This becomes the vendor's URL: <code class="bg-gray-100 px-1 rounded">/en/vendor/<strong>[slug]</strong></code>
+          </label>
+          <input
+            type="text"
+            id="slug"
+            name="slug"
+            value={initialSlug}
+            class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white font-mono"
+            placeholder="company-name"
+          />
+          <p id="slug-error" class="hidden mt-1 text-xs text-red-600">A URL slug is required</p>
+        </div>
+      </div>
+
+      <!-- Section 1: Company Details -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3">Company Details</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="name" class="block text-xs font-medium text-gray-600 mb-1">Company Name *</label>
+            <input type="text" id="name" name="name" value={listing.name || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+          <div>
+            <label for="website" class="block text-xs font-medium text-gray-600 mb-1">Website</label>
+            <input type="text" id="website" name="website" value={listing.website || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="email" class="block text-xs font-medium text-gray-600 mb-1">Email</label>
+            <input type="email" id="email" name="email" value={listing.email || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+          <div>
+            <label for="country-input" class="block text-xs font-medium text-gray-600 mb-1">Country *</label>
+            <div class="relative">
+              <input
+                type="text"
+                id="country-input"
+                value={listing.country || ''}
+                class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
+                autocomplete="off"
+              />
+              <input type="hidden" id="country-value" value={listing.country || ''} />
+              <div id="country-dropdown" class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto text-sm"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- is_suspect flag -->
+        <div>
+          <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input type="checkbox" id="is-suspect" class="rounded border-gray-300" checked={listing.is_suspect} />
+            <span>Mark as suspect (honeypot was triggered)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Descriptions -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3">Descriptions</h2>
+        <div>
+          <label for="description_en" class="block text-xs font-medium text-gray-600 mb-1">English *</label>
+          <textarea id="description_en" name="description_en" rows="5" class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white resize-y">{listing.description_en || ''}</textarea>
+        </div>
+        <div>
+          <label for="description_de" class="block text-xs font-medium text-gray-600 mb-1">German (optional)</label>
+          <textarea id="description_de" name="description_de" rows="4" class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white resize-y">{listing.description_de || ''}</textarea>
+        </div>
+      </div>
+
+      <!-- Contact & Location -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3">Contact & Location</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="city" class="block text-xs font-medium text-gray-600 mb-1">City</label>
+            <input type="text" id="city" name="city" value={listing.city || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+          <div>
+            <label for="region" class="block text-xs font-medium text-gray-600 mb-1">Region</label>
+            <input type="text" id="region" name="region" value={listing.region || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+          <div>
+            <label for="phone" class="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+            <input type="text" id="phone" name="phone" value={listing.phone || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+          <div>
+            <label for="linkedin_url" class="block text-xs font-medium text-gray-600 mb-1">LinkedIn URL</label>
+            <input type="url" id="linkedin_url" name="linkedin_url" value={listing.linkedin_url || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3 mb-4">Categories</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {categories.map((cat) => (
+            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 py-0.5">
+              <input type="checkbox" name="category_slugs" value={cat.slug} checked={categorySlugs.includes(cat.slug)} class="rounded border-gray-300 text-brand-600 focus:ring-brand-300 shrink-0" />
+              <span>{cat.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <!-- Technologies -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3 mb-4">Technologies</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {technologies.map((tech) => (
+            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 py-0.5">
+              <input type="checkbox" name="technology_slugs" value={tech.slug} checked={technologySlugs.includes(tech.slug)} class="rounded border-gray-300 text-brand-600 focus:ring-brand-300 shrink-0" />
+              <span>{tech.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <!-- Industries -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3 mb-4">Industries</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {industries.map((ind) => (
+            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 py-0.5">
+              <input type="checkbox" name="industry_slugs" value={ind.slug} checked={industrySlugs.includes(ind.slug)} class="rounded border-gray-300 text-brand-600 focus:ring-brand-300 shrink-0" />
+              <span>{ind.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <!-- Certifications -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3 mb-4">Certifications</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {certifications.map((cert) => (
+            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 py-0.5">
+              <input type="checkbox" name="certification_slugs" value={cert.slug} checked={certificationSlugs.includes(cert.slug)} class="rounded border-gray-300 text-brand-600 focus:ring-brand-300 shrink-0" />
+              <span>{cert.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <!-- Languages -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3 mb-4">Service Languages</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+          {LANGUAGES.map((lang) => (
+            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 py-0.5">
+              <input type="checkbox" name="languages" value={lang} checked={selectedLanguages.includes(lang)} class="rounded border-gray-300 text-brand-600 focus:ring-brand-300 shrink-0" />
+              <span>{lang}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <!-- Countries Served + Company Facts -->
+      <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-3">Company Facts</h2>
+
+        <!-- Countries served multi-tag -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Countries Served</label>
+          <div id="cs-tags" class="flex flex-wrap gap-1.5 mb-2 min-h-0"></div>
+          <div class="relative">
+            <input type="text" id="cs-input" class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" placeholder="Type to add countries..." autocomplete="off" />
+            <div id="cs-dropdown" class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto text-sm"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="year_founded" class="block text-xs font-medium text-gray-600 mb-1">Year Founded</label>
+            <input type="number" id="year_founded" name="year_founded" value={listing.year_founded || ''} min="1800" max="2099" class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+          <div>
+            <label for="employee_count" class="block text-xs font-medium text-gray-600 mb-1">Company Size</label>
+            <select id="employee_count" name="employee_count" class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white">
+              <option value="">Select...</option>
+              {['1-10','11-50','51-200','201-500','500+'].map(v => (
+                <option value={v} selected={listing.employee_count === v}>{v} employees</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-2">Taking new projects?</label>
+          <div class="flex gap-2">
+            <button type="button" data-tnp="true"  class="tnp-opt px-4 py-1.5 text-sm border border-gray-300 rounded-full text-gray-600 hover:border-gray-500 transition-colors">Yes</button>
+            <button type="button" data-tnp="false" class="tnp-opt px-4 py-1.5 text-sm border border-gray-300 rounded-full text-gray-600 hover:border-gray-500 transition-colors">No</button>
+            <button type="button" data-tnp=""      class="tnp-opt px-4 py-1.5 text-sm border border-gray-300 rounded-full text-gray-600 hover:border-gray-500 transition-colors">Not specified</button>
+          </div>
+          <input type="hidden" id="tnp-value" value={
+            listing.taking_new_projects === true ? 'true'
+            : listing.taking_new_projects === false ? 'false'
+            : ''
+          } />
+        </div>
+      </div>
+
+      <!-- Reject panel (shown inline when Reject is clicked) -->
+      <div id="reject-panel" class="hidden bg-red-50 border border-red-200 rounded-xl p-5 space-y-3">
+        <h2 class="text-sm font-semibold text-red-800">Reject this submission</h2>
+        <div>
+          <label for="reject-reason" class="block text-xs font-medium text-red-700 mb-1">Reason (optional — sent to applicant log)</label>
+          <textarea id="reject-reason" rows="3" class="w-full px-3 py-2 text-sm border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-300 bg-white resize-y" placeholder="e.g. Duplicate, incomplete information, outside scope..."></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button type="button" id="reject-confirm-btn" class="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Confirm rejection</button>
+          <button type="button" id="reject-cancel-btn" class="px-4 py-2 text-sm font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Bottom action bar -->
+      <div class="flex items-center justify-between pt-2">
+        <a href="/admin/listings" class="text-sm text-gray-500 hover:text-gray-800">← Back</a>
+        <div class="flex items-center gap-3">
+          <button type="button" id="delete-btn-bottom" class="px-4 py-2 text-sm font-medium border border-gray-300 text-gray-500 rounded-md hover:bg-gray-100 hover:text-red-600 hover:border-red-300 transition-colors" title="Permanently delete this submission">Delete</button>
+          <button type="button" id="reject-btn-bottom" class="px-4 py-2 text-sm font-medium border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition-colors">Reject</button>
+          <button type="button" id="approve-btn-bottom" class="px-5 py-2 text-sm font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">Approve listing</button>
+        </div>
+      </div>
+
+    </form>
+    <!-- end form -->
+
+  </div>
+</AdminLayout>
+
+<script define:vars={{ listingId: listing.id, initialCountriesServed }}>
+
+const ISO_COUNTRIES = [
+  "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia",
+  "Australia","Austria","Azerbaijan","Bahrain","Bangladesh","Belarus","Belgium",
+  "Bolivia","Bosnia and Herzegovina","Brazil","Bulgaria","Cambodia","Canada",
+  "Chile","China","Colombia","Costa Rica","Croatia","Cyprus","Czech Republic",
+  "Denmark","Ecuador","Egypt","Estonia","Ethiopia","Finland","France","Georgia",
+  "Germany","Ghana","Greece","Hong Kong","Hungary","India","Indonesia","Iran",
+  "Iraq","Ireland","Israel","Italy","Japan","Jordan","Kazakhstan","Kenya",
+  "Kuwait","Latvia","Lebanon","Lithuania","Luxembourg","Malaysia","Mexico",
+  "Morocco","Netherlands","New Zealand","Nigeria","North Macedonia","Norway",
+  "Oman","Pakistan","Peru","Philippines","Poland","Portugal","Qatar","Romania",
+  "Russia","Saudi Arabia","Serbia","Singapore","Slovakia","Slovenia",
+  "South Africa","South Korea","Spain","Sri Lanka","Sweden","Switzerland",
+  "Taiwan","Thailand","Tunisia","Turkey","Ukraine","United Arab Emirates",
+  "United Kingdom","United States","Uruguay","Uzbekistan","Venezuela","Vietnam",
+  "Zimbabwe"
+];
+
+// ---- Country picker ----
+const countryInput    = document.getElementById('country-input');
+const countryValue    = document.getElementById('country-value');
+const countryDropdown = document.getElementById('country-dropdown');
+
+function buildCountryDD(q) {
+  const matches = q
+    ? ISO_COUNTRIES.filter(c => c.toLowerCase().includes(q.toLowerCase()))
+    : ISO_COUNTRIES;
+  countryDropdown.innerHTML = matches.length
+    ? matches.map(c => `<div class="c-opt px-3 py-2 cursor-pointer hover:bg-gray-50 text-gray-800" data-v="${c}">${c}</div>`).join('')
+    : '<div class="px-3 py-2 text-gray-400">No results</div>';
+}
+
+countryInput.addEventListener('focus', () => { buildCountryDD(countryInput.value); countryDropdown.classList.remove('hidden'); });
+countryInput.addEventListener('input', () => { countryValue.value = ''; buildCountryDD(countryInput.value); countryDropdown.classList.remove('hidden'); });
+countryDropdown.addEventListener('mousedown', e => {
+  const opt = e.target.closest('.c-opt');
+  if (!opt) return;
+  countryInput.value = opt.dataset.v;
+  countryValue.value = opt.dataset.v;
+  countryDropdown.classList.add('hidden');
+});
+document.addEventListener('click', e => {
+  if (!countryInput.contains(e.target) && !countryDropdown.contains(e.target)) {
+    countryDropdown.classList.add('hidden');
+    if (countryInput.value && !ISO_COUNTRIES.includes(countryInput.value)) {
+      countryInput.value = countryValue.value; // revert to last confirmed
+    }
+  }
+});
+
+// ---- Countries served multi-tag ----
+const selectedCS = new Set(initialCountriesServed);
+const csTags     = document.getElementById('cs-tags');
+const csInput    = document.getElementById('cs-input');
+const csDropdown = document.getElementById('cs-dropdown');
+
+function renderCSTags() {
+  csTags.innerHTML = [...selectedCS].map(c =>
+    `<span class="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-200 text-brand-700 text-xs rounded-full">
+       ${c}<button type="button" class="cs-rm text-brand-400 hover:text-brand-700 ml-0.5 text-base leading-none" data-c="${c}">&times;</button>
+     </span>`
+  ).join('');
+}
+renderCSTags(); // pre-populate from server data
+
+function buildCSDD(q) {
+  const avail = ISO_COUNTRIES.filter(c => !selectedCS.has(c));
+  const matches = q ? avail.filter(c => c.toLowerCase().includes(q.toLowerCase())) : avail;
+  csDropdown.innerHTML = matches.slice(0, 60).map(c =>
+    `<div class="cs-opt px-3 py-2 cursor-pointer hover:bg-gray-50 text-gray-800" data-v="${c}">${c}</div>`
+  ).join('') || '<div class="px-3 py-2 text-gray-400">No results</div>';
+}
+
+csInput.addEventListener('focus', () => { buildCSDD(csInput.value); csDropdown.classList.remove('hidden'); });
+csInput.addEventListener('input', () => { buildCSDD(csInput.value); csDropdown.classList.remove('hidden'); });
+csDropdown.addEventListener('mousedown', e => {
+  const opt = e.target.closest('.cs-opt');
+  if (!opt) return;
+  selectedCS.add(opt.dataset.v);
+  renderCSTags();
+  csInput.value = '';
+  buildCSDD('');
+});
+csTags.addEventListener('click', e => {
+  const btn = e.target.closest('.cs-rm');
+  if (btn) { selectedCS.delete(btn.dataset.c); renderCSTags(); }
+});
+document.addEventListener('click', e => {
+  if (!csInput.contains(e.target) && !csDropdown.contains(e.target)) csDropdown.classList.add('hidden');
+});
+
+// ---- Taking new projects toggle ----
+const tnpOpts  = document.querySelectorAll('.tnp-opt');
+const tnpValue = document.getElementById('tnp-value');
+
+function setTnpActive(val) {
+  tnpOpts.forEach(b => {
+    const active = b.dataset.tnp === val;
+    b.classList.toggle('bg-gray-900', active);
+    b.classList.toggle('text-white', active);
+    b.classList.toggle('border-gray-900', active);
+    b.classList.toggle('text-gray-600', !active);
+    b.classList.toggle('border-gray-300', !active);
+  });
+}
+setTnpActive(tnpValue.value); // pre-select from server
+
+tnpOpts.forEach(btn => {
+  btn.addEventListener('click', () => { tnpValue.value = btn.dataset.tnp; setTnpActive(btn.dataset.tnp); });
+});
+
+// ---- Collect form payload ----
+function collectPayload() {
+  const yearVal = document.getElementById('year_founded').value;
+  const tnpRaw  = tnpValue.value;
+  return {
+    id: listingId,
+    slug: document.getElementById('slug').value.trim(),
+    name: document.getElementById('name').value.trim(),
+    website: document.getElementById('website').value.trim() || null,
+    email: document.getElementById('email').value.trim() || null,
+    country: countryValue.value || countryInput.value.trim(),
+    description_en: document.getElementById('description_en').value.trim() || null,
+    description_de: document.getElementById('description_de').value.trim() || null,
+    city: document.getElementById('city').value.trim() || null,
+    region: document.getElementById('region').value.trim() || null,
+    phone: document.getElementById('phone').value.trim() || null,
+    linkedin_url: document.getElementById('linkedin_url').value.trim() || null,
+    category_slugs:      [...document.querySelectorAll('[name="category_slugs"]:checked')].map(e => e.value),
+    technology_slugs:    [...document.querySelectorAll('[name="technology_slugs"]:checked')].map(e => e.value),
+    industry_slugs:      [...document.querySelectorAll('[name="industry_slugs"]:checked')].map(e => e.value),
+    certification_slugs: [...document.querySelectorAll('[name="certification_slugs"]:checked')].map(e => e.value),
+    languages:           [...document.querySelectorAll('[name="languages"]:checked')].map(e => e.value),
+    countries_served:    [...selectedCS],
+    year_founded: yearVal ? parseInt(yearVal, 10) : null,
+    employee_count: document.getElementById('employee_count').value || null,
+    taking_new_projects: tnpRaw === 'true' ? true : tnpRaw === 'false' ? false : null,
+  };
+}
+
+// ---- Banner helper ----
+const banner = document.getElementById('action-banner');
+function showBanner(msg, type = 'error') {
+  banner.textContent = msg;
+  banner.className = type === 'success'
+    ? 'px-4 py-3 rounded-lg text-sm font-medium bg-green-50 border border-green-200 text-green-800'
+    : 'px-4 py-3 rounded-lg text-sm font-medium bg-red-50 border border-red-200 text-red-700';
+  banner.classList.remove('hidden');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ---- Approve ----
+async function handleApprove() {
+  const slug = document.getElementById('slug').value.trim();
+  if (!slug) {
+    document.getElementById('slug-error').classList.remove('hidden');
+    document.getElementById('slug').focus();
+    return;
+  }
+  document.getElementById('slug-error').classList.add('hidden');
+
+  const approveBtns = document.querySelectorAll('#approve-btn-top, #approve-btn-bottom');
+  approveBtns.forEach(b => { b.disabled = true; b.textContent = 'Approving…'; });
+
+  try {
+    const res  = await fetch('/api/admin/approve-listing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(collectPayload()),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showBanner(data.error || 'Approval failed. Please try again.');
+      approveBtns.forEach(b => { b.disabled = false; b.textContent = 'Approve listing'; });
+    } else {
+      showBanner('Listing approved and added to the vendor directory!', 'success');
+      setTimeout(() => { window.location.href = '/admin/listings'; }, 1500);
+    }
+  } catch {
+    showBanner('Network error. Please try again.');
+    approveBtns.forEach(b => { b.disabled = false; b.textContent = 'Approve listing'; });
+  }
+}
+
+document.getElementById('approve-btn-top').addEventListener('click', handleApprove);
+document.getElementById('approve-btn-bottom').addEventListener('click', handleApprove);
+
+// ---- Reject ----
+const rejectPanel = document.getElementById('reject-panel');
+
+function openRejectPanel() {
+  rejectPanel.classList.remove('hidden');
+  rejectPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+document.getElementById('reject-btn-top').addEventListener('click', openRejectPanel);
+document.getElementById('reject-btn-bottom').addEventListener('click', openRejectPanel);
+document.getElementById('reject-cancel-btn').addEventListener('click', () => rejectPanel.classList.add('hidden'));
+
+document.getElementById('reject-confirm-btn').addEventListener('click', async () => {
+  const reason = document.getElementById('reject-reason').value.trim();
+  const btn = document.getElementById('reject-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Rejecting…';
+
+  try {
+    const res  = await fetch('/api/admin/reject-listing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: listingId, reject_reason: reason || null }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showBanner(data.error || 'Rejection failed. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Confirm rejection';
+    } else {
+      showBanner('Submission rejected.', 'success');
+      setTimeout(() => { window.location.href = '/admin/listings'; }, 1200);
+    }
+  } catch {
+    showBanner('Network error. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Confirm rejection';
+  }
+});
+
+// ---- Delete ----
+async function handleDelete() {
+  if (!confirm('Permanently delete this submission? This cannot be undone.')) return;
+  const deleteBtns = document.querySelectorAll('#delete-btn-top, #delete-btn-bottom');
+  deleteBtns.forEach(b => { b.disabled = true; b.textContent = 'Deleting…'; });
+  try {
+    const res = await fetch('/api/admin/delete-listing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: listingId }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showBanner(data.error || 'Delete failed. Please try again.');
+      deleteBtns.forEach(b => { b.disabled = false; b.textContent = 'Delete'; });
+    } else {
+      window.location.href = '/admin/listings?tab=rejected';
+    }
+  } catch {
+    showBanner('Network error. Please try again.');
+    deleteBtns.forEach(b => { b.disabled = false; b.textContent = 'Delete'; });
+  }
+}
+const deleteBtnTop = document.getElementById('delete-btn-top');
+const deleteBtnBottom = document.getElementById('delete-btn-bottom');
+
+if (deleteBtnTop) deleteBtnTop.addEventListener('click', handleDelete);
+if (deleteBtnBottom) deleteBtnBottom.addEventListener('click', handleDelete);
+
+</script>

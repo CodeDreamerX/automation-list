@@ -409,6 +409,13 @@ if (isGerman) {
           <!-- DE TOGGLE & MOBILE MENU -->
           <div class="flex items-center space-x-3">
             <a
+              href="/submit-listing"
+              class="hidden sm:inline-flex items-center text-sm font-medium text-orange-900 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-md hover:bg-orange-100 hover:border-orange-300 transition-colors"
+            >
+              {isGerman ? "Eintragen" : "List your company"}
+            </a>
+
+            <a
               href={languageToggleUrl}
               class="text-sm font-medium text-gray-700 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50 transition-colors"
               aria-label={`Switch to ${languageToggleLabel === "DE" ? "German" : "English"}`}
@@ -442,6 +449,12 @@ if (isGerman) {
                 {item.label}
               </a>
             ))}
+            <a
+              href="/submit-listing"
+              class="text-sm font-medium text-orange-900 bg-orange-50 border border-orange-200 transition-colors px-3 py-1.5 rounded-md hover:bg-orange-100 hover:border-orange-300"
+            >
+              {isGerman ? "Eintragen" : "List your company"}
+            </a>
           </div>
         </div>
       </nav>
@@ -516,11 +529,17 @@ if (isGerman) {
               >
                 {isGerman ? "Technologien" : "Technologies"}
               </a>
-              <a 
+              <a
                 href={isGerman ? "/de/industries" : "/en/industries"}
                 class="text-sm text-[#6B7280] hover:underline"
               >
                 {isGerman ? "Branchen" : "Industries"}
+              </a>
+              <a
+                href="/submit-listing"
+                class="text-sm text-[#6B7280] hover:underline"
+              >
+                {isGerman ? "Unternehmen eintragen" : "Submit your company"}
               </a>
             </nav>
           </div>
