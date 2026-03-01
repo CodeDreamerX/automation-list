@@ -3,7 +3,6 @@ import type { CategoryFormOption } from '../../types/category';
 import type { TechnologyFormOption } from '../../types/technology';
 import type { IndustryFormOption } from '../../types/industry';
 import type { CertificationFormOption } from '../../types/certification';
-import FormInput from './FormInput.astro';
 import FormSection from './FormSection.astro';
 
 interface CategorizationSectionProps {
@@ -45,99 +44,242 @@ const certificationsByCategory = certifications.reduce((acc: Record<string, Cert
   acc[cat].push(cert);
   return acc;
 }, {});
+
+const certificationEntries = Object.entries(certificationsByCategory) as [string, CertificationFormOption[]][];
+
+// Pass-through: preserve existing tags value in DB without any UI
 ---
 
+<!-- Pass-through hidden input: preserves existing tags in DB, no UI exposed -->
+<input type="hidden" name="tags" value={vendor?.tags || ''} />
+
 <FormSection title="Categorization">
-  <div>
-    <h2 class="text-lg font-semibold mb-2">Categories</h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {categories.map((cat: CategoryFormOption) => {
-        const checked = vendor?.category_slugs?.includes(cat.slug);
-        return (
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" name="category_slugs" value={cat.slug} checked={checked} />
-            <span>{cat.name_en}</span>
-          </label>
-        );
-      })}
+  <!-- Search -->
+  <div class="mb-2">
+    <input
+      id="cat-search"
+      type="text"
+      placeholder="Search categories, technologies, certifications…"
+      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+      autocomplete="off"
+    />
+  </div>
+
+  <!-- Categories -->
+  <div class="cat-section" data-expanded="false">
+    <button type="button" class="cat-section-header w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-left transition-colors" aria-expanded="false">
+      <h2 class="text-base font-semibold text-gray-800">Categories</h2>
+      <div class="flex items-center gap-2">
+        <span class="cat-section-badge hidden text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5"></span>
+        <svg class="cat-section-chevron w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+    <div class="cat-section-content hidden pt-3 pb-1">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {categories.map((cat: CategoryFormOption) => {
+          const checked = vendor?.category_slugs?.includes(cat.slug);
+          return (
+            <label class="flex items-center gap-2 cursor-pointer" data-search-text={cat.name_en.toLowerCase()}>
+              <input type="checkbox" name="category_slugs" value={cat.slug} checked={checked} />
+              <span>{cat.name_en}</span>
+            </label>
+          );
+        })}
+      </div>
     </div>
   </div>
-  
-  <div>
-    <h2 class="text-lg font-semibold mb-2">Technologies</h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {technologies.map((tech: TechnologyFormOption) => {
-        const checked = vendor?.technology_slugs?.includes(tech.slug);
-        return (
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" name="technology_slugs" value={tech.slug} checked={checked} />
-            <span>{tech.name_en}</span>
-          </label>
-        );
-      })}
+
+  <!-- Technologies -->
+  <div class="cat-section" data-expanded="false">
+    <button type="button" class="cat-section-header w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-left transition-colors" aria-expanded="false">
+      <h2 class="text-base font-semibold text-gray-800">Technologies</h2>
+      <div class="flex items-center gap-2">
+        <span class="cat-section-badge hidden text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5"></span>
+        <svg class="cat-section-chevron w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+    <div class="cat-section-content hidden pt-3 pb-1">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {technologies.map((tech: TechnologyFormOption) => {
+          const checked = vendor?.technology_slugs?.includes(tech.slug);
+          return (
+            <label class="flex items-center gap-2 cursor-pointer" data-search-text={tech.name_en.toLowerCase()}>
+              <input type="checkbox" name="technology_slugs" value={tech.slug} checked={checked} />
+              <span>{tech.name_en}</span>
+            </label>
+          );
+        })}
+      </div>
     </div>
   </div>
-  
-  <div>
-    <h2 class="text-lg font-semibold mb-2">Languages</h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {LANGUAGE_OPTIONS.map((language) => {
-        const checked = selectedLanguages.has(language);
-        return (
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" name="languages" value={language} checked={checked} />
-            <span>{language}</span>
-          </label>
-        );
-      })}
+
+  <!-- Languages -->
+  <div class="cat-section" data-expanded="false">
+    <button type="button" class="cat-section-header w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-left transition-colors" aria-expanded="false">
+      <h2 class="text-base font-semibold text-gray-800">Languages</h2>
+      <div class="flex items-center gap-2">
+        <span class="cat-section-badge hidden text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5"></span>
+        <svg class="cat-section-chevron w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+    <div class="cat-section-content hidden pt-3 pb-1">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {LANGUAGE_OPTIONS.map((language) => {
+          const checked = selectedLanguages.has(language);
+          return (
+            <label class="flex items-center gap-2 cursor-pointer" data-search-text={language.toLowerCase()}>
+              <input type="checkbox" name="languages" value={language} checked={checked} />
+              <span>{language}</span>
+            </label>
+          );
+        })}
+      </div>
     </div>
   </div>
-  
-  <div>
-    <h2 class="text-lg font-semibold mb-2">Certifications</h2>
-    {certifications.length === 0 ? (
-      <p class="text-sm text-gray-500">No certifications available. Run DB migration to populate.</p>
-    ) : (
-      Object.entries(certificationsByCategory).map(([categoryName, certs]) => (
-        <div class="mb-4">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{categoryName}</p>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {certs.map(cert => {
-              const checked = vendor?.certification_slugs?.includes(cert.slug);
-              return (
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" name="certification_slugs" value={cert.slug} checked={checked} class="w-4 h-4" />
-                  <span class="text-sm">{cert.name}</span>
-                </label>
-              );
-            })}
+
+  <!-- Certifications -->
+  <div class="cat-section" data-expanded="false">
+    <button type="button" class="cat-section-header w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-left transition-colors" aria-expanded="false">
+      <h2 class="text-base font-semibold text-gray-800">Certifications</h2>
+      <div class="flex items-center gap-2">
+        <span class="cat-section-badge hidden text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5"></span>
+        <svg class="cat-section-chevron w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+    <div class="cat-section-content hidden pt-3 pb-1">
+      {certifications.length === 0 ? (
+        <p class="text-sm text-gray-500">No certifications available. Run DB migration to populate.</p>
+      ) : (
+        certificationEntries.map(([categoryName, certs]) => (
+          <div class="cert-category-group mb-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{categoryName}</p>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {certs.map(cert => {
+                const checked = vendor?.certification_slugs?.includes(cert.slug);
+                return (
+                  <label class="flex items-center gap-2 cursor-pointer" data-search-text={cert.name.toLowerCase()}>
+                    <input type="checkbox" name="certification_slugs" value={cert.slug} checked={checked} class="w-4 h-4" />
+                    <span class="text-sm">{cert.name}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))
-    )}
+        ))
+      )}
+    </div>
   </div>
-  
-  <FormInput
-    id="tags"
-    name="tags"
-    label="Tags (comma-separated)"
-    value={vendor?.tags || ''}
-    placeholder="tag1, tag2, tag3"
-  />
-  
-  <div>
-    <h2 class="text-lg font-semibold mb-2">Industries</h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {industries.map((industry: IndustryFormOption) => {
-        const checked = vendor?.industry_slugs?.includes(industry.slug);
-        return (
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" name="industry_slugs" value={industry.slug} checked={checked} />
-            <span>{industry.name_en}</span>
-          </label>
-        );
-      })}
+
+  <!-- Industries -->
+  <div class="cat-section" data-expanded="false">
+    <button type="button" class="cat-section-header w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-left transition-colors" aria-expanded="false">
+      <h2 class="text-base font-semibold text-gray-800">Industries</h2>
+      <div class="flex items-center gap-2">
+        <span class="cat-section-badge hidden text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5"></span>
+        <svg class="cat-section-chevron w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+    <div class="cat-section-content hidden pt-3 pb-1">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {industries.map((industry: IndustryFormOption) => {
+          const checked = vendor?.industry_slugs?.includes(industry.slug);
+          return (
+            <label class="flex items-center gap-2 cursor-pointer" data-search-text={industry.name_en.toLowerCase()}>
+              <input type="checkbox" name="industry_slugs" value={industry.slug} checked={checked} />
+              <span>{industry.name_en}</span>
+            </label>
+          );
+        })}
+      </div>
     </div>
   </div>
 </FormSection>
 
+<script>
+  function updateSectionCount(section: Element) {
+    const checked = section.querySelectorAll('input[type="checkbox"]:checked').length;
+    const badge = section.querySelector('.cat-section-badge');
+    if (!badge) return;
+    if (checked > 0) {
+      badge.textContent = String(checked);
+      badge.classList.remove('hidden');
+    } else {
+      badge.textContent = '';
+      badge.classList.add('hidden');
+    }
+  }
+
+  function setExpanded(section: Element, expanded: boolean) {
+    const content = section.querySelector('.cat-section-content');
+    const header = section.querySelector('.cat-section-header');
+    const chevron = section.querySelector('.cat-section-chevron');
+    (section as HTMLElement).dataset.expanded = expanded ? 'true' : 'false';
+    content?.classList.toggle('hidden', !expanded);
+    header?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    if (expanded) {
+      chevron?.classList.add('rotate-180');
+    } else {
+      chevron?.classList.remove('rotate-180');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const sections = Array.from(document.querySelectorAll('.cat-section'));
+    const searchInput = document.getElementById('cat-search') as HTMLInputElement | null;
+
+    // Init counts and toggle handlers
+    sections.forEach((section) => {
+      updateSectionCount(section);
+
+      section.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+        cb.addEventListener('change', () => updateSectionCount(section));
+      });
+
+      const header = section.querySelector('.cat-section-header');
+      header?.addEventListener('click', () => {
+        const expanded = (section as HTMLElement).dataset.expanded === 'true';
+        setExpanded(section, !expanded);
+      });
+    });
+
+    // Search handler
+    searchInput?.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase().trim();
+
+      sections.forEach((section) => {
+        const labels = Array.from(section.querySelectorAll<HTMLElement>('label[data-search-text]'));
+        let hasMatch = false;
+
+        labels.forEach((label) => {
+          const text = label.dataset.searchText || '';
+          const matches = !query || text.includes(query);
+          label.classList.toggle('hidden', !matches);
+          if (matches) hasMatch = true;
+        });
+
+        // Hide cert category sub-groups if none of their labels are visible
+        section.querySelectorAll('.cert-category-group').forEach((group) => {
+          const anyVisible = Array.from(group.querySelectorAll<HTMLElement>('label[data-search-text]'))
+            .some((l) => !l.classList.contains('hidden'));
+          (group as HTMLElement).classList.toggle('hidden', !anyVisible);
+        });
+
+        if (query) {
+          setExpanded(section, hasMatch);
+        } else {
+          setExpanded(section, false);
+        }
+      });
+    });
+  });
+</script>
