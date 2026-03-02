@@ -409,7 +409,7 @@ if (isGerman) {
           <!-- DE TOGGLE & MOBILE MENU -->
           <div class="flex items-center space-x-3">
             <a
-              href="/submit-listing"
+              href={isGerman ? "/de/submit-listing" : "/en/submit-listing"}
               class="hidden sm:inline-flex items-center text-sm font-medium text-orange-900 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-md hover:bg-orange-100 hover:border-orange-300 transition-colors"
             >
               {isGerman ? "Eintragen" : "List your company"}
@@ -450,7 +450,7 @@ if (isGerman) {
               </a>
             ))}
             <a
-              href="/submit-listing"
+              href={isGerman ? "/de/submit-listing" : "/en/submit-listing"}
               class="text-sm font-medium text-orange-900 bg-orange-50 border border-orange-200 transition-colors px-3 py-1.5 rounded-md hover:bg-orange-100 hover:border-orange-300"
             >
               {isGerman ? "Eintragen" : "List your company"}
@@ -536,7 +536,7 @@ if (isGerman) {
                 {isGerman ? "Branchen" : "Industries"}
               </a>
               <a
-                href="/submit-listing"
+                href={isGerman ? "/de/submit-listing" : "/en/submit-listing"}
                 class="text-sm text-[#6B7280] hover:underline"
               >
                 {isGerman ? "Unternehmen eintragen" : "Submit your company"}
