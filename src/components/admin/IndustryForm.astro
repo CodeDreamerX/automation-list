@@ -192,7 +192,11 @@ const formAction = isNewIndustry
   </div>
 </form>
 
-
-
+<script>
+  import { initTitleLengthFeedback } from './title-length-feedback';
+  document.addEventListener('DOMContentLoaded', () => {
+    initTitleLengthFeedback(['name_en', 'name_de']);
+  });
+</script>
 
 

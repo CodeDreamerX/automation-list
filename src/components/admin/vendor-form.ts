@@ -1,4 +1,5 @@
 // Vendor Form Client-Side Logic
+import { initTitleLengthFeedback } from './title-length-feedback';
 
 // Helper function to map form variant to LogoBox CSS classes
 function getVariantClasses(formVariant: string): string {
@@ -69,6 +70,7 @@ function updatePreviewWithVariant(variant: string) {
 
 // Initialize form handlers
 export function initVendorForm() {
+  initTitleLengthFeedback(['name', 'country']);
   const nameInput = document.getElementById('name') as HTMLInputElement;
   const slugInput = document.getElementById('slug') as HTMLInputElement;
   const websiteInput = document.getElementById('website') as HTMLInputElement;

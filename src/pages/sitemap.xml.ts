@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../lib/supabaseClient';
+import { slugifyCountry } from '../lib/countryUtils';
 
 // Production domain - sitemap URLs must be canonical and absolute
 // SEO: Use production domain to ensure consistency across environments
@@ -151,20 +152,11 @@ export const GET: APIRoute = async () => {
     }
   });
 
-  // Helper function to convert country name to URL slug (matching country page format)
-  // Uses hyphens to match the format expected by country pages (which convert hyphens back to spaces)
-  function countryToSlug(country: string): string {
-    return country
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-'); // Replace spaces with hyphens
-  }
-
   // Sort countries and generate country page URLs
   const uniqueCountries = Array.from(countryMap.keys()).sort();
   uniqueCountries.forEach((normalizedCountry) => {
     const lastmodDate = countryMap.get(normalizedCountry);
-    const countrySlug = countryToSlug(normalizedCountry);
+    const countrySlug = slugifyCountry(normalizedCountry);
     
     const urlEn: SitemapUrl = {
       loc: `${PRODUCTION_DOMAIN}/en/country/${countrySlug}`,

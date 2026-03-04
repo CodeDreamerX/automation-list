@@ -1,6 +1,7 @@
 ---
 import "../styles/globals.css";
 import { supabase } from "../lib/supabaseClient";
+import { slugifyCountry } from "../lib/countryUtils";
 import CookieBanner from "../components/CookieBanner.astro";
 import Breadcrumb from "../components/Breadcrumb.astro";
 
@@ -235,14 +236,6 @@ function translateCountryName(country: string, targetLang: string): string {
   return country;
 }
 
-// Helper function to convert country name to URL slug (matching country page format)
-// Uses hyphens to match the format expected by country pages (which convert hyphens back to spaces)
-function countryToSlug(country: string): string {
-  return country
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-'); // Replace spaces with hyphens
-}
 
 // Language switching logic - use both path detection and lang prop for reliability
 const isGerman = lang === "de" || currentPath.startsWith("/de/");
@@ -554,7 +547,7 @@ if (isGerman) {
             <nav class="flex flex-col space-y-2">
               {popularCountries.length > 0 ? (
                 popularCountries.map((country) => {
-                  const countrySlug = countryToSlug(country);
+                  const countrySlug = slugifyCountry(country);
                   const displayCountry = translateCountryName(country, lang);
                   return (
                     <a
