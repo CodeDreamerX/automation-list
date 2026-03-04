@@ -158,9 +158,9 @@ const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 // SEO metadata
 const metaTitle = `Industrial Automation Companies for ${industryName} | Automation List`;
 const metaDescription = (industryDescription && industryDescription.trim()) || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${industryName}. Browse verified automation vendors worldwide.`;
-const origin = Astro.url.origin;
-const defaultOgImage = `${origin}/og/default.png`;
-const fullUrl = `https://automation-list.com/en/industry/${industrySlug}`;
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+const defaultOgImage = `${siteOrigin}/og/default.png`;
+const fullUrl = `${siteOrigin}/en/industry/${industrySlug}`;
 
 // Build breadcrumbs
 const breadcrumbs = [
@@ -178,19 +178,19 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       position: 1,
       name: "Home",
-      item: `${origin}/en/`,
+      item: `${siteOrigin}/en/`,
     },
     {
       "@type": "ListItem",
       position: 2,
       name: "Industries",
-      item: `${origin}/en/industries`,
+      item: `${siteOrigin}/en/industries`,
     },
     {
       "@type": "ListItem",
       position: 3,
       name: industryName,
-      item: `${origin}/en/industry/${industrySlug}`,
+      item: `${siteOrigin}/en/industry/${industrySlug}`,
     },
   ],
 };
@@ -213,7 +213,7 @@ const breadcrumbSchema = {
       "@type": "Organization",
       "position": index + 1,
       "name": v.name,
-      "url": `https://automation-list.com/en/vendor/${v.slug}`,
+      "url": `${siteOrigin}/en/vendor/${v.slug}`,
       "logo": v.logo_url,
       "image": v.logo_url,
       "address": v.country

@@ -185,9 +185,9 @@ const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 // SEO metadata
 const metaTitle = `${techName} Industrial Automation Companies | Automation List`;
 const metaDescription = (techDescription && techDescription.trim()) || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
-const origin = Astro.url.origin;
-const defaultOgImage = `${origin}/og/default.png`;
-const fullUrl = `https://automation-list.com/en/technology/${techSlug}`;
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+const defaultOgImage = `${siteOrigin}/og/default.png`;
+const fullUrl = `${siteOrigin}/en/technology/${techSlug}`;
 
 // Build breadcrumbs
 const breadcrumbs = [
@@ -214,7 +214,7 @@ const breadcrumbs = [
       "@type": "Organization",
       "position": index + 1,
       "name": v.name,
-      "url": `https://automation-list.com/en/vendor/${v.slug}`,
+      "url": `${siteOrigin}/en/vendor/${v.slug}`,
       "logo": v.logo_url,
       "image": v.logo_url,
       "address": v.country

@@ -147,9 +147,9 @@ const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 // SEO metadata
 const metaTitle = `Industrial Automation ${categoryName} | Automation List`;
 const metaDescription = (categoryDescription && categoryDescription.trim()) || `Discover top ${categoryName} automation vendors, integrators, and solution providers.`;
-const origin = Astro.url.origin;
-const defaultOg = `${origin}/og/default.png`;
-const currentUrl = `https://automation-list.com/en/category/${categorySlug}`;
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+const defaultOg = `${siteOrigin}/og/default.png`;
+const currentUrl = `${siteOrigin}/en/category/${categorySlug}`;
 
 // Build breadcrumbs
 const breadcrumbs = [
@@ -177,7 +177,7 @@ const breadcrumbs = [
       "@type": "Organization",
       "position": index + 1,
       "name": v.name,
-      "url": `https://automation-list.com/en/vendor/${v.slug}`,
+      "url": `${siteOrigin}/en/vendor/${v.slug}`,
       "logo": v.logo_url,
       "image": v.logo_url,
       "address": v.country

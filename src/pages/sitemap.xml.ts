@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 
 // Production domain - sitemap URLs must be canonical and absolute
 // SEO: Use production domain to ensure consistency across environments
-const PRODUCTION_DOMAIN = 'https://automation-list.com';
+const PRODUCTION_DOMAIN = 'https://www.automation-list.com';
 
 interface SitemapUrl {
   loc: string;

@@ -170,7 +170,7 @@ const primaryCategoryName = primaryCategory?.categories?.name_en || primaryCateg
 const primaryCategorySlug = primaryCategory?.categories?.slug;
 
 // Determine canonical URL
-const canonicalUrl = normalizedVendor.canonical_url || `https://automation-list.com/en/vendor/${slug}`;
+const canonicalUrl = normalizedVendor.canonical_url || `${Astro.site?.origin ?? Astro.url.origin}/en/vendor/${slug}`;
 
 // Build JSON-LD Organization schema
 const organizationSchema = {

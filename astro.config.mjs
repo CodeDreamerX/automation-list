@@ -5,6 +5,7 @@ import tailwind from '@tailwindcss/vite';
 // SSR configuration required for Docker + Koyeb deployment
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://www.automation-list.com',
   output: 'server',
   adapter: node({
     mode: 'standalone',

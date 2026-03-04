@@ -62,9 +62,9 @@ const normalizeOrigin = (urlOrigin: string): string => {
   return normalized;
 };
 
-// Extract origin from normalized Astro.url.origin
-// This ensures hreflang URLs match the canonical URL's domain format
-const origin = normalizeOrigin(Astro.url.origin);
+// Use Astro.site (from astro.config.mjs) as the canonical origin in production.
+// Falls back to normalizeOrigin(Astro.url.origin) for local dev where Astro.site is undefined.
+const origin = Astro.site?.origin ?? normalizeOrigin(Astro.url.origin);
 
 // Check if we're on a vendor page with query parameters (for SEO handling)
 const currentPath = Astro.url.pathname;
@@ -80,7 +80,9 @@ if (isVendorPage && hasQueryParams) {
   canonicalUrl = origin + currentPath;
 } else if (meta?.canonical || canonical) {
   // Use explicit canonical if provided (for non-filtered vendor pages or other pages)
-  canonicalUrl = meta?.canonical || canonical || "";
+  // Normalize to www in case a non-www value was passed in or stored in DB
+  const rawCanonical = meta?.canonical || canonical || "";
+  canonicalUrl = rawCanonical.replace('https://automation-list.com', 'https://www.automation-list.com');
 } else {
   // For other pages, use pathname only (no query params in canonical)
   canonicalUrl = origin + currentPath;
@@ -305,7 +307,7 @@ if (isGerman) {
     <meta property="og:site_name" content="Automation List" />
     <meta property="og:locale" content={ogLocale} />
     <meta property="og:image" content={ogImageUrl} />
-    {ogUrl && <meta property="og:url" content={ogUrl} />}
+    <meta property="og:url" content={ogUrl ?? canonicalUrl} />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
