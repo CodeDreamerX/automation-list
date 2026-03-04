@@ -147,9 +147,9 @@ const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 // SEO metadata
 const metaTitle = `${categoryName} für Industrieautomatisierung | Automation List`;
 const metaDescription = (categoryDescription && categoryDescription.trim()) || `Entdecken Sie führende ${categoryName} Automatisierungsanbieter, Integratoren und Lösungsanbieter.`;
-const origin = Astro.url.origin;
-const defaultOg = `${origin}/og/default.png`;
-const currentUrl = `https://automation-list.com/de/category/${categorySlug}`;
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+const defaultOg = `${siteOrigin}/og/default.png`;
+const currentUrl = `${siteOrigin}/de/category/${categorySlug}`;
 
 // Build breadcrumbs
 const breadcrumbs = [
@@ -177,7 +177,7 @@ const breadcrumbs = [
       "@type": "Organization",
       "position": index + 1,
       "name": v.name,
-      "url": `https://automation-list.com/de/vendor/${v.slug}`,
+      "url": `${siteOrigin}/de/vendor/${v.slug}`,
       "logo": v.logo_url,
       "image": v.logo_url,
       "address": v.country

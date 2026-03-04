@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://automation-list.com/sitemap.xml
-

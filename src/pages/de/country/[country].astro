@@ -136,9 +136,9 @@ if (normalizedVendors.length > 0 && normalizedVendors[0].country) {
 const CountryName = displayCountry;
 const metaTitle = `Industrieautomatisierungsunternehmen in ${CountryName} | Automation List`;
 const metaDescription = `Discover top industrial automation vendors, PLC experts, SCADA integrators, and system integrators in ${CountryName}.`;
-const origin = Astro.url.origin;
-const defaultOg = `${origin}/og/default.png`;
-const currentUrl = `https://automation-list.com/de/country/${encodeURIComponent(normalizedCountry)}`;
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+const defaultOg = `${siteOrigin}/og/default.png`;
+const currentUrl = `${siteOrigin}/de/country/${encodeURIComponent(normalizedCountry)}`;
 
 // Build breadcrumbs
 const breadcrumbs = [
@@ -165,7 +165,7 @@ const breadcrumbs = [
       "@type": "Organization",
       "position": index + 1,
       "name": v.name,
-      "url": `https://automation-list.com/de/vendor/${v.slug}`,
+      "url": `${siteOrigin}/de/vendor/${v.slug}`,
       "logo": v.logo_url,
       "image": v.logo_url,
       "address": v.country

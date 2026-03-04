@@ -174,8 +174,7 @@ const industries = allIndustries.slice(0, 12);
 
 // Build WebSite structured data with SearchAction
 // Use production domain for schema.org URLs
-const origin = Astro.url.origin;
-const productionOrigin = "https://www.automation-list.com";
+const productionOrigin = Astro.site?.origin ?? Astro.url.origin;
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",

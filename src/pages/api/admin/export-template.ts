@@ -37,7 +37,6 @@ export const GET: APIRoute = async ({ cookies }) => {
 
       // --- Comma-joined arrays stored as text ---
       languages: [],
-      tags: [],
       countries_served: [],
 
       // --- Metrics ---

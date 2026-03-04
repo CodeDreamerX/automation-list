@@ -6,6 +6,6 @@ export function GET() {
 Allow: /
 Disallow: /admin/
 
-Sitemap: https://automation-list.com/sitemap.xml`
+Sitemap: https://www.automation-list.com/sitemap.xml`
   );
 }
