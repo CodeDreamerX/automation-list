@@ -24,6 +24,16 @@ if (error) {
   console.error('Error fetching industries:', error);
 }
 
+// Fetch vendor counts per industry
+const { data: industryLinks } = await supabaseAdmin
+  .from('vendor_industries')
+  .select('industry_id');
+
+const industryVendorCounts = new Map<string, number>();
+for (const row of industryLinks || []) {
+  industryVendorCounts.set(row.industry_id, (industryVendorCounts.get(row.industry_id) || 0) + 1);
+}
+
 ---
 
 <AdminLayout title="Industry Management - Admin Panel" currentPath="/admin/industries">
@@ -70,6 +80,9 @@ if (error) {
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Active
               </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Vendors
+              </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -115,6 +128,9 @@ if (error) {
                         )}
                       </div>
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">{industryVendorCounts.get(industry.id) ?? 0}</div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div class="flex items-center justify-end gap-2">
                         <a
@@ -138,7 +154,7 @@ if (error) {
               })
             ) : (
               <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">
+                <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
                   No industries found.
                 </td>
               </tr>

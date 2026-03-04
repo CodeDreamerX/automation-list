@@ -7,19 +7,24 @@
  * @see DATA_STRUCTURES.md for detailed documentation
  */
 
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
 /**
  * Base Category interface matching the database schema
- * 
+ *
  * Primary identifiers:
  * - id: UUID
  * - slug: URL-friendly identifier
- * 
+ *
  * Names (bilingual):
  * - name_en, name_de: English and German names
- * 
+ *
  * Descriptions (bilingual):
  * - description_en, description_de: English and German descriptions
- * 
+ *
  * Display:
  * - icon_name: Icon identifier (e.g., "plcs", "scada-hmi")
  * - order_index: Display order
@@ -37,6 +42,8 @@ export interface Category {
   icon_name?: string | null;   // Icon identifier (e.g., "plcs", "scada-hmi")
   order_index?: number | null; // Display order
   is_active?: boolean | null;         // Whether category is active
+  faq_en?: FaqItem[] | null;   // FAQ entries in English
+  faq_de?: FaqItem[] | null;   // FAQ entries in German
 }
 
 /**

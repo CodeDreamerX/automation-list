@@ -175,6 +175,27 @@ const formAction = isNewTechnology
     </div>
   </section>
 
+  <!-- FAQ -->
+  <section>
+    <h2 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-1">
+      FAQ
+    </h2>
+
+    <div class="mb-8">
+      <h3 class="text-base font-medium text-gray-800 mb-3">FAQ (English)</h3>
+      <div id="faq-en-rows" class="space-y-4 mb-3"></div>
+      <button type="button" id="add-faq-en" class="text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add Question (EN)</button>
+      <input type="hidden" name="faq_en" id="faq_en_value" />
+    </div>
+
+    <div>
+      <h3 class="text-base font-medium text-gray-800 mb-3">FAQ (Deutsch)</h3>
+      <div id="faq-de-rows" class="space-y-4 mb-3"></div>
+      <button type="button" id="add-faq-de" class="text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add Question (DE)</button>
+      <input type="hidden" name="faq_de" id="faq_de_value" />
+    </div>
+  </section>
+
   <!-- SUBMIT BUTTONS -->
   <div class="flex items-center justify-between pt-4 border-t">
     <a
@@ -196,6 +217,53 @@ const formAction = isNewTechnology
   import { initTitleLengthFeedback } from './title-length-feedback';
   document.addEventListener('DOMContentLoaded', () => {
     initTitleLengthFeedback(['name_en', 'name_de']);
+  });
+</script>
+
+<script is:inline define:vars={{ initialFaqEn: technology?.faq_en ?? [], initialFaqDe: technology?.faq_de ?? [] }}>
+  function createFaqRow(lang, question, answer) {
+    const row = document.createElement('div');
+    row.className = 'faq-row flex gap-3 items-start p-3 bg-gray-50 rounded-md border border-gray-200';
+    row.innerHTML = `
+      <div class="flex-1 space-y-2">
+        <input type="text" placeholder="Question" value="${(question || '').replace(/"/g, '&quot;')}"
+          class="faq-question border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent" />
+        <textarea rows="3" placeholder="Answer"
+          class="faq-answer border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-y">${(answer || '').replace(/</g, '&lt;')}</textarea>
+      </div>
+      <button type="button" class="mt-1 text-red-500 hover:text-red-700 text-sm font-medium px-2 py-1 shrink-0">Remove</button>
+    `;
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    return row;
+  }
+
+  document.getElementById('add-faq-en').addEventListener('click', () => {
+    document.getElementById('faq-en-rows').appendChild(createFaqRow('en', '', ''));
+  });
+  document.getElementById('add-faq-de').addEventListener('click', () => {
+    document.getElementById('faq-de-rows').appendChild(createFaqRow('de', '', ''));
+  });
+
+  document.querySelector('form').addEventListener('submit', () => {
+    const serialize = (containerId, hiddenId) => {
+      const rows = document.querySelectorAll(`#${containerId} .faq-row`);
+      const items = [];
+      rows.forEach(row => {
+        const q = row.querySelector('.faq-question').value.trim();
+        const a = row.querySelector('.faq-answer').value.trim();
+        if (q && a) items.push({ question: q, answer: a });
+      });
+      document.getElementById(hiddenId).value = items.length > 0 ? JSON.stringify(items) : '';
+    };
+    serialize('faq-en-rows', 'faq_en_value');
+    serialize('faq-de-rows', 'faq_de_value');
+  });
+
+  (initialFaqEn || []).forEach(item => {
+    document.getElementById('faq-en-rows').appendChild(createFaqRow('en', item.question, item.answer));
+  });
+  (initialFaqDe || []).forEach(item => {
+    document.getElementById('faq-de-rows').appendChild(createFaqRow('de', item.question, item.answer));
   });
 </script>
 

@@ -12,6 +12,11 @@ export interface Industry {
   icon_name?: string | null;
 }
 
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
 /**
  * Raw industry data from database
  */
@@ -27,6 +32,8 @@ export interface IndustryDB {
   icon_name?: string | null;
   order_index?: number | null;
   is_active?: boolean;
+  faq_en?: FaqItem[] | null;   // FAQ entries in English
+  faq_de?: FaqItem[] | null;   // FAQ entries in German
 }
 
 /**

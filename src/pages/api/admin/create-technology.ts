@@ -23,6 +23,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
     const is_active = body.get("is_active") ? true : false;
+    const faq_en_raw = body.get("faq_en");
+    const faq_de_raw = body.get("faq_de");
+
+    function parseFaq(raw: FormDataEntryValue | null) {
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw.toString());
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+      } catch { return null; }
+    }
 
     if (!slug) {
       return errorResponse('Technology slug is required', 400);
@@ -44,6 +54,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       icon_name: icon_name?.toString() || null,
       order_index: order_index ? parseInt(order_index.toString()) : null,
       is_active: is_active,
+      faq_en: parseFaq(faq_en_raw),
+      faq_de: parseFaq(faq_de_raw),
     };
 
     // Create technology using admin client

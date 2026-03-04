@@ -24,7 +24,7 @@ if (!industrySlug) {
 // Fetch industry from database
 const { data: industry, error: industryError } = await supabase
   .from('industries')
-  .select('id, slug, name_en, name_de, description_en, description_de, icon_name')
+  .select('id, slug, name_en, name_de, description_en, description_de, icon_name, faq_en, faq_de')
   .eq('slug', industrySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -155,6 +155,12 @@ const normalizedVendors = normalizeVendors(vendors || []);
 
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
+// FAQ
+const faqItems = ((industry.faq_de ?? []) as any[]).filter(
+  (item: any) => item?.question?.trim() && item?.answer?.trim()
+);
+const hasFaq = faqItems.length > 0;
+
 // SEO metadata
 const metaTitle = `${industryName} Automatisierung | Automation List`;
 const metaDescription = (industryDescription && industryDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
@@ -220,6 +226,17 @@ const breadcrumbSchema = {
     }))
   }, null, 2)} />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema, null, 2)} />
+  {hasFaq && (
+    <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": faqItems.map((item: any) => ({
+        "@type": "Question",
+        "name": item.question,
+        "acceptedAnswer": { "@type": "Answer", "text": item.answer }
+      }))
+    })} />
+  )}
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
     <!-- Industry Header -->
     <div class="mb-8">
@@ -285,5 +302,19 @@ const breadcrumbSchema = {
       lang="de"
     />
   </div>
+
+  {hasFaq && (
+    <div class="container-px mx-auto max-w-7xl px-4 py-10 border-t border-gray-100">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Häufig gestellte Fragen</h2>
+      <div class="space-y-6">
+        {faqItems.map((item: any) => (
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">{item.question}</h3>
+            <p class="text-gray-700 leading-relaxed">{item.answer}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
 </BaseLayout>
 

@@ -24,6 +24,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
     const is_active = body.get("is_active") ? true : false;
+    const faq_en_raw = body.get("faq_en");
+    const faq_de_raw = body.get("faq_de");
+
+    function parseFaq(raw: FormDataEntryValue | null) {
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw.toString());
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+      } catch { return null; }
+    }
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
@@ -46,6 +56,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateData.order_index = null;
     }
     updateData.is_active = is_active;
+    updateData.faq_en = parseFaq(faq_en_raw);
+    updateData.faq_de = parseFaq(faq_de_raw);
 
     // Update category using admin client
     const { error } = await supabaseAdmin
