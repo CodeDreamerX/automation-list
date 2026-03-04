@@ -156,7 +156,7 @@ const normalizedVendors = normalizeVendors(vendors || []);
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // SEO metadata
-const metaTitle = `Industrieautomatisierung Unternehmen für ${industryName} | Automation List`;
+const metaTitle = `${industryName} Automatisierung | Automation List`;
 const metaDescription = (industryDescription && industryDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;

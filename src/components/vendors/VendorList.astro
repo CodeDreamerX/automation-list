@@ -4,6 +4,7 @@ import { getCached, setCached } from '../../lib/cache';
 import VendorCard from '../VendorCard.astro';
 import Pagination from '../Pagination.astro';
 import { normalizeTech } from '../../lib/normalizeTech';
+import { slugifyCountry } from '../../lib/countryUtils';
 import { getIndustries } from '../../lib/getIndustries';
 import { normalizeVendors } from '../../lib/vendors/vendorUtils';
 
@@ -141,21 +142,12 @@ if (!industryList) {
   industryList = [];
 }
 
-// Helper function to convert country name to URL-friendly slug
-function countryToSlug(country: string): string {
-  return country
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/[^\w\-]/g, ''); // Remove special characters except hyphens
-}
-
 // Helper function to convert country slug back to country name
 function slugToCountryName(slug: string): string | null {
   // Find the country in uniqueCountryList that matches this slug
   if (!uniqueCountryList) return null;
-  const matchingCountry = uniqueCountryList.find(country => 
-    countryToSlug(country) === slug
+  const matchingCountry = uniqueCountryList.find(country =>
+    slugifyCountry(country) === slug
   );
   return matchingCountry || null;
 }
@@ -496,7 +488,7 @@ const categoryList = (dbCategories || []).map(cat => ({
           >
             <option value="">{lang === "de" ? "Alle Länder" : "All Countries"}</option>
             {uniqueCountryList.map(country => {
-              const countrySlug = countryToSlug(country);
+              const countrySlug = slugifyCountry(country);
               return (
                 <option value={countrySlug} selected={countryFilter === countrySlug}>
                   {country}
