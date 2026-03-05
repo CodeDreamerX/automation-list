@@ -2,17 +2,17 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* Brand color palette 50-900 scale */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #2f74ff;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  /* Brand color palette 50-900 scale (orange) */
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-200: #fed7aa;
+  --color-brand-300: #fdba74;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+  --color-brand-700: #c2410c;
+  --color-brand-800: #9a3412;
+  --color-brand-900: #7c2d12;
 
   /* Orange accent color palette 50-900 scale */
   --color-orange-50: #fff7ed;
@@ -94,7 +94,7 @@
     position: absolute;
     width: 13rem;
     height: 13rem;
-    background: radial-gradient(circle at center, rgba(37, 99, 235, 0.22) 0%, rgba(37, 99, 235, 0) 70%);
+    background: radial-gradient(circle at center, rgba(249, 115, 22, 0.24) 0%, rgba(249, 115, 22, 0) 70%);
     top: -5rem;
     right: -5rem;
     border-radius: 9999px;
