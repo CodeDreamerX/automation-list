@@ -66,6 +66,7 @@ export const GET: APIRoute = async () => {
   // SEO: Use Set to prevent duplicate URLs
   const urlSet = new Set<string>();
   const sitemapUrls: SitemapUrl[] = [];
+  const locales = ['en', 'de'] as const;
 
   // Helper function to add URL if not duplicate
   function addUrl(url: SitemapUrl): void {
@@ -81,11 +82,38 @@ export const GET: APIRoute = async () => {
   // SEO: Highest priority for homepage
   addUrl({
     loc: `${PRODUCTION_DOMAIN}/en/`,
+    changefreq: 'weekly',
     priority: '1.0',
   });
   addUrl({
     loc: `${PRODUCTION_DOMAIN}/de/`,
+    changefreq: 'weekly',
     priority: '1.0',
+  });
+
+  // Public index and landing pages (EN and DE)
+  // SEO: Include all public indexable landing pages; exclude admin/API routes.
+  const localizedStaticPages: Array<{ path: string; changefreq: string; priority: string }> = [
+    { path: '/vendors', changefreq: 'daily', priority: '0.9' },
+    { path: '/categories', changefreq: 'weekly', priority: '0.9' },
+    { path: '/technologies', changefreq: 'weekly', priority: '0.9' },
+    { path: '/industries', changefreq: 'weekly', priority: '0.9' },
+    { path: '/features', changefreq: 'monthly', priority: '0.7' },
+    { path: '/pricing', changefreq: 'monthly', priority: '0.7' },
+    { path: '/contact', changefreq: 'yearly', priority: '0.5' },
+    { path: '/submit-listing', changefreq: 'monthly', priority: '0.6' },
+    { path: '/impressum', changefreq: 'yearly', priority: '0.3' },
+    { path: '/privacy', changefreq: 'yearly', priority: '0.3' },
+  ];
+
+  localizedStaticPages.forEach((page) => {
+    locales.forEach((locale) => {
+      addUrl({
+        loc: `${PRODUCTION_DOMAIN}/${locale}${page.path}`,
+        changefreq: page.changefreq,
+        priority: page.priority,
+      });
+    });
   });
 
   // Vendor detail pages (EN and DE)
@@ -116,7 +144,7 @@ export const GET: APIRoute = async () => {
     }
   });
 
-  // Category pages (EN and DE)
+  // Category detail pages (EN and DE)
   // SEO: Category pages are important landing pages
   (categories || []).forEach((category) => {
     if (category.slug) {
@@ -140,20 +168,26 @@ export const GET: APIRoute = async () => {
   }
 
   // Get unique countries with their most recent update date
+  // Include countries even when updated_at is missing, but omit lastmod.
   const countryMap = new Map<string, Date>();
+  const countrySet = new Set<string>();
   (vendors || []).forEach((vendor: any) => {
-    if (vendor.country && vendor.updated_at) {
+    if (vendor.country) {
       const normalized = normalizeCountry(vendor.country);
-      const updateDate = new Date(vendor.updated_at);
-      const existingDate = countryMap.get(normalized);
-      if (!existingDate || updateDate > existingDate) {
-        countryMap.set(normalized, updateDate);
+      countrySet.add(normalized);
+
+      if (vendor.updated_at) {
+        const updateDate = new Date(vendor.updated_at);
+        const existingDate = countryMap.get(normalized);
+        if (!existingDate || updateDate > existingDate) {
+          countryMap.set(normalized, updateDate);
+        }
       }
     }
   });
 
   // Sort countries and generate country page URLs
-  const uniqueCountries = Array.from(countryMap.keys()).sort();
+  const uniqueCountries = Array.from(countrySet.keys()).sort();
   uniqueCountries.forEach((normalizedCountry) => {
     const lastmodDate = countryMap.get(normalizedCountry);
     const countrySlug = slugifyCountry(normalizedCountry);
@@ -232,29 +266,6 @@ export const GET: APIRoute = async () => {
       addUrl(urlEn);
       addUrl(urlDe);
     }
-  });
-
-  // Legal pages (EN and DE)
-  // SEO: Legal pages are required but low priority
-  addUrl({
-    loc: `${PRODUCTION_DOMAIN}/en/impressum`,
-    changefreq: 'yearly',
-    priority: '0.3',
-  });
-  addUrl({
-    loc: `${PRODUCTION_DOMAIN}/de/impressum`,
-    changefreq: 'yearly',
-    priority: '0.3',
-  });
-  addUrl({
-    loc: `${PRODUCTION_DOMAIN}/en/privacy`,
-    changefreq: 'yearly',
-    priority: '0.3',
-  });
-  addUrl({
-    loc: `${PRODUCTION_DOMAIN}/de/privacy`,
-    changefreq: 'yearly',
-    priority: '0.3',
   });
 
   // Build XML from sitemap URLs
