@@ -22,3 +22,38 @@ export function slugifyCountry(country: string): string {
     .replace(/-+/g, '-')        // collapse multiple hyphens
     .replace(/^-|-$/g, '');     // trim leading/trailing hyphens
 }
+
+/**
+ * Normalizes a country name to a comparable format.
+ *
+ * @param country - Country name string
+ * @returns Normalized country string in lowercase with collapsed whitespace
+ */
+export function normalizeCountryName(country: string): string {
+  if (!country || typeof country !== 'string') return '';
+  return country
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Converts a country route param/slug into a normalized country name.
+ *
+ * Examples:
+ * - "united-kingdom" => "united kingdom"
+ * - "united%20kingdom" => "united kingdom"
+ *
+ * @param value - URL param value
+ * @returns Normalized country name
+ */
+export function parseCountryParam(value: string): string {
+  if (!value || typeof value !== 'string') return '';
+
+  try {
+    const decoded = decodeURIComponent(value).trim();
+    return normalizeCountryName(decoded.replace(/-/g, ' '));
+  } catch {
+    return normalizeCountryName(value.replace(/-/g, ' '));
+  }
+}

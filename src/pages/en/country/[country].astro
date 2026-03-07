@@ -10,30 +10,26 @@ import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
+import { parseCountryParam, slugifyCountry } from "../../../lib/countryUtils";
 
 
 // Get country from URL param
 const countryParam = Astro.params.country || '';
 
-// Normalize country: decode URL, convert hyphens to spaces, trim, and normalize case
-// Handles slugs like "united-states" → "united states" → "united states" (lowercase)
-function normalizeCountry(country: string): string {
-  try {
-    const decoded = decodeURIComponent(country).trim();
-    // Convert hyphens to spaces for matching (slug format: "united-states" → "united states")
-    const withSpaces = decoded.replace(/-/g, ' ');
-    return withSpaces.toLowerCase();
-  } catch {
-    const withSpaces = country.trim().replace(/-/g, ' ');
-    return withSpaces.toLowerCase();
-  }
-}
-
-const normalizedCountry = normalizeCountry(countryParam);
+const normalizedCountry = parseCountryParam(countryParam);
 
 // If no country param, redirect to vendors page
 if (!normalizedCountry) {
   return Astro.redirect('/en/vendors');
+}
+
+const countrySlug = slugifyCountry(normalizedCountry);
+if (!countrySlug) {
+  return Astro.redirect('/en/vendors');
+}
+
+if (countryParam !== countrySlug) {
+  return Astro.redirect(`/en/country/${countrySlug}${Astro.url.search}`);
 }
 
 // Get pagination params
@@ -134,17 +130,17 @@ if (normalizedVendors.length > 0 && normalizedVendors[0].country) {
 
 // SEO metadata
 const CountryName = displayCountry;
-const metaTitle = `Industrial Automation in ${CountryName} | Automation List`;
+const metaTitle = `Automation Vendors in ${CountryName} | Automation List`;
 const metaDescription = `Discover top industrial automation vendors, PLC experts, SCADA integrators, and system integrators in ${CountryName}.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
-const currentUrl = `${siteOrigin}/en/country/${encodeURIComponent(normalizedCountry)}`;
+const currentUrl = `${siteOrigin}/en/country/${countrySlug}`;
 
 // Build breadcrumbs
 const breadcrumbs = [
   { label: "Home", href: "/en/" },
   { label: "Vendors", href: "/en/vendors" },
-  { label: CountryName, href: `/en/country/${encodeURIComponent(normalizedCountry)}` },
+  { label: CountryName, href: `/en/country/${countrySlug}` },
 ];
 
 ---
@@ -216,4 +212,3 @@ const breadcrumbs = [
     />
   </div>
 </BaseLayout>
-

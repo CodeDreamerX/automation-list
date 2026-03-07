@@ -17,6 +17,9 @@ const { vendor } = Astro.props;
     label="Meta Title"
     value={vendor?.meta_title || ''}
   />
+  <p id="meta_title_counter" class="text-xs mt-[-0.75rem] mb-4 text-gray-500">
+    0 characters
+  </p>
   
   <FormTextarea
     id="meta_description"
@@ -48,4 +51,34 @@ const { vendor } = Astro.props;
     <p class="text-xs text-gray-500">Leave empty to use uploaded logo above</p>
   </div>
 </FormSection>
+
+<script>
+  const metaTitleInput = document.getElementById('meta_title') as HTMLInputElement | null;
+  const metaTitleCounter = document.getElementById('meta_title_counter');
+
+  const updateMetaTitleCounter = () => {
+    if (!metaTitleInput || !metaTitleCounter) return;
+
+    const length = metaTitleInput.value.length;
+    metaTitleCounter.textContent = `${length} characters`;
+    metaTitleCounter.classList.remove('text-green-600', 'text-orange-500', 'text-red-600');
+
+    if (length <= 60) {
+      metaTitleCounter.classList.add('text-green-600');
+      return;
+    }
+
+    if (length <= 65) {
+      metaTitleCounter.classList.add('text-orange-500');
+      return;
+    }
+
+    metaTitleCounter.classList.add('text-red-600');
+  };
+
+  if (metaTitleInput && metaTitleCounter) {
+    updateMetaTitleCounter();
+    metaTitleInput.addEventListener('input', updateMetaTitleCounter);
+  }
+</script>
 

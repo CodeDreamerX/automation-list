@@ -189,7 +189,7 @@ const faqItems = ((technology?.faq_en ?? []) as any[]).filter(
 const hasFaq = faqItems.length > 0;
 
 // SEO metadata
-const metaTitle = `${techName} Integrators | Automation List`;
+const metaTitle = `${techName} Vendors | Automation List`;
 const metaDescription = (techDescription && techDescription.trim()) || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;

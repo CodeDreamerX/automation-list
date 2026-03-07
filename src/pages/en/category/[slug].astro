@@ -151,7 +151,7 @@ const faqItems = ((category.faq_en ?? []) as any[]).filter(
 const hasFaq = faqItems.length > 0;
 
 // SEO metadata
-const metaTitle = `Industrial Automation ${categoryName} | Automation List`;
+const metaTitle = `${categoryName} Vendors | Automation List`;
 const metaDescription = (categoryDescription && categoryDescription.trim()) || `Discover top ${categoryName} automation vendors, integrators, and solution providers.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
