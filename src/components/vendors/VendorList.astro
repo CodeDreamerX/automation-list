@@ -465,7 +465,7 @@ const categoryList = (dbCategories || []).map(cat => ({
 
   <!-- Search and Filter Form -->
   <div class="border border-gray-200 rounded-lg p-4 mb-8 bg-white shadow-sm">
-    <form method="GET" action={Astro.url.pathname}>
+    <form id="vendor-filter-form" method="GET" action={Astro.url.pathname}>
       <!-- Reset to page 1 when filters change -->
       <input type="hidden" name="page" value="1" />
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -645,4 +645,33 @@ const categoryList = (dbCategories || []).map(cat => ({
     lang={lang}
   />
 </div>
+
+<script>
+  const form = document.getElementById('vendor-filter-form') as HTMLFormElement | null;
+  form?.addEventListener('submit', (e) => {
+    const data = new FormData(form);
+    const q        = (data.get('q')          || '').toString().trim();
+    const country  = (data.get('country')    || '').toString().trim();
+    const category = (data.get('category')   || '').toString().trim();
+    const tech     = (data.get('technology') || '').toString().trim();
+    const industry = (data.get('industries') || '').toString().trim();
+
+    const activeFilters = [country, category, tech, industry].filter(Boolean);
+
+    // Only redirect when exactly ONE filter and NO keyword
+    if (activeFilters.length !== 1 || q) return;
+
+    e.preventDefault();
+
+    const lang = window.location.pathname.startsWith('/de') ? 'de' : 'en';
+
+    let cleanUrl = '';
+    if (country)  cleanUrl = `/${lang}/country/${country}`;
+    if (category) cleanUrl = `/${lang}/category/${category}`;
+    if (tech)     cleanUrl = `/${lang}/technology/${tech}`;
+    if (industry) cleanUrl = `/${lang}/industry/${industry}`;
+
+    window.location.href = cleanUrl;
+  });
+</script>
 
