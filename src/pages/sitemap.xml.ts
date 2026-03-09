@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../lib/supabaseClient';
-import { slugifyCountry } from '../lib/countryUtils';
+import { normalizeCountryName, slugifyCountry } from '../lib/countryUtils';
 
 // Production domain - sitemap URLs must be canonical and absolute
 // SEO: Use production domain to ensure consistency across environments
@@ -163,17 +163,13 @@ export const GET: APIRoute = async () => {
 
   // Country pages - get distinct countries and calculate lastmod
   // SEO: Country pages aggregate vendors, use most recent vendor update
-  function normalizeCountry(country: string): string {
-    return country.trim().toLowerCase();
-  }
-
   // Get unique countries with their most recent update date
   // Include countries even when updated_at is missing, but omit lastmod.
   const countryMap = new Map<string, Date>();
   const countrySet = new Set<string>();
   (vendors || []).forEach((vendor: any) => {
     if (vendor.country) {
-      const normalized = normalizeCountry(vendor.country);
+      const normalized = normalizeCountryName(vendor.country);
       countrySet.add(normalized);
 
       if (vendor.updated_at) {

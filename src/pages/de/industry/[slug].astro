@@ -162,7 +162,7 @@ const faqItems = ((industry.faq_de ?? []) as any[]).filter(
 const hasFaq = faqItems.length > 0;
 
 // SEO metadata
-const metaTitle = `${industryName} Automatisierung | Automation List`;
+const metaTitle = `${industryName} Anbieter | Automation List`;
 const metaDescription = (industryDescription && industryDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;
