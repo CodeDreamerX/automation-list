@@ -1,0 +1,139 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const updated = parseInt(Astro.url.searchParams.get('updated') || '0');
+const skipped = parseInt(Astro.url.searchParams.get('skipped') || '0');
+const failed = parseInt(Astro.url.searchParams.get('failed') || '0');
+const warningsCount = parseInt(Astro.url.searchParams.get('warningsCount') || '0');
+const errorsCount = parseInt(Astro.url.searchParams.get('errorsCount') || '0');
+---
+
+<AdminLayout title="JSON Update Results - Admin Panel" currentPath="/admin/vendors/json-update">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">JSON Update Results</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Summary of the JSON update operation
+        </p>
+      </div>
+      <a href="/admin/vendors/json-update" class="text-sm text-gray-600 hover:text-gray-900">
+        ← Back to JSON Update Import
+      </a>
+    </div>
+
+    <!-- SUMMARY STATISTICS -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Update Summary</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-green-50 border border-green-200 rounded-md p-4">
+          <div class="text-sm font-medium text-green-900 mb-1">Successfully Updated</div>
+          <div class="text-2xl font-bold text-green-700">{updated}</div>
+          <div class="text-xs text-green-600 mt-1">vendor{updated !== 1 ? 's' : ''}</div>
+        </div>
+
+        {skipped > 0 && (
+          <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <div class="text-sm font-medium text-yellow-900 mb-1">Skipped</div>
+            <div class="text-2xl font-bold text-yellow-700">{skipped}</div>
+            <div class="text-xs text-yellow-600 mt-1">row{skipped !== 1 ? 's' : ''} (slug not found)</div>
+          </div>
+        )}
+
+        {failed > 0 && (
+          <div class="bg-red-50 border border-red-200 rounded-md p-4">
+            <div class="text-sm font-medium text-red-900 mb-1">Failed</div>
+            <div class="text-2xl font-bold text-red-700">{failed}</div>
+            <div class="text-xs text-red-600 mt-1">row{failed !== 1 ? 's' : ''}</div>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- WARNINGS -->
+    {warningsCount > 0 && (
+      <div class="bg-white rounded-lg shadow-sm border border-yellow-200 p-6">
+        <h2 class="text-lg font-semibold text-yellow-900 mb-4">
+          Warnings ({warningsCount})
+        </h2>
+        <div id="warnings-list" class="space-y-2 max-h-96 overflow-y-auto">
+          <p class="text-sm text-gray-600">Loading warnings...</p>
+        </div>
+      </div>
+    )}
+
+    <!-- ERRORS -->
+    {errorsCount > 0 && (
+      <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+        <h2 class="text-lg font-semibold text-red-900 mb-4">
+          Errors ({errorsCount})
+        </h2>
+        <div id="errors-list" class="space-y-2 max-h-96 overflow-y-auto">
+          <p class="text-sm text-gray-600">Loading errors...</p>
+        </div>
+      </div>
+    )}
+
+    <!-- ACTIONS -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center gap-4">
+        <a href="/admin" class="btn-primary">
+          View All Vendors
+        </a>
+        <a href="/admin/vendors/json-update" class="btn-secondary">
+          Update Another File
+        </a>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const resultsData = sessionStorage.getItem('jsonUpdateResults');
+
+  if (resultsData) {
+    try {
+      const results = JSON.parse(resultsData);
+
+      if (results.warnings && results.warnings.length > 0) {
+        const warningsList = document.getElementById('warnings-list');
+        if (warningsList) {
+          warningsList.innerHTML = '';
+          results.warnings.forEach((warning: string) => {
+            const div = document.createElement('div');
+            div.className = 'text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2';
+            div.textContent = warning;
+            warningsList.appendChild(div);
+          });
+        }
+      }
+
+      if (results.errors && results.errors.length > 0) {
+        const errorsList = document.getElementById('errors-list');
+        if (errorsList) {
+          errorsList.innerHTML = '';
+          results.errors.forEach((error: string) => {
+            const div = document.createElement('div');
+            div.className = 'text-sm text-red-800 bg-red-50 border border-red-200 rounded px-3 py-2';
+            div.textContent = error;
+            errorsList.appendChild(div);
+          });
+        }
+      }
+
+      sessionStorage.removeItem('jsonUpdateResults');
+    } catch (e) {
+      console.error('Error parsing update results:', e);
+    }
+  }
+</script>

@@ -694,7 +694,14 @@ const allCategories = normalizedVendor.vendor_categories || [];
           <div>
             <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Countries Served</p>
             {hasProAccess ? (
-              <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
+              <div class="flex flex-wrap gap-1">
+                {normalizedVendor.countries_served.split(',').map(c => c.trim()).filter(Boolean).map(country => (
+                  <a
+                    href={`/en/country/${slugifyCountry(country)}`}
+                    class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >{country}</a>
+                ))}
+              </div>
             ) : (
               <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
             )}

@@ -38,7 +38,8 @@ const navItems = [
 
 // Import section - only show if authenticated
 const importItems = isAuthenticated ? [
-  { label: "Import", href: "/admin/vendors/json", active: currentPath?.startsWith("/admin/vendors/json") },
+  { label: "Import", href: "/admin/vendors/json", active: currentPath?.startsWith("/admin/vendors/json") && !currentPath?.startsWith("/admin/vendors/json-update") },
+  { label: "Update", href: "/admin/vendors/json-update", active: currentPath?.startsWith("/admin/vendors/json-update") },
 ] : [];
 ---
 

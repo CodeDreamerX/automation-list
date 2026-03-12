@@ -1,0 +1,125 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+---
+
+<AdminLayout title="JSON Update Import - Admin Panel" currentPath="/admin/vendors/json-update">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">JSON Update Import</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Bulk-patch existing vendors by slug from a JSON file
+        </p>
+      </div>
+      <a href="/admin" class="text-sm text-gray-600 hover:text-gray-900">
+        ← Back to Dashboard
+      </a>
+    </div>
+
+    <!-- WORKFLOW EXPLANATION -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">How It Works</h2>
+
+      <div class="space-y-6">
+        <!-- Step 1 -->
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-semibold text-sm">
+            1
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-gray-900 mb-1">Upload File</h3>
+            <p class="text-sm text-gray-600">
+              Upload a JSON array of vendor objects. Each object must include a <code class="bg-gray-100 px-1 rounded">slug</code> — this is the match key used to find the vendor in the database.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-semibold text-sm">
+            2
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-gray-900 mb-1">Preview</h3>
+            <p class="text-sm text-gray-600">
+              Each vendor slug is looked up in the database. Rows with a matching slug are marked <span class="text-green-700 font-medium">will update</span>; rows with no match are marked <span class="text-yellow-700 font-medium">will skip</span>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-semibold text-sm">
+            3
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-gray-900 mb-1">Update</h3>
+            <p class="text-sm text-gray-600">
+              Only the fields present in each JSON object are written to the database — absent fields are left untouched. Relation arrays (<code class="bg-gray-100 px-1 rounded">category_slugs</code> etc.) are replaced only when present; if absent, existing relations are kept. Logo fields are always ignored.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTON -->
+      <div class="mt-8 pt-6 border-t border-gray-200">
+        <a href="/admin/vendors/json-update/upload" class="btn-primary">
+          Start Update Import
+        </a>
+      </div>
+    </div>
+
+    <!-- DOWNLOADS -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
+      <h3 class="text-sm font-semibold text-gray-900">Downloads</h3>
+
+      <div class="flex items-start justify-between gap-4">
+        <p class="text-xs text-gray-600">
+          Current list of all valid slugs for categories, technologies, industries, and certifications — use these values in the relation array fields.
+        </p>
+        <a
+          href="/api/admin/export-slugs"
+          download="slug-reference.json"
+          class="text-xs text-brand-600 hover:text-brand-700 font-medium whitespace-nowrap"
+        >
+          slug-reference.json
+        </a>
+      </div>
+
+      <div class="flex items-start justify-between gap-4 pt-3 border-t border-gray-100">
+        <p class="text-xs text-gray-600">
+          Example update file with all supported fields and placeholder values (no logo fields).
+        </p>
+        <a
+          href="/api/admin/export-template"
+          download="import-template.json"
+          class="text-xs text-brand-600 hover:text-brand-700 font-medium whitespace-nowrap"
+        >
+          import-template.json
+        </a>
+      </div>
+    </div>
+
+    <!-- FILE FORMAT NOTES -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h3 class="text-sm font-semibold text-gray-900 mb-2">File Format</h3>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• File must be a JSON array of vendor objects (<code class="bg-gray-100 px-1 rounded">[{`{ ... }, { ... }`}]</code>)</li>
+        <li>• Each object must have a <code class="bg-gray-100 px-1 rounded">slug</code> field — vendors without a matching slug are skipped</li>
+        <li>• Only include the fields you want to change — omitted fields are not touched</li>
+        <li>• Relation arrays (<code class="bg-gray-100 px-1 rounded">category_slugs</code>, <code class="bg-gray-100 px-1 rounded">technology_slugs</code>, <code class="bg-gray-100 px-1 rounded">industry_slugs</code>, <code class="bg-gray-100 px-1 rounded">certification_slugs</code>): if present, existing links are replaced; if absent, existing links are kept</li>
+        <li>• Logo fields are always ignored, even if present in the JSON</li>
+        <li>• Maximum file size: 10MB</li>
+      </ul>
+    </div>
+  </div>
+
+</AdminLayout>
