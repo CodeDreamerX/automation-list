@@ -3,6 +3,7 @@ import type { CategoryFormOption } from '../../types/category';
 import type { TechnologyFormOption } from '../../types/technology';
 import type { IndustryFormOption } from '../../types/industry';
 import type { CertificationFormOption } from '../../types/certification';
+import type { CountryFormOption } from '../../types/country';
 import FormSection from './FormSection.astro';
 
 interface CategorizationSectionProps {
@@ -11,9 +12,10 @@ interface CategorizationSectionProps {
   technologies?: TechnologyFormOption[];
   industries?: IndustryFormOption[];
   certifications?: CertificationFormOption[];
+  countries?: CountryFormOption[];
 }
 
-const { vendor, categories = [], technologies = [], industries = [], certifications = [] } = Astro.props;
+const { vendor, categories = [], technologies = [], industries = [], certifications = [], countries = [] } = Astro.props;
 
 const LANGUAGE_OPTIONS = [
   'English',
@@ -201,6 +203,39 @@ const certificationEntries = Object.entries(certificationsByCategory) as [string
           );
         })}
       </div>
+    </div>
+  </div>
+
+  <!-- Countries Served -->
+  <div class="cat-section" data-expanded="false">
+    <button type="button" class="cat-section-header w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-left transition-colors" aria-expanded="false">
+      <h2 class="text-base font-semibold text-gray-800">Countries Served</h2>
+      <div class="flex items-center gap-2">
+        <span class="cat-section-badge hidden text-xs font-medium bg-orange-100 text-orange-700 rounded-full px-2 py-0.5"></span>
+        <svg class="cat-section-chevron w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+    <div class="cat-section-content hidden pt-3 pb-1">
+      {countries.length === 0 ? (
+        <p class="text-sm text-gray-500">No countries available. Run DB migration to populate.</p>
+      ) : (
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {countries.map((country: CountryFormOption) => {
+            const checked = vendor?.country_slugs?.includes(country.slug);
+            return (
+              <label class="flex items-center gap-2 cursor-pointer" data-search-text={country.name_en.toLowerCase()}>
+                <input type="checkbox" name="country_slugs" value={country.slug} checked={checked} />
+                <span class="flex items-center gap-1.5">
+                  {country.flag_emoji && <img src={`https://flagcdn.com/16x12/${country.flag_emoji.toLowerCase()}.png`} width="16" height="12" alt="" class="inline-block" />}
+                  {country.name_en}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
     </div>
   </div>
 </FormSection>

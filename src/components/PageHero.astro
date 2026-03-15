@@ -9,6 +9,8 @@ interface PageHeroProps {
   secondaryMicroCopy?: string;
   vendorCount?: number | null;
   vendorCountLabel?: string;
+  countryCount?: number | null;
+  countriesHref?: string;
 }
 
 const {
@@ -21,6 +23,8 @@ const {
   secondaryMicroCopy,
   vendorCount,
   vendorCountLabel,
+  countryCount,
+  countriesHref,
 } = Astro.props;
 ---
 
@@ -36,10 +40,14 @@ const {
 
     {vendorCount !== null && vendorCount !== undefined && vendorCountLabel && (
       <div class="mt-4 mb-6 text-sm text-gray-500 text-center">
-        <span class="font-medium text-gray-600">
-          {vendorCount}
-        </span>
+        <span class="font-medium text-gray-600">{vendorCount}</span>
         {" "}{vendorCountLabel}
+        {countryCount && countriesHref && (
+          <>
+            {" "}across{" "}
+            <a href={countriesHref} class="text-gray-400 no-underline hover:underline transition-colors">{countryCount} countries →</a>
+          </>
+        )}
       </div>
     )}
 

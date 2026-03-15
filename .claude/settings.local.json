@@ -7,7 +7,14 @@
       "Bash(npm install @lucide/astro)",
       "Bash(npm uninstall papaparse @types/papaparse)",
       "Bash(xargs grep -l \"country.*slug\\\\|slug.*country\")",
-      "Bash(xargs grep -l \"country.*=\")"
+      "Bash(xargs grep -l \"country.*=\")",
+      "Bash(grep -E \"\\\\.\\(astro|ts\\)$\")",
+      "Bash(find d:Projectsautomationlistsrcpages -name *country* -type f)",
+      "Bash(ls -la /d/Projects/automationlist/.supabase*)",
+      "Bash(grep -r \"RLS\\\\|Row Level\\\\|POLICY\\\\|policy\" /d/Projects/automationlist/src --include=*.ts --include=*.astro)",
+      "Bash(grep -r \"supabase\\\\|Supabase\" /d/Projects/automationlist --include=*.md)",
+      "Bash(grep -n \"vendor?.country_slugs\" /d/Projects/automationlist/src/pages/admin/edit/[id].astro)",
+      "Bash(grep -n \"formData.get\\(''countries_served''\\)\" /d/Projects/automationlist/src/pages/admin/*.astro /d/Projects/automationlist/src/pages/admin/**/*.astro)"
     ]
   }
 }

@@ -107,6 +107,15 @@ const { data: vendor, error } = await supabase
         reference_url,
         category
       )
+    ),
+    vendor_countries (
+      countries:countries (
+        id,
+        slug,
+        name_en,
+        name_de,
+        flag_emoji
+      )
     )
   `)
   .eq('slug', slug)
@@ -124,7 +133,8 @@ if (!vendor) {
 const normalizedVendor = normalizeVendor(vendor, {
   includeCategories: true,
   includeTechnologies: false,
-  includeIndustries: false
+  includeIndustries: false,
+  includeCountries: true,
 });
 // Use language-specific description (EN: description_en)
 normalizedVendor.description_en = vendor.description_en || null;
@@ -336,6 +346,9 @@ const tags = normalizedVendor.tags ? splitValue(normalizedVendor.tags) : [];
 
 // Prepare categories data (show everywhere, not just for Pro)
 const allCategories = normalizedVendor.vendor_categories || [];
+const vendorDescription = normalizedVendor.description_en;
+const descriptionWordCount = vendorDescription ? vendorDescription.trim().split(/\s+/).filter(Boolean).length : 0;
+const shouldCollapseDescription = descriptionWordCount > 200;
 ---
 
 <BaseLayout 
@@ -348,6 +361,32 @@ const allCategories = normalizedVendor.vendor_categories || [];
 >
   <script slot="head" type="application/ld+json" set:html={organizationSchemaJson} />
   <script slot="head" type="application/ld+json" set:html={breadcrumbSchemaJson} />
+  <style>
+    .vendor-description-copy {
+      line-height: 1.625;
+    }
+
+    .vendor-description-content[data-collapsible="true"][data-enhanced="true"] {
+      position: relative;
+      overflow: hidden;
+      max-height: calc(1em * 1.625 * 4);
+      transition: max-height 180ms ease;
+    }
+
+    .vendor-description-content[data-collapsible="true"][data-enhanced="true"]::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 2.75rem;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff);
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .vendor-description-content[data-expanded="true"]::after {
+      opacity: 0;
+    }
+  </style>
   <div class={`container-px mx-auto max-w-4xl px-4 py-10 ${showUpgradeCta ? 'pb-28' : ''}`}>
     <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
       ← Back to Vendors
@@ -425,10 +464,31 @@ const allCategories = normalizedVendor.vendor_categories || [];
     </div>
 
     <!-- SECTION 2 — DESCRIPTION -->
-    {normalizedVendor.description_en && (
+    {vendorDescription && (
       <div class="mb-4">
         <h2 class="text-xl font-semibold text-gray-900 mb-3">About</h2>
-        <p class="text-gray-700 text-sm leading-relaxed">{normalizedVendor.description_en}</p>
+        <div
+          id="vendor-description-en"
+          class="vendor-description-content"
+          data-collapsible={shouldCollapseDescription ? 'true' : 'false'}
+          data-enhanced="false"
+          data-expanded="false"
+        >
+          <p class="vendor-description-copy text-gray-700 text-sm">{vendorDescription}</p>
+        </div>
+        {shouldCollapseDescription && (
+          <button
+            type="button"
+            class="vendor-description-toggle mt-3 inline-flex text-sm font-medium text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            aria-controls="vendor-description-en"
+            aria-expanded="false"
+            data-label-more="Read more"
+            data-label-less="Read less"
+            hidden
+          >
+            Read more
+          </button>
+        )}
       </div>
     )}
 
@@ -693,11 +753,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
         {normalizedVendor.countries_served && (
           <div>
             <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Countries Served</p>
-            {hasProAccess ? (
-              <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
-            ) : (
-              <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
-            )}
+            <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
           </div>
         )}
         {normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined && (
@@ -825,6 +881,32 @@ const allCategories = normalizedVendor.vendor_categories || [];
       </div>
     </div>
   )}
+  <script>
+    document.querySelectorAll('.vendor-description-toggle').forEach((button) => {
+      button.hidden = false;
+      const controlsId = button.getAttribute('aria-controls');
+      if (!controlsId) return;
+
+      const content = document.getElementById(controlsId);
+      if (!content) return;
+
+      content.setAttribute('data-enhanced', 'true');
+
+      button.addEventListener('click', () => {
+        if (!content) return;
+
+        const expanded = button.getAttribute('aria-expanded') === 'true';
+        const nextExpanded = !expanded;
+
+        button.setAttribute('aria-expanded', String(nextExpanded));
+        button.textContent = nextExpanded
+          ? button.getAttribute('data-label-less') || 'Read less'
+          : button.getAttribute('data-label-more') || 'Read more';
+        content.setAttribute('data-expanded', String(nextExpanded));
+        content.style.maxHeight = nextExpanded ? `${content.scrollHeight}px` : '';
+      });
+    });
+  </script>
   {showUpgradeCta && (
     <script>
       const cta = document.getElementById('upgrade-cta');

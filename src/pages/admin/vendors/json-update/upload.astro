@@ -1,0 +1,169 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+import { randomUUID } from 'crypto';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const file = formData.get('jsonFile') as File | null;
+
+  if (!file) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=no_file');
+  }
+
+  const isJsonMime = file.type === 'application/json' || file.type === 'text/plain';
+  const isJsonExt = file.name.toLowerCase().endsWith('.json');
+  if (!isJsonExt && !isJsonMime) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=invalid_file_type');
+  }
+
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=file_too_large');
+  }
+
+  if (file.size === 0) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=empty_file');
+  }
+
+  const fileContent = await file.text();
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(fileContent);
+  } catch {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=invalid_json');
+  }
+
+  if (!Array.isArray(parsed)) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=not_array');
+  }
+
+  if (parsed.length === 0) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=empty_file');
+  }
+
+  const sessionId = randomUUID();
+
+  // Clean up expired sessions (older than 30 minutes)
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  await supabaseAdmin
+    .from('import_sessions')
+    .delete()
+    .lt('created_at', thirtyMinutesAgo);
+
+  const { error: insertError } = await supabaseAdmin
+    .from('import_sessions')
+    .insert({ id: sessionId, content: fileContent });
+
+  if (insertError) {
+    console.error('Error storing update session:', insertError);
+    return Astro.redirect('/admin/vendors/json-update/upload?error=storage_error');
+  }
+
+  Astro.cookies.set('json_update_session', sessionId, {
+    httpOnly: true,
+    secure: Astro.url.protocol === 'https:',
+    sameSite: 'strict',
+    maxAge: 60 * 10,
+    path: '/',
+  });
+
+  Astro.cookies.set('json_update_filename', file.name, {
+    httpOnly: true,
+    secure: Astro.url.protocol === 'https:',
+    sameSite: 'strict',
+    maxAge: 60 * 10,
+    path: '/',
+  });
+
+  return Astro.redirect('/admin/vendors/json-update/preview');
+}
+
+const error = Astro.url.searchParams.get('error');
+const errorMessages: Record<string, string> = {
+  no_file: 'Please select a JSON file to upload.',
+  invalid_file_type: 'Invalid file type. Please upload a JSON file (.json).',
+  file_too_large: 'File is too large. Maximum file size is 10MB.',
+  empty_file: 'The uploaded file is empty or contains no vendors.',
+  invalid_json: 'The file is not valid JSON. Please check the file and try again.',
+  not_array: 'The JSON file must be an array of vendor objects (e.g. [{ ... }, { ... }]).',
+  storage_error: 'An error occurred while storing the file. Please try again.',
+};
+const errorMessage = error ? (errorMessages[error] ?? '') : '';
+---
+
+<AdminLayout title="JSON Update Upload - Admin Panel" currentPath="/admin/vendors/json-update">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Upload JSON File</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Select a JSON file containing vendor update data
+        </p>
+      </div>
+      <a href="/admin/vendors/json-update" class="text-sm text-gray-600 hover:text-gray-900">
+        ← Back to JSON Update Import
+      </a>
+    </div>
+
+    <!-- ERROR MESSAGE -->
+    {errorMessage && (
+      <div class="bg-red-50 border border-red-200 rounded-md p-4">
+        <p class="text-sm text-red-700">{errorMessage}</p>
+      </div>
+    )}
+
+    <!-- UPLOAD FORM -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        <div>
+          <label for="jsonFile" class="block text-sm font-medium text-gray-700 mb-2">
+            JSON File
+          </label>
+          <input
+            type="file"
+            id="jsonFile"
+            name="jsonFile"
+            accept=".json,application/json"
+            required
+            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-brand-500 file:text-white hover:file:bg-brand-600 file:cursor-pointer border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+          <p class="mt-2 text-xs text-gray-500">
+            Select a .json file containing an array of vendor update objects. Each object must include a <code class="bg-gray-100 px-1 rounded">slug</code>. Maximum file size: 10MB.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
+          <button type="submit" class="btn-primary">
+            Upload and Continue to Preview
+          </button>
+          <a href="/admin/vendors/json-update" class="btn-secondary">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- FILE REQUIREMENTS -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h3 class="text-sm font-semibold text-gray-900 mb-2">File Requirements</h3>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• File must be valid JSON with a <code class="bg-gray-100 px-1 rounded">.json</code> extension</li>
+        <li>• Top-level structure must be a JSON array: <code class="bg-gray-100 px-1 rounded">[{`{ ... }`}]</code></li>
+        <li>• Each object must have a <code class="bg-gray-100 px-1 rounded">slug</code> field</li>
+        <li>• Maximum file size: 10MB</li>
+        <li>• File must use UTF-8 encoding</li>
+      </ul>
+    </div>
+  </div>
+</AdminLayout>

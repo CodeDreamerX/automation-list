@@ -168,6 +168,11 @@ const { count: totalVendorCount } = await supabase
   .select("*", { count: "exact", head: true })
   .neq("plan", "deactivated");
 
+const { count: countryCount } = await supabase
+  .from("countries")
+  .select("*", { count: "exact", head: true })
+  .eq("is_active", true);
+
 // Fetch active industries (limit 8-12, ordered by order_index then name)
 const allIndustries = await getIndustries({ lang: "de", activeOnly: true });
 const industries = allIndustries.slice(0, 12);
@@ -209,6 +214,8 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     description="Das anbieterneutrale Automatisierungsverzeichnis – von Ingenieuren erstellt, nicht von Agenturen. Finden und vergleichen Sie Systemintegratoren, OEMs und Spezialisten weltweit."
     vendorCount={totalVendorCount}
     vendorCountLabel="gelistete geprüfte Automatisierungsanbieter"
+    countryCount={countryCount}
+    countriesHref="/de/countries"
     primaryButtonText="Verzeichnis durchsuchen →"
     primaryButtonHref="/de/vendors"
     secondaryButtonText="Unternehmen kostenlos eintragen →"

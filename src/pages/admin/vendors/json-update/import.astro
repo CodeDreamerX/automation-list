@@ -1,0 +1,219 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+import { parseUpdateRow, RELATION_CONFIG, RELATION_KEYS } from '../../../../lib/admin/jsonUpdateUtils';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+if (Astro.request.method !== 'POST') {
+  return Astro.redirect('/admin/vendors/json-update/upload');
+}
+
+const formData = await Astro.request.formData();
+const sessionId = formData.get('sessionId')?.toString();
+
+if (!sessionId) {
+  return Astro.redirect('/admin/vendors/json-update/upload?error=no_session');
+}
+
+// Fetch JSON content from session
+const { data: sessionRow, error: sessionError } = await supabaseAdmin
+  .from('import_sessions')
+  .select('content')
+  .eq('id', sessionId)
+  .maybeSingle();
+
+if (sessionError || !sessionRow) {
+  return Astro.redirect('/admin/vendors/json-update/upload?error=file_not_found');
+}
+
+let parsedData: any[];
+try {
+  parsedData = JSON.parse(sessionRow.content);
+  if (!Array.isArray(parsedData) || parsedData.length === 0) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=empty_file');
+  }
+} catch {
+  return Astro.redirect('/admin/vendors/json-update/upload?error=invalid_json');
+}
+
+// Collect all slugs from JSON
+const allSlugs = parsedData
+  .map((row: any) => (typeof row.slug === 'string' ? row.slug : null))
+  .filter(Boolean) as string[];
+
+// Batch-fetch vendor slug→id map
+const { data: vendorRows } = await supabaseAdmin
+  .from('vendors')
+  .select('id, slug')
+  .in('slug', allSlugs.length > 0 ? allSlugs : ['__no_match__']);
+
+const vendorMap = new Map<string, string>(
+  (vendorRows || []).map((v: any) => [v.slug, v.id])
+);
+
+// Batch-fetch all 4 M2M slug→id maps (4 queries in parallel)
+const [
+  { data: allCategories },
+  { data: allTechnologies },
+  { data: allIndustries },
+  { data: allCertifications },
+] = await Promise.all([
+  supabaseAdmin.from('categories').select('id, slug'),
+  supabaseAdmin.from('technologies').select('id, slug'),
+  supabaseAdmin.from('industries').select('id, slug'),
+  supabaseAdmin.from('certifications').select('id, slug'),
+]);
+
+const categoryMap = new Map((allCategories || []).map((r: any) => [r.slug, r.id]));
+const technologyMap = new Map((allTechnologies || []).map((r: any) => [r.slug, r.id]));
+const industryMap = new Map((allIndustries || []).map((r: any) => [r.slug, r.id]));
+const certificationMap = new Map((allCertifications || []).map((r: any) => [r.slug, r.id]));
+
+const relationMaps: Record<string, Map<string, string>> = {
+  category_slugs:      categoryMap,
+  technology_slugs:    technologyMap,
+  industry_slugs:      industryMap,
+  certification_slugs: certificationMap,
+};
+
+const results = {
+  updated: 0,
+  skipped: 0,
+  failed: 0,
+  warnings: [] as string[],
+  errors: [] as string[],
+};
+
+for (let i = 0; i < parsedData.length; i++) {
+  const row = parsedData[i];
+  const rowNum = i + 1;
+  const slug = typeof row.slug === 'string' ? row.slug : null;
+
+  if (!slug) {
+    results.skipped++;
+    results.warnings.push(`Row ${rowNum}: Missing slug field, skipped`);
+    continue;
+  }
+
+  const vendorId = vendorMap.get(slug);
+  if (!vendorId) {
+    results.skipped++;
+    results.warnings.push(`Row ${rowNum}: Slug "${slug}" not found in database, skipped`);
+    continue;
+  }
+
+  try {
+    const { scalarFields, presentRelations } = parseUpdateRow(row);
+    const hasScalarUpdate = Object.keys(scalarFields).length > 1; // more than just updated_at
+
+    // Patch scalar fields if any are present
+    if (hasScalarUpdate || Object.keys(presentRelations).length > 0) {
+      if (hasScalarUpdate) {
+        const { error: updateError } = await supabaseAdmin
+          .from('vendors')
+          .update(scalarFields)
+          .eq('id', vendorId);
+
+        if (updateError) {
+          results.failed++;
+          results.errors.push(`Row ${rowNum} ("${slug}"): ${updateError.message}`);
+          continue;
+        }
+      } else {
+        // No scalar fields but relations present — still bump updated_at
+        const { error: updateError } = await supabaseAdmin
+          .from('vendors')
+          .update({ updated_at: scalarFields['updated_at'] })
+          .eq('id', vendorId);
+
+        if (updateError) {
+          // Non-fatal: proceed with relation updates
+          results.warnings.push(`Row ${rowNum} ("${slug}"): Failed to update updated_at: ${updateError.message}`);
+        }
+      }
+    }
+
+    // Update M2M relations — only for keys present in this row
+    for (const key of RELATION_KEYS) {
+      if (!(key in presentRelations)) continue;
+
+      const slugsToLink = presentRelations[key]!;
+      const config = RELATION_CONFIG[key];
+      const idMap = relationMaps[key];
+
+      // Delete existing junction rows for this vendor
+      const { error: deleteError } = await supabaseAdmin
+        .from(config.junctionTable)
+        .delete()
+        .eq('vendor_id', vendorId);
+
+      if (deleteError) {
+        results.warnings.push(`Row ${rowNum} ("${slug}"): Failed to clear ${key}: ${deleteError.message}`);
+        continue;
+      }
+
+      // Insert new junction rows
+      for (const relSlug of slugsToLink) {
+        const relId = idMap.get(relSlug);
+        if (!relId) {
+          results.warnings.push(`Row ${rowNum} ("${slug}"): Unknown ${key} slug: "${relSlug}"`);
+          continue;
+        }
+
+        const insertPayload: Record<string, string> = {
+          vendor_id: vendorId,
+          [config.fkColumn]: relId,
+        };
+
+        // vendor_categories has an extra column
+        if (key === 'category_slugs') {
+          (insertPayload as any)['is_primary'] = false;
+        }
+
+        const { error: insertError } = await supabaseAdmin
+          .from(config.junctionTable)
+          .insert(insertPayload);
+
+        if (insertError) {
+          results.warnings.push(`Row ${rowNum} ("${slug}"): Failed to link ${key} "${relSlug}": ${insertError.message}`);
+        }
+      }
+    }
+
+    results.updated++;
+
+  } catch (err: any) {
+    results.failed++;
+    results.errors.push(`Row ${rowNum} ("${slug}"): ${err?.message || 'Unexpected error'}`);
+  }
+}
+
+// Cleanup session
+await supabaseAdmin
+  .from('import_sessions')
+  .delete()
+  .eq('id', sessionId);
+
+Astro.cookies.delete('json_update_session', { path: '/' });
+Astro.cookies.delete('json_update_filename', { path: '/' });
+
+return new Response(
+  JSON.stringify({
+    updated: results.updated,
+    skipped: results.skipped,
+    failed: results.failed,
+    warnings: results.warnings,
+    errors: results.errors,
+  }),
+  {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  }
+);
+---

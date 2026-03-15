@@ -1,7 +1,4 @@
 ---
-// Server-Side Rendering (SSR) - This page is rendered on-demand
-// See STATIC_GENERATION_STRATEGY.md for details
-
 export const prerender = false;
 
 import BaseLayout from "../../../layouts/BaseLayout.astro";
@@ -11,43 +8,40 @@ import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import { parseCountryParam, slugifyCountry } from "../../../lib/countryUtils";
-
+import type { FaqItem } from "../../../types/industry";
 
 // Get country from URL param
 const countryParam = Astro.params.country || '';
 
 const normalizedCountry = parseCountryParam(countryParam);
 
-// If no country param, redirect to vendors page
-if (!normalizedCountry) {
-  return Astro.redirect('/en/vendors');
-}
+if (!normalizedCountry) return Astro.redirect('/en/vendors');
 
 const countrySlug = slugifyCountry(normalizedCountry);
-if (!countrySlug) {
-  return Astro.redirect('/en/vendors');
-}
+if (!countrySlug) return Astro.redirect('/en/vendors');
 
 if (countryParam !== countrySlug) {
   return Astro.redirect(`/en/country/${countrySlug}${Astro.url.search}`);
 }
 
+// Try to find managed country record in DB for rich content
+const { data: countryRecord } = await supabase
+  .from('countries')
+  .select('id, slug, name_en, name_de, description_en, description_de, flag_emoji, faq_en, faq_de')
+  .eq('slug', countrySlug)
+  .eq('is_active', true)
+  .maybeSingle();
+
 // Get pagination params
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
-const pageSize = 20;
+const pageSize = 60;
 
-// Helper function to capitalize first letter of each word (for display)
 function capitalizeCountry(country: string): string {
-  return country
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+  return country.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 }
 
-// Build cache key
-const cacheKey = `vendors:country:en:${countryParam}:${page}`;
+const cacheKey = `vendors:country:en:${countryParam}:${pageSize}:${page}`;
 
-// Try to get cached result
 interface CachedCountryResult {
   vendors: any[];
   totalVendors: number | null;
@@ -61,7 +55,6 @@ if (cachedResult) {
   vendors = cachedResult.vendors || [];
   totalVendors = cachedResult.totalVendors;
 } else {
-  // Build base query builder function
   function buildCountryQuery() {
     return supabase
       .from('vendors')
@@ -77,15 +70,12 @@ if (cachedResult) {
           )
         )
       `)
-      // Case-insensitive country filter - use ilike for exact match (case-insensitive)
       .ilike('country', normalizedCountry)
       .neq('plan', 'deactivated')
-      // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
-      .order('priority', { ascending: false })
+      .order('priority', { ascending: false, nullsFirst: false })
       .order('name', { ascending: true });
   }
 
-  // Get total count from materialized view
   const { data: countryCount } = await supabase
     .from('country_vendor_counts')
     .select('vendor_count')
@@ -93,13 +83,9 @@ if (cachedResult) {
     .single();
   totalVendors = countryCount?.vendor_count || null;
 
-  // Build paginated query
   const start = (page - 1) * pageSize;
   const end = page * pageSize - 1;
-  const paginatedQuery = buildCountryQuery().range(start, end);
-
-  // Execute paginated query
-  const { data, error } = await paginatedQuery;
+  const { data, error } = await buildCountryQuery().range(start, end);
 
   if (error) {
     console.error('Error fetching vendors:', error);
@@ -108,44 +94,104 @@ if (cachedResult) {
     vendors = data || [];
   }
 
-  // Cache the result
   if (totalVendors !== null) {
     setCached(cacheKey, { vendors, totalVendors }, 300);
   }
 }
 
-// Normalize category data shape
 const normalizedVendors = normalizeVendors(vendors || []);
-
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
-// Get the actual country name from the first vendor (if exists) for proper capitalization
-// Otherwise use the normalized param
-let displayCountry = normalizedCountry;
-if (normalizedVendors.length > 0 && normalizedVendors[0].country) {
-  displayCountry = normalizedVendors[0].country;
-} else {
-  displayCountry = capitalizeCountry(normalizedCountry);
-}
+// Display name: prefer DB record, fallback to vendor country field, fallback to capitalize slug
+let displayCountry = countryRecord?.name_en
+  || (normalizedVendors.length > 0 ? normalizedVendors[0].country : null)
+  || capitalizeCountry(normalizedCountry);
 
-// SEO metadata
-const CountryName = displayCountry;
-const metaTitle = `Automation Vendors in ${CountryName} | Automation List`;
-const metaDescription = `Discover top industrial automation vendors, PLC experts, SCADA integrators, and system integrators in ${CountryName}.`;
+const flagEmoji = countryRecord?.flag_emoji || '';
+
+// Description paragraphs
+const descriptionText = countryRecord?.description_en || '';
+const descriptionParagraphs = descriptionText ? descriptionText.split(/\n\s*\n/).filter((p: string) => p.trim()) : [];
+
+// FAQ
+const faqItems = ((countryRecord?.faq_en ?? []) as FaqItem[]).filter(
+  (item) => item?.question?.trim() && item?.answer?.trim()
+);
+const hasFaq = faqItems.length > 0;
+
+// SEO
+const countryAdjectives: Record<string, string> = {
+  'Switzerland': 'Swiss',
+  'Germany': 'German',
+  'United Kingdom': 'UK-based',
+  'France': 'French',
+  'Netherlands': 'Dutch',
+  'Belgium': 'Belgian',
+  'Sweden': 'Swedish',
+  'Poland': 'Polish',
+  'Denmark': 'Danish',
+  'Austria': 'Austrian',
+  'Italy': 'Italian',
+  'Spain': 'Spanish',
+  'Finland': 'Finnish',
+  'Norway': 'Norwegian',
+  'Czech Republic': 'Czech',
+};
+const countryAdj = countryAdjectives[displayCountry] ?? displayCountry;
+
+const metaTitle = totalVendors
+  ? `${totalVendors} Industrial Automation Companies in ${displayCountry} | Automation List`
+  : `Industrial Automation Companies in ${displayCountry} | Automation List`;
+const metaDescription = totalVendors
+  ? `Browse ${totalVendors} verified ${countryAdj} automation vendors — system integrators, MES specialists, machine builders and more. Filter by category, technology and industry.`
+  : `Browse verified ${countryAdj} automation vendors — system integrators, MES specialists, machine builders and more. Filter by category, technology and industry.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/en/country/${countrySlug}`;
 
-// Build breadcrumbs
 const breadcrumbs = [
   { label: "Home", href: "/en/" },
-  { label: "Vendors", href: "/en/vendors" },
-  { label: CountryName, href: `/en/country/${countrySlug}` },
+  { label: "Countries", href: "/en/countries" },
+  { label: displayCountry, href: `/en/country/${countrySlug}` },
 ];
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: `${siteOrigin}/en/` },
+    { "@type": "ListItem", position: 2, name: "Countries", item: `${siteOrigin}/en/countries` },
+    { "@type": "ListItem", position: 3, name: displayCountry, item: currentUrl },
+  ],
+};
+
+const itemListSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": `Industrial Automation Companies in ${displayCountry}`,
+  "itemListElement": normalizedVendors.map((v, index) => ({
+    "@type": "Organization",
+    "position": index + 1,
+    "name": v.name,
+    "url": `${siteOrigin}/en/vendor/${v.slug}`,
+    "logo": v.logo_url,
+    "image": v.logo_url,
+    "address": v.country,
+  })),
+};
+
+const faqSchema = hasFaq ? {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqItems.map((item) => ({
+    "@type": "Question",
+    "name": item.question,
+    "acceptedAnswer": { "@type": "Answer", "text": item.answer },
+  })),
+} : null;
 ---
 
-<BaseLayout 
+<BaseLayout
   title={metaTitle}
   description={metaDescription}
   canonical={currentUrl}
@@ -153,62 +199,60 @@ const breadcrumbs = [
   lang="en"
   breadcrumbs={breadcrumbs}
 >
-  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": `Industrial Automation Companies in ${CountryName}`,
-    "itemListElement": normalizedVendors.map((v, index) => ({
-      "@type": "Organization",
-      "position": index + 1,
-      "name": v.name,
-      "url": `${siteOrigin}/en/vendor/${v.slug}`,
-      "logo": v.logo_url,
-      "image": v.logo_url,
-      "address": v.country
-    }))
-  })} />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />
+  {faqSchema && (
+    <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  )}
+
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      Industrial Automation Companies in {displayCountry}
+    <h1 class="text-3xl font-bold text-gray-900 mb-4">
+      {flagEmoji && <img src={`https://flagcdn.com/32x24/${flagEmoji.toLowerCase()}.png`} width="32" height="24" alt="" class="inline-block align-middle mr-2" />}Industrial Automation Companies in {displayCountry}
     </h1>
 
-    <!-- Result Count -->
     <div class="mb-4">
       <p class="text-sm text-gray-600">
         {totalVendors || 0} {totalVendors === 1 ? 'vendor' : 'vendors'} found
         {totalPages > 1 && (
-          <span class="text-xs text-gray-500 ml-2">
-            (Page {page} of {totalPages})
-          </span>
+          <span class="text-xs text-gray-500 ml-2">(Page {page} of {totalPages})</span>
         )}
       </p>
     </div>
 
-    <!-- Vendor Grid -->
+    {descriptionParagraphs.length > 0 && (
+      <div class="prose prose-gray max-w-none mb-8 text-gray-700">
+        {descriptionParagraphs.map((para: string) => (
+          <p>{para}</p>
+        ))}
+      </div>
+    )}
+
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {normalizedVendors.length > 0 ? (
         normalizedVendors.map(vendor => (
-          <VendorCard
-            vendor={vendor}
-            hrefPrefix="/en/vendor"
-            lang="en"
-          />
+          <VendorCard vendor={vendor} hrefPrefix="/en/vendor" lang="en" />
         ))
       ) : (
         <div class="col-span-full text-center py-12">
-          <p class="text-gray-600">
-            No vendors found in this country.
-          </p>
+          <p class="text-gray-600">No vendors found in this country.</p>
         </div>
       )}
     </div>
 
-    <!-- Pagination -->
-    <Pagination
-      currentPage={page}
-      totalPages={totalPages}
-      baseUrl={Astro.url}
-      lang="en"
-    />
+    <Pagination currentPage={page} totalPages={totalPages} baseUrl={Astro.url} lang="en" />
+
+    {hasFaq && (
+      <section class="mt-16">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
+        <div class="space-y-6">
+          {faqItems.map((item) => (
+            <div class="border-b border-gray-200 pb-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">{item.question}</h3>
+              <p class="text-gray-700">{item.answer}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
   </div>
 </BaseLayout>

@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
     industry_slugs: Array.isArray(industry_slugs) ? industry_slugs : [],
     certification_slugs: Array.isArray(certification_slugs) ? certification_slugs : [],
     languages: Array.isArray(languages) ? languages : [],
-    countries_served: Array.isArray(countries_served) ? countries_served : [],
+    countries_served: typeof countries_served === 'string' ? countries_served.trim() || null : null,
     year_founded: year_founded ? (Number(year_founded) || null) : null,
     employee_count: employee_count || null,
     taking_new_projects:

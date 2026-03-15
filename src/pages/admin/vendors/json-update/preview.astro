@@ -1,0 +1,258 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const sessionId = Astro.cookies.get('json_update_session')?.value;
+const filename = Astro.cookies.get('json_update_filename')?.value || 'uploaded-file.json';
+
+if (!sessionId) {
+  return Astro.redirect('/admin/vendors/json-update/upload?error=no_session');
+}
+
+const { data: sessionRow, error: sessionError } = await supabaseAdmin
+  .from('import_sessions')
+  .select('content')
+  .eq('id', sessionId)
+  .maybeSingle();
+
+if (sessionError || !sessionRow) {
+  return Astro.redirect('/admin/vendors/json-update/upload?error=file_not_found');
+}
+
+let parsedData: any[];
+try {
+  parsedData = JSON.parse(sessionRow.content);
+  if (!Array.isArray(parsedData) || parsedData.length === 0) {
+    return Astro.redirect('/admin/vendors/json-update/upload?error=empty_file');
+  }
+} catch {
+  return Astro.redirect('/admin/vendors/json-update/upload?error=invalid_json');
+}
+
+// Extract all slugs from the JSON rows
+const allSlugs = parsedData
+  .map((row: any) => (typeof row.slug === 'string' ? row.slug : null))
+  .filter(Boolean) as string[];
+
+// Batch-fetch vendor slugs that exist in the DB
+const { data: existingVendors } = await supabaseAdmin
+  .from('vendors')
+  .select('slug')
+  .in('slug', allSlugs.length > 0 ? allSlugs : ['__no_match__']);
+
+const existingSlugSet = new Set((existingVendors || []).map((v: any) => v.slug));
+
+// Determine per-row status
+type RowStatus = 'will_update' | 'will_skip' | 'no_slug';
+
+interface PreviewRow {
+  index: number;
+  slug: string | null;
+  name: string | null;
+  status: RowStatus;
+  fieldCount: number;
+}
+
+const previewRows: PreviewRow[] = parsedData.map((row: any, i: number) => {
+  const slug = typeof row.slug === 'string' && row.slug ? row.slug : null;
+  let status: RowStatus;
+  if (!slug) {
+    status = 'no_slug';
+  } else if (existingSlugSet.has(slug)) {
+    status = 'will_update';
+  } else {
+    status = 'will_skip';
+  }
+  return {
+    index: i + 1,
+    slug,
+    name: typeof row.name === 'string' ? row.name : null,
+    status,
+    fieldCount: Object.keys(row).length,
+  };
+});
+
+const willUpdateCount = previewRows.filter(r => r.status === 'will_update').length;
+const willSkipCount = previewRows.filter(r => r.status !== 'will_update').length;
+const first10 = previewRows.slice(0, 10);
+---
+
+<AdminLayout title="JSON Update Preview - Admin Panel" currentPath="/admin/vendors/json-update">
+  <div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Update Preview</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Reviewing: <strong>{filename}</strong>
+        </p>
+      </div>
+      <a href="/admin/vendors/json-update" class="text-sm text-gray-600 hover:text-gray-900">
+        ← Back to JSON Update Import
+      </a>
+    </div>
+
+    <!-- STATISTICS -->
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Preview Statistics</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-3 rounded border border-gray-200">
+          <div class="text-sm text-gray-600">Total Rows</div>
+          <div class="text-2xl font-bold text-gray-900">{parsedData.length}</div>
+        </div>
+        <div class={`p-3 rounded border ${willUpdateCount > 0 ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+          <div class="text-sm text-gray-600">Will Update</div>
+          <div class={`text-2xl font-bold ${willUpdateCount > 0 ? 'text-green-700' : 'text-gray-900'}`}>{willUpdateCount}</div>
+        </div>
+        <div class={`p-3 rounded border ${willSkipCount > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`}>
+          <div class="text-sm text-gray-600">Will Skip</div>
+          <div class={`text-2xl font-bold ${willSkipCount > 0 ? 'text-yellow-700' : 'text-gray-900'}`}>{willSkipCount}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIRST 10 ROWS PREVIEW -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">
+        First {Math.min(10, parsedData.length)} Row{parsedData.length !== 1 ? 's' : ''} Preview
+        {parsedData.length > 10 && <span class="text-sm font-normal text-gray-500"> (showing 10 of {parsedData.length})</span>}
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Fields</th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {first10.map(row => (
+              <tr class={
+                row.status === 'will_update'
+                  ? 'bg-green-50'
+                  : row.status === 'no_slug'
+                  ? 'bg-red-50'
+                  : 'bg-yellow-50'
+              }>
+                <td class="py-2 px-3 text-gray-500">{row.index}</td>
+                <td class="py-2 px-3 font-mono text-xs text-gray-800">
+                  {row.slug ?? <span class="text-red-600 italic">missing</span>}
+                </td>
+                <td class="py-2 px-3 text-gray-700">{row.name ?? <span class="text-gray-400 italic">—</span>}</td>
+                <td class="py-2 px-3 text-gray-500">{row.fieldCount}</td>
+                <td class="py-2 px-3">
+                  {row.status === 'will_update' && (
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                      will update
+                    </span>
+                  )}
+                  {row.status === 'will_skip' && (
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                      will skip (not found)
+                    </span>
+                  )}
+                  {row.status === 'no_slug' && (
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                      will skip (no slug)
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- IMPORT FORM -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Ready to Update?</h2>
+      {willUpdateCount === 0 ? (
+        <p class="text-sm text-yellow-700 font-medium mb-4">
+          No rows match existing vendor slugs. Nothing will be updated.
+        </p>
+      ) : (
+        <p class="text-sm text-gray-600 mb-6">
+          {willUpdateCount} vendor{willUpdateCount !== 1 ? 's' : ''} will be patched.
+          {willSkipCount > 0 && ` ${willSkipCount} row${willSkipCount !== 1 ? 's' : ''} will be skipped (slug not found).`}
+        </p>
+      )}
+
+      <form id="update-form" class="space-y-4">
+        <input type="hidden" name="sessionId" value={sessionId} />
+
+        <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
+          <button
+            type="submit"
+            id="update-button"
+            class="btn-primary"
+            disabled={willUpdateCount === 0}
+          >
+            Update {willUpdateCount} Vendor{willUpdateCount !== 1 ? 's' : ''}
+          </button>
+          <a href="/admin/vendors/json-update/upload" class="btn-secondary">
+            Upload Different File
+          </a>
+        </div>
+      </form>
+
+      <script>
+        const form = document.getElementById('update-form') as HTMLFormElement | null;
+        const updateButton = document.getElementById('update-button') as HTMLButtonElement | null;
+
+        if (form && updateButton && !updateButton.disabled) {
+          const originalText = updateButton.textContent;
+
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            updateButton.setAttribute('disabled', 'true');
+            updateButton.textContent = 'Updating...';
+
+            try {
+              const formData = new FormData(form);
+              const response = await fetch('/admin/vendors/json-update/import', {
+                method: 'POST',
+                body: formData,
+              });
+
+              if (!response.ok) {
+                throw new Error('Update import failed');
+              }
+
+              const results = await response.json();
+
+              sessionStorage.setItem('jsonUpdateResults', JSON.stringify(results));
+
+              const params = new URLSearchParams({
+                updated: results.updated?.toString() || '0',
+                skipped: results.skipped?.toString() || '0',
+                failed: results.failed?.toString() || '0',
+                warningsCount: results.warnings?.length?.toString() || '0',
+                errorsCount: results.errors?.length?.toString() || '0',
+              });
+
+              window.location.href = `/admin/vendors/json-update/results?${params.toString()}`;
+            } catch (error) {
+              console.error('Update import error:', error);
+              alert('An error occurred during the update. Please try again.');
+              updateButton.removeAttribute('disabled');
+              updateButton.textContent = originalText;
+            }
+          });
+        }
+      </script>
+    </div>
+  </div>
+</AdminLayout>

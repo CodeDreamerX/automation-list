@@ -5,7 +5,7 @@
  * including normalization, formatting, and data transformation.
  */
 
-import type { VendorWithRelations, VendorCategoryRelation, VendorTechnologyRelation, VendorIndustryRelation, VendorCertificationRelation } from '../../types/vendor';
+import type { VendorWithRelations, VendorCategoryRelation, VendorTechnologyRelation, VendorIndustryRelation, VendorCertificationRelation, VendorCountryRelation } from '../../types/vendor';
 
 /**
  * Normalizes a vendor by extracting slug arrays from relationship data
@@ -41,6 +41,7 @@ export function normalizeVendor(
     includeTechnologies?: boolean;
     includeIndustries?: boolean;
     includeCertifications?: boolean;
+    includeCountries?: boolean;
   } = {}
 ): VendorWithRelations {
   const {
@@ -48,6 +49,7 @@ export function normalizeVendor(
     includeTechnologies = false,
     includeIndustries = false,
     includeCertifications = false,
+    includeCountries = false,
   } = options;
 
   const normalized: VendorWithRelations = { ...vendor };
@@ -73,6 +75,12 @@ export function normalizeVendor(
   if (includeCertifications) {
     normalized.certification_slugs = vendor.vendor_certifications
       ?.map((vc: VendorCertificationRelation) => vc.certifications?.slug)
+      .filter(Boolean) || [];
+  }
+
+  if (includeCountries) {
+    normalized.country_slugs = vendor.vendor_countries
+      ?.map((vc: VendorCountryRelation) => vc.countries?.slug)
       .filter(Boolean) || [];
   }
 
@@ -108,6 +116,7 @@ export function normalizeVendors(
     includeTechnologies?: boolean;
     includeIndustries?: boolean;
     includeCertifications?: boolean;
+    includeCountries?: boolean;
   }
 ): VendorWithRelations[] {
   return vendors.map(vendor => normalizeVendor(vendor, options));

@@ -165,6 +165,11 @@ const { count: totalVendorCount } = await supabase
   .select("*", { count: "exact", head: true })
   .neq("plan", "deactivated");
 
+const { count: countryCount } = await supabase
+  .from("countries")
+  .select("*", { count: "exact", head: true })
+  .eq("is_active", true);
+
 // Fetch active industries (limit 8-12, ordered by order_index then name)
 const allIndustries = await getIndustries({ lang: "en", activeOnly: true });
 const industries = allIndustries.slice(0, 12);
@@ -206,6 +211,8 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     description="The vendor-neutral automation directory built by engineers — not agencies. Find and compare system integrators, OEMs, and specialists worldwide."
     vendorCount={totalVendorCount}
     vendorCountLabel="verified automation vendors listed"
+    countryCount={countryCount}
+    countriesHref="/en/countries"
     primaryButtonText="Browse Directory →"
     primaryButtonHref="/en/vendors"
     secondaryButtonText="Add Your Company for Free →"

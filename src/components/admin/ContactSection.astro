@@ -1,12 +1,14 @@
 ---
 import FormInput from './FormInput.astro';
 import FormSection from './FormSection.astro';
+import type { CountryFormOption } from '../../types/country';
 
 interface ContactSectionProps {
   vendor: any;
+  countries?: CountryFormOption[];
 }
 
-const { vendor } = Astro.props;
+const { vendor, countries = [] } = Astro.props;
 ---
 
 <FormSection title="Contact Information">
@@ -58,13 +60,102 @@ const { vendor } = Astro.props;
       value={vendor?.region || ''}
     />
     
-    <FormInput
-      id="country"
-      name="country"
-      label="Country"
-      value={vendor?.country || ''}
-      required
-    />
+    <div>
+      <label for="country" class="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+      {countries.length > 0 ? (
+        <div class="relative" id="country-dropdown-wrapper">
+          <input type="hidden" id="country" name="country" value={vendor?.country || ''} required />
+          <button
+            type="button"
+            id="country-dropdown-btn"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent bg-white"
+          >
+            <span id="country-dropdown-label" class="flex items-center gap-2">
+              {(() => {
+                const selected = countries.find((c: CountryFormOption) => c.name_en === vendor?.country);
+                if (selected) {
+                  return (
+                    <>
+                      {selected.flag_emoji && <img src={`https://flagcdn.com/16x12/${selected.flag_emoji.toLowerCase()}.png`} width="16" height="12" alt="" />}
+                      {selected.name_en}
+                    </>
+                  );
+                }
+                return '— Select country —';
+              })()}
+            </span>
+            <svg class="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <ul
+            id="country-dropdown-list"
+            class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto hidden"
+          >
+            <li
+              class="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 text-gray-400"
+              data-value=""
+            >— Select country —</li>
+            {countries.map((c: CountryFormOption) => (
+              <li
+                class="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 flex items-center gap-2"
+                data-value={c.name_en}
+                data-flag={c.flag_emoji || ''}
+              >
+                {c.flag_emoji && <img src={`https://flagcdn.com/16x12/${c.flag_emoji.toLowerCase()}.png`} width="16" height="12" alt="" />}
+                {c.name_en}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <input
+          type="text"
+          id="country"
+          name="country"
+          value={vendor?.country || ''}
+          required
+          class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+      )}
+    </div>
   </div>
 </FormSection>
+
+<script>
+  const wrapper = document.getElementById('country-dropdown-wrapper');
+  if (wrapper) {
+    const btn = document.getElementById('country-dropdown-btn') as HTMLButtonElement;
+    const list = document.getElementById('country-dropdown-list') as HTMLUListElement;
+    const label = document.getElementById('country-dropdown-label') as HTMLSpanElement;
+    const hidden = document.getElementById('country') as HTMLInputElement;
+
+    btn.addEventListener('click', () => {
+      list.classList.toggle('hidden');
+    });
+
+    list.addEventListener('click', (e) => {
+      const li = (e.target as HTMLElement).closest('li');
+      if (!li) return;
+      const value = li.dataset.value ?? '';
+      const flag = li.dataset.flag ?? '';
+      hidden.value = value;
+      if (value) {
+        const name = li.querySelector('img') ? li.querySelector('img')!.nextSibling?.textContent?.trim() ?? value : li.textContent!.trim();
+        label.innerHTML = flag
+          ? `<img src="https://flagcdn.com/16x12/${flag.toLowerCase()}.png" width="16" height="12" alt="" />${name}`
+          : name;
+        label.classList.remove('text-gray-400');
+      } else {
+        label.textContent = '— Select country —';
+        label.classList.add('text-gray-400');
+      }
+      list.classList.add('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target as Node)) {
+        list.classList.add('hidden');
+      }
+    });
+  }
+</script>
 

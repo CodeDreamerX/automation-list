@@ -1,0 +1,141 @@
+---
+export const prerender = false;
+
+import { supabaseAdmin } from '../../lib/supabaseAdminClient';
+import { protectAdminRoute } from '../../lib/admin/authUtils';
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) return redirectResponse;
+
+const { data: countries, error } = await supabaseAdmin
+  .from('countries')
+  .select('id, slug, name_en, name_de, flag_emoji, order_index, is_active')
+  .order('order_index', { ascending: true, nullsFirst: false })
+  .order('name_en', { ascending: true });
+
+if (error) console.error('Error fetching countries:', error);
+
+const { data: countRows } = await supabaseAdmin
+  .from('country_vendor_counts')
+  .select('country, vendor_count');
+
+const vendorCounts = new Map<string, number>();
+for (const row of countRows || []) {
+  if (row.country) vendorCounts.set(row.country.toLowerCase(), row.vendor_count || 0);
+}
+---
+
+<AdminLayout title="Country Management - Admin Panel" currentPath="/admin/countries">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Country Management</h1>
+        <p class="mt-1 text-sm text-gray-600">Manage all countries in the Automation List directory</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-gray-600">Total: {countries?.length || 0} countries</div>
+        <a
+          href="/admin/countries/new"
+          class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-900 transition-colors text-sm font-medium"
+        >
+          + New Country
+        </a>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flag</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendors</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {countries && countries.length > 0 ? (
+              countries.map((country) => {
+                const displayName = country.name_en || '-';
+                return (
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      {country.flag_emoji
+                        ? <img src={`https://flagcdn.com/32x24/${country.flag_emoji.toLowerCase()}.png`} width="32" height="24" alt="" />
+                        : <span class="text-gray-400 text-sm">—</span>
+                      }
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="text-sm font-medium text-gray-900">{displayName}</div>
+                      {country.name_de && (
+                        <div class="text-xs text-gray-500">{country.name_de}</div>
+                      )}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">{country.slug || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">{country.order_index ?? '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      {country.is_active ? (
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                      ) : (
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Inactive</span>
+                      )}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">{vendorCounts.get((country.name_en || '').toLowerCase()) ?? 0}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div class="flex items-center justify-end gap-2">
+                        <a
+                          href={`/admin/countries/edit/${country.id}`}
+                          class="text-black hover:text-gray-700 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          Edit
+                        </a>
+                        <button
+                          type="button"
+                          class="text-red-600 hover:text-red-800 px-3 py-1 rounded-md hover:bg-red-50 transition-colors"
+                          data-delete-country-id={country.id}
+                          data-delete-country-name={displayName}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
+                  No countries found. Run the DB migration first, then add countries here.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { initAdminDeleteButtons } from '../../components/admin/admin-delete';
+
+    initAdminDeleteButtons({
+      buttonSelector: '[data-delete-country-id]',
+      idAttribute: 'data-delete-country-id',
+      nameAttribute: 'data-delete-country-name',
+      endpoint: '/api/admin/delete-country',
+      entityFallbackName: 'this country',
+      errorFallbackMessage: 'Failed to delete country',
+    });
+  </script>
+</AdminLayout>

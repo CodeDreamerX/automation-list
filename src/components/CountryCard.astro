@@ -1,0 +1,40 @@
+---
+import type { CountryBasic } from '../types/country';
+
+interface CountryCardProps {
+  country: CountryBasic & { vendor_count?: number };
+  lang?: string;
+  index?: number;
+}
+
+const { country, lang = 'en', index = 0 } = Astro.props;
+
+const cardText = lang === 'de' ? country.card_description_de : country.card_description_en;
+const link = `/${lang}/country/${country.slug}`;
+---
+
+<a
+  href={link}
+  class="fade-in-up relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition flex flex-col items-center text-center"
+  style={`animation-delay: ${index * 0.05}s`}
+>
+  {country.vendor_count !== undefined && (
+    <span class="absolute top-3 right-3 text-xs font-medium bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+      {country.vendor_count}
+    </span>
+  )}
+  {country.flag_emoji && (
+    <div class="mb-3">
+      <img
+        src={`https://flagcdn.com/40x30/${country.flag_emoji.toLowerCase()}.png`}
+        width="40"
+        height="30"
+        alt=""
+      />
+    </div>
+  )}
+  <h3 class="text-lg font-semibold text-gray-900">{country.name}</h3>
+  {cardText?.trim() && (
+    <p class="text-sm text-gray-600 mt-2">{cardText}</p>
+  )}
+</a>
