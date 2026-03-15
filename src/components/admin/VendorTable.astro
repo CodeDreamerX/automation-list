@@ -1,19 +1,20 @@
 ---
 import { calculateCompletenessScore } from '../../lib/vendors/completenessScore';
+import type { VendorWithRelations } from '../../types/vendor';
 
 interface VendorTableProps {
-  vendors: any[];
+  vendors: VendorWithRelations[];
   searchQuery?: string;
 }
 
-const { vendors, searchQuery = '' } = Astro.props;
+const { vendors = [], searchQuery = '' } = Astro.props as VendorTableProps;
 
 // Filter vendors based on search query
-let filteredVendors = vendors || [];
+let filteredVendors: VendorWithRelations[] = vendors || [];
 
 if (searchQuery) {
   const query = searchQuery.toLowerCase();
-  filteredVendors = filteredVendors.filter((vendor) => {
+  filteredVendors = filteredVendors.filter((vendor: VendorWithRelations) => {
     const nameMatch = vendor.name?.toLowerCase().includes(query) ?? false;
     const slugMatch = vendor.slug?.toLowerCase().includes(query) ?? false;
     // Search in vendor_technologies
@@ -52,59 +53,59 @@ function completenessColor(score: number): string {
 ---
 
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200" data-sortable-table>
+  <div>
+    <table class="w-full divide-y divide-gray-200" data-sortable-table>
       <thead class="bg-gray-50">
         <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="name" data-sort-type="text">
               <span>Name</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="name">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="country" data-sort-type="text">
               <span>Country</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="country">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="category" data-sort-type="text">
               <span>Category</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="category">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="plan" data-sort-type="text">
               <span>Plan</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="plan">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="featured" data-sort-type="number">
               <span>Featured</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="featured">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="priority" data-sort-type="number">
-              <span>Priority</span>
+              <span>Pri.</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="priority">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="complete" data-sort-type="number">
-              <span>Complete</span>
+              <span>Done</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="complete">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="updated" data-sort-type="number">
               <span>Updated</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="updated">-</span>
             </button>
           </th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Actions
           </th>
         </tr>
@@ -112,14 +113,18 @@ function completenessColor(score: number): string {
       <tbody class="bg-white divide-y divide-gray-200">
         {filteredVendors.length === 0 ? (
           <tr>
-            <td colspan="9" class="px-6 py-8 text-center text-sm text-gray-500">
+            <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-500">
               No vendors found.
             </td>
           </tr>
         ) : (
-          filteredVendors.map((vendor) => {
+          filteredVendors.map((vendor: VendorWithRelations) => {
             const score = calculateCompletenessScore(vendor);
             const { label: updatedLabel, colorClass: updatedColor } = formatUpdatedAt(vendor.updated_at);
+            const isStale = vendor.updated_at
+              ? (new Date().getFullYear() - new Date(vendor.updated_at).getFullYear()) * 12 +
+                (new Date().getMonth() - new Date(vendor.updated_at).getMonth()) >= 12
+              : false;
             const categoryLabel = vendor.vendor_categories && vendor.vendor_categories.length > 0
               ? vendor.vendor_categories
                 .map((vc: any) => vc.categories?.name_en || vc.categories?.name_de || '')
@@ -139,21 +144,21 @@ function completenessColor(score: number): string {
                 data-complete={score}
                 data-updated={vendor.updated_at ? new Date(vendor.updated_at).getTime() : 0}
               >
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{vendor.name || '-'}</div>
+                <td class="px-4 py-3 max-w-[180px]">
+                  <div class="text-sm font-medium text-gray-900 truncate">{vendor.name || '-'}</div>
                   {vendor.slug && (
-                    <div class="text-xs text-gray-500">{vendor.slug}</div>
+                    <div class="text-xs text-gray-500 truncate">{vendor.slug}</div>
                   )}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-3 whitespace-nowrap">
                   <div class="text-sm text-gray-900">{vendor.country || '-'}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">
+                <td class="px-4 py-3 max-w-[160px]">
+                  <div class="text-sm text-gray-900 truncate" title={categoryLabel}>
                     {categoryLabel || '-'}
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-3 whitespace-nowrap">
                   <form method="POST" action="/admin" class="inline">
                     <input type="hidden" name="action" value="change_plan" />
                     <input type="hidden" name="vendor_id" value={vendor.id} />
@@ -169,7 +174,7 @@ function completenessColor(score: number): string {
                     </select>
                   </form>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-3 whitespace-nowrap">
                   <form method="POST" action="/admin" class="inline">
                     <input type="hidden" name="action" value="toggle_featured" />
                     <input type="hidden" name="vendor_id" value={vendor.id} />
@@ -186,7 +191,7 @@ function completenessColor(score: number): string {
                     </button>
                   </form>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-3 whitespace-nowrap">
                   <form method="POST" action="/admin" class="inline">
                     <input type="hidden" name="action" value="change_priority" />
                     <input type="hidden" name="vendor_id" value={vendor.id} />
@@ -204,18 +209,18 @@ function completenessColor(score: number): string {
                     </select>
                   </form>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-3 whitespace-nowrap">
                   <span class={`px-2 py-1 rounded-full text-xs font-medium ${completenessColor(score)}`}>
                     {score}%
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-3 whitespace-nowrap">
                   <span class={`text-xs ${updatedColor}`}>{updatedLabel}</span>
-                  {updatedLabel !== '—' && (new Date().getFullYear() - new Date(vendor.updated_at).getFullYear()) * 12 + (new Date().getMonth() - new Date(vendor.updated_at).getMonth()) >= 12 && (
+                  {updatedLabel !== '—' && isStale && (
                     <span class="ml-1 text-xs bg-orange-100 text-orange-700 px-1 rounded">Stale</span>
                   )}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
                   <div class="flex items-center gap-2">
                     <a
                       href={`/admin/edit/${vendor.id}`}

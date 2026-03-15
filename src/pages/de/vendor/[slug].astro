@@ -107,6 +107,15 @@ const { data: vendor, error } = await supabase
         reference_url,
         category
       )
+    ),
+    vendor_countries (
+      countries:countries (
+        id,
+        slug,
+        name_en,
+        name_de,
+        flag_emoji
+      )
     )
   `)
   .eq('slug', slug)
@@ -124,7 +133,8 @@ if (!vendor) {
 const normalizedVendor = normalizeVendor(vendor, {
   includeCategories: true,
   includeTechnologies: false,
-  includeIndustries: false
+  includeIndustries: false,
+  includeCountries: true,
 });
 // Use language-specific description (DE: description_de, fallback to description_en if missing)
 normalizedVendor.description_en = vendor.description_en || null;
@@ -311,7 +321,7 @@ if (isFromTechnology && techSlugParam) {
     ];
   }
 } else {
-  // Default breadcrumbs: Startseite → Anbieter → Vendor
+  // Default breadcrumbs: Startseite -> Anbieter -> Vendor
   breadcrumbs = [
     { label: "Startseite", href: "/de/" },
     { label: "Anbieter", href: "/de/vendors" },
@@ -324,7 +334,7 @@ const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Aut
 
 // Determine description: use meta_description if available, otherwise fallback to truncated vendor.description_de (or description_en)
 const pageDescription = normalizedVendor.meta_description || 
-  ((normalizedVendor.description_de || normalizedVendor.description_en) ? truncateDescription(normalizedVendor.description_de || normalizedVendor.description_en, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
+  ((normalizedVendor.description_de || normalizedVendor.description_en) ? truncateDescription(normalizedVendor.description_de || normalizedVendor.description_en, 160) : `Erfahren Sie mehr ueber ${normalizedVendor.name}, einen fuehrenden Anbieter in der Industrieautomatisierung.`);
 
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
 const origin = Astro.url.origin;
@@ -347,6 +357,9 @@ const tags = normalizedVendor.tags ? splitValue(normalizedVendor.tags) : [];
 
 // Prepare categories data (show everywhere, not just for Pro)
 const allCategories = normalizedVendor.vendor_categories || [];
+const vendorDescription = normalizedVendor.description_de || normalizedVendor.description_en;
+const descriptionWordCount = vendorDescription ? vendorDescription.trim().split(/\s+/).filter(Boolean).length : 0;
+const shouldCollapseDescription = descriptionWordCount > 200;
 ---
 
 <BaseLayout 
@@ -359,12 +372,38 @@ const allCategories = normalizedVendor.vendor_categories || [];
 >
   <script slot="head" type="application/ld+json" set:html={organizationSchemaJson} />
   <script slot="head" type="application/ld+json" set:html={breadcrumbSchemaJson} />
+  <style>
+    .vendor-description-copy {
+      line-height: 1.625;
+    }
+
+    .vendor-description-content[data-collapsible="true"][data-enhanced="true"] {
+      position: relative;
+      overflow: hidden;
+      max-height: calc(1em * 1.625 * 4);
+      transition: max-height 180ms ease;
+    }
+
+    .vendor-description-content[data-collapsible="true"][data-enhanced="true"]::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 2.75rem;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff);
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .vendor-description-content[data-expanded="true"]::after {
+      opacity: 0;
+    }
+  </style>
   <div class={`container-px mx-auto max-w-4xl px-4 py-10 ${showUpgradeCta ? 'pb-28' : ''}`}>
     <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
-      ← Zurück zu Anbietern
+      &larr; Zurueck zu Anbietern
     </a>
 
-    <!-- SECTION 1 — HEADER -->
+    <!-- SECTION 1 - HEADER -->
     <div class={`mb-8 text-center ${isFeatured ? 'border-2 border-orange-300 rounded-lg p-6 bg-orange-50/30' : ''}`}>
       <div class="flex justify-center mb-4">
         <LogoBox 
@@ -393,7 +432,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
         )}
         {isOgMember && (
           <span class="inline-block px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-            OG Member — Preis für immer gesperrt
+            OG Member - Preis fuer immer gesperrt
           </span>
         )}
       </div>
@@ -430,16 +469,37 @@ const allCategories = normalizedVendor.vendor_categories || [];
           rel="noopener noreferrer"
           class="inline-block px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900 transition"
         >
-          Website besuchen →
+          Website besuchen &rarr;
         </a>
       )}
     </div>
 
-    <!-- SECTION 2 — DESCRIPTION -->
-    {(normalizedVendor.description_de || normalizedVendor.description_en) && (
+    <!-- SECTION 2 - DESCRIPTION -->
+    {vendorDescription && (
       <div class="mb-4">
-        <h2 class="text-xl font-semibold text-gray-900 mb-3">Über</h2>
-        <p class="text-gray-700 text-sm leading-relaxed">{normalizedVendor.description_de || normalizedVendor.description_en}</p>
+        <h2 class="text-xl font-semibold text-gray-900 mb-3">Ueber</h2>
+        <div
+          id="vendor-description-de"
+          class="vendor-description-content"
+          data-collapsible={shouldCollapseDescription ? 'true' : 'false'}
+          data-enhanced="false"
+          data-expanded="false"
+        >
+          <p class="vendor-description-copy text-gray-700 text-sm">{vendorDescription}</p>
+        </div>
+        {shouldCollapseDescription && (
+          <button
+            type="button"
+            class="vendor-description-toggle mt-3 inline-flex text-sm font-medium text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            aria-controls="vendor-description-de"
+            aria-expanded="false"
+            data-label-more="Mehr lesen"
+            data-label-less="Weniger anzeigen"
+            hidden
+          >
+            Mehr lesen
+          </button>
+        )}
       </div>
     )}
 
@@ -450,7 +510,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
       </div>
     )}
 
-    <!-- SECTION 3 — GRID BLOCKS -->
+    <!-- SECTION 3 - GRID BLOCKS -->
     {(allTechnologies.length > 0 || allCertifications.length > 0 || languages.length > 0 || allIndustries.length > 0 || tags.length > 0 || allCategories.length > 0) && (
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- Technologies -->
@@ -490,7 +550,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               ) : (
                 allTechnologies.slice(1).map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    🔒 Nur Pro
+                    &#128274; Nur Pro
                   </span>
                 ))
               )}
@@ -525,7 +585,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               ) : (
                 allCertifications.map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    🔒 Nur Pro
+                    &#128274; Nur Pro
                   </span>
                 ))
               )}
@@ -547,7 +607,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               ) : (
                 languages.map((_: string, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    🔒 Nur Pro
+                    &#128274; Nur Pro
                   </span>
                 ))
               )}
@@ -592,7 +652,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               ) : (
                 allIndustries.slice(1).map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    🔒 Nur Pro
+                    &#128274; Nur Pro
                   </span>
                 ))
               )}
@@ -614,7 +674,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               ) : (
                 tags.map((_: string, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    🔒 Nur Pro
+                    &#128274; Nur Pro
                   </span>
                 ))
               )}
@@ -657,7 +717,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               ) : (
                 allCategories.slice(2).map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    🔒 Nur Pro
+                    &#128274; Nur Pro
                   </span>
                 ))
               )}
@@ -667,18 +727,18 @@ const allCategories = normalizedVendor.vendor_categories || [];
       </div>
     )}
 
-    <!-- SECTION 4 — COMPANY FACTS (always visible, values locked for free) -->
-    {(normalizedVendor.year_founded || normalizedVendor.employee_count || normalizedVendor.hourly_rate || normalizedVendor.region || normalizedVendor.country || normalizedVendor.countries_served || (normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined)) && (
+    <!-- SECTION 4 - COMPANY FACTS (always visible, values locked for free) -->
+    {(normalizedVendor.year_founded || normalizedVendor.employee_count || normalizedVendor.hourly_rate || normalizedVendor.region || normalizedVendor.country || (normalizedVendor.vendor_countries && normalizedVendor.vendor_countries.length > 0) || (normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined)) && (
       <div class="border border-gray-200 rounded-lg p-6 mb-8 bg-gray-50">
         <h2 class="text-xl font-semibold text-gray-900 mb-4">Unternehmensfakten</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {normalizedVendor.year_founded && (
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Gründungsjahr</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Gruendungsjahr</p>
               {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.year_founded}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
@@ -688,7 +748,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.employee_count}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
@@ -698,25 +758,14 @@ const allCategories = normalizedVendor.vendor_categories || [];
               {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.hourly_rate}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
           {normalizedVendor.countries_served && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Tätigkeitsländer</p>
-              {hasProAccess ? (
-                <div class="flex flex-wrap gap-1">
-                  {normalizedVendor.countries_served.split(',').map(c => c.trim()).filter(Boolean).map(country => (
-                    <a
-                      href={`/de/country/${slugifyCountry(country)}`}
-                      class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                    >{country}</a>
-                  ))}
-                </div>
-              ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
-              )}
+              <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
             </div>
           )}
           {normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined && (
@@ -729,7 +778,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
                   <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 font-medium">Derzeit nicht</span>
                 )
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
@@ -752,7 +801,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
       </div>
     )}
 
-    <!-- SECTION 5 — CONTACT CARD (always visible, values locked for free) -->
+    <!-- SECTION 5 - CONTACT CARD (always visible, values locked for free) -->
     {(normalizedVendor.email || normalizedVendor.phone || normalizedVendor.address || normalizedVendor.linkedin_url) && (
       <div class="border border-gray-200 rounded-lg p-6 mb-8">
         <h2 class="text-xl font-semibold text-gray-900 mb-4">Kontakt</h2>
@@ -765,7 +814,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
                   {normalizedVendor.email}
                 </a>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
@@ -777,7 +826,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
                   {normalizedVendor.phone}
                 </a>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
@@ -787,7 +836,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
               {hasProAccess ? (
                 <p class="text-sm text-gray-900">{normalizedVendor.address}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
@@ -796,10 +845,10 @@ const allCategories = normalizedVendor.vendor_categories || [];
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">LinkedIn</p>
               {hasProAccess ? (
                 <a href={normalizedVendor.linkedin_url} target="_blank" rel="noopener noreferrer" class="text-sm text-brand-700 hover:text-brand-800">
-                  LinkedIn-Profil ansehen →
+                  LinkedIn-Profil ansehen &rarr;
                 </a>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
               )}
             </div>
           )}
@@ -807,10 +856,10 @@ const allCategories = normalizedVendor.vendor_categories || [];
       </div>
     )}
 
-    <!-- SECTION 6 — UPGRADE CTA (free only) -->
+    <!-- SECTION 6 - UPGRADE CTA (free only) -->
     {showUpgradeCta && (
       <div id="upgrade-cta" class="border border-gray-200 rounded-lg p-8 mb-8 text-center transition-all duration-300">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Vollständiges Profil freischalten</h3>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Vollstaendiges Profil freischalten</h3>
         <p class="text-sm text-gray-500 mb-6">
           Erhalten Sie Zugang zu allen Technologien, Branchen und Unternehmensdetails.
         </p>
@@ -818,7 +867,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
           href="/de/pricing"
           class="inline-block rounded-md bg-orange-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-orange-600"
         >
-          Auf Pro upgraden — CHF 99/Jahr
+          Auf Pro upgraden - CHF 99/Jahr
         </a>
       </div>
     )}
@@ -828,12 +877,36 @@ const allCategories = normalizedVendor.vendor_categories || [];
       </p>
     )}
   </div>
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('.vendor-description-toggle').forEach((button) => {
+      button.hidden = false;
+      const controlsId = button.getAttribute('aria-controls');
+      if (!controlsId) return;
+
+      const content = document.getElementById(controlsId);
+      if (!content) return;
+
+      content.setAttribute('data-enhanced', 'true');
+
+      button.addEventListener('click', () => {
+        const expanded = button.getAttribute('aria-expanded') === 'true';
+        const nextExpanded = !expanded;
+
+        button.setAttribute('aria-expanded', String(nextExpanded));
+        button.textContent = nextExpanded
+          ? button.getAttribute('data-label-less') || 'Weniger anzeigen'
+          : button.getAttribute('data-label-more') || 'Mehr lesen';
+        content.setAttribute('data-expanded', String(nextExpanded));
+        content.style.maxHeight = nextExpanded ? `${content.scrollHeight}px` : '';
+      });
+    });
+  </script>
   {showUpgradeCta && (
     <div class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-[0_-4px_12px_rgba(15,23,42,0.08)] backdrop-blur">
       <div class="mx-auto flex h-14 max-w-4xl items-center justify-between gap-3 px-4">
         <p class="flex items-center gap-2 text-xs text-gray-700 sm:text-sm">
-          <span aria-hidden="true">🔒</span>
-          <span class="sm:hidden">Mit Pro freischalten →</span>
+          <span aria-hidden="true">&#128274;</span>
+          <span class="sm:hidden">Mit Pro freischalten &rarr;</span>
           <span class="hidden sm:inline">Ausgeblendete Details gibt es mit Pro.</span>
         </p>
         <a
@@ -849,7 +922,7 @@ const allCategories = normalizedVendor.vendor_categories || [];
     <script>
       const cta = document.getElementById('upgrade-cta');
       const lockNodes = Array.from(document.querySelectorAll('span')).filter((node) =>
-        (node.textContent || '').trim().startsWith('🔒')
+        (node.textContent || '').trim().startsWith('\uD83D\uDD12')
       );
 
       const focusUpgradeCta = () => {
@@ -877,4 +950,3 @@ const allCategories = normalizedVendor.vendor_categories || [];
     </script>
   )}
 </BaseLayout>
-

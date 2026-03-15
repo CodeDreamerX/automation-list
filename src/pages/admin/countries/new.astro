@@ -1,0 +1,25 @@
+---
+export const prerender = false;
+
+import { protectAdminRoute } from '../../../lib/admin/authUtils';
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import CountryForm from '../../../components/admin/CountryForm.astro';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) return redirectResponse;
+---
+
+<AdminLayout title="New Country - Admin Panel" currentPath="/admin/countries">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">New Country</h1>
+        <p class="mt-1 text-sm text-gray-600">Create a new country for the Automation List directory</p>
+      </div>
+      <a href="/admin/countries" class="text-sm text-gray-600 hover:text-gray-900">← Back to Countries</a>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <CountryForm country={null} />
+    </div>
+  </div>
+</AdminLayout>

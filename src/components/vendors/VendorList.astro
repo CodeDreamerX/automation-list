@@ -4,7 +4,6 @@ import { getCached, setCached } from '../../lib/cache';
 import VendorCard from '../VendorCard.astro';
 import Pagination from '../Pagination.astro';
 import { normalizeTech } from '../../lib/normalizeTech';
-import { slugifyCountry } from '../../lib/countryUtils';
 import { getIndustries } from '../../lib/getIndustries';
 import { normalizeVendors } from '../../lib/vendors/vendorUtils';
 
@@ -34,7 +33,7 @@ const activeCategory = safeDecode(Astro.url.searchParams.get('category'));
 const technologyFilter = safeDecode(Astro.url.searchParams.get('technology'));
 const industriesFilter = safeDecode(Astro.url.searchParams.get('industries'));
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
-const pageSize = 24;
+const pageSize = 60;
 
 // Fetch all categories from database for the dropdown (cached)
 const categoriesCacheKey = 'categories:all';
@@ -57,25 +56,23 @@ if (activeCategory) {
   categoryId = category?.id || null;
 }
 
-// Fetch unique countries from all vendors for dropdown (cached)
+// Fetch countries from managed countries table for dropdown (cached)
+interface CountryOption { slug: string; name_en: string; name_de: string | null; flag_emoji: string | null; }
 const countriesCacheKey = 'vendors:countries:all';
-let uniqueCountryList = getCached<string[]>(countriesCacheKey);
+let uniqueCountryList = getCached<CountryOption[]>(countriesCacheKey);
 if (!uniqueCountryList) {
-  const { data: allVendorsForCountries } = await supabase
-    .from('vendors')
-    .select('country')
-    .not('country', 'is', null)
-    .neq('plan', 'deactivated');
-  
-  uniqueCountryList = Array.from(
-    new Set((allVendorsForCountries || []).map(v => v.country).filter(Boolean))
-  ).sort();
-  
-  if (uniqueCountryList) {
+  const { data: countriesData } = await supabase
+    .from('countries')
+    .select('slug, name_en, name_de, flag_emoji')
+    .eq('is_active', true)
+    .order('name_en', { ascending: true });
+
+  uniqueCountryList = (countriesData || []) as CountryOption[];
+
+  if (uniqueCountryList.length > 0) {
     setCached(countriesCacheKey, uniqueCountryList, 300);
   }
 }
-// Ensure uniqueCountryList is always an array (never null)
 if (!uniqueCountryList) {
   uniqueCountryList = [];
 }
@@ -142,14 +139,11 @@ if (!industryList) {
   industryList = [];
 }
 
-// Helper function to convert country slug back to country name
+// Helper function to convert country slug back to country name (for ilike filter)
 function slugToCountryName(slug: string): string | null {
-  // Find the country in uniqueCountryList that matches this slug
   if (!uniqueCountryList) return null;
-  const matchingCountry = uniqueCountryList.find(country =>
-    slugifyCountry(country) === slug
-  );
-  return matchingCountry || null;
+  const match = uniqueCountryList.find(c => c.slug === slug);
+  return match?.name_en || null;
 }
 
 // Helper function to convert technology slug back to technology name
@@ -400,7 +394,7 @@ function buildBaseQuery() {
 }
 
 // Build cache key for vendor listing query
-const cacheKey = `vendors:list:${lang}:${searchQuery || ''}:${activeCategory || ''}:${countryFilter || ''}:${technologyFilter || ''}:${industriesFilter || ''}:${page}`;
+const cacheKey = `vendors:list:${lang}:${searchQuery || ''}:${activeCategory || ''}:${countryFilter || ''}:${technologyFilter || ''}:${industriesFilter || ''}:${pageSize}:${page}`;
 
 // Try to get cached result
 interface CachedVendorResult {
@@ -487,14 +481,11 @@ const categoryList = (dbCategories || []).map(cat => ({
             class="border border-gray-300 rounded-md px-3 py-2 w-full text-sm"
           >
             <option value="">{lang === "de" ? "Alle Länder" : "All Countries"}</option>
-            {uniqueCountryList.map(country => {
-              const countrySlug = slugifyCountry(country);
-              return (
-                <option value={countrySlug} selected={countryFilter === countrySlug}>
-                  {country}
-                </option>
-              );
-            })}
+            {uniqueCountryList.map(country => (
+              <option value={country.slug} selected={countryFilter === country.slug}>
+                {lang === 'de' && country.name_de ? country.name_de : country.name_en}
+              </option>
+            ))}
           </select>
         </div>
 

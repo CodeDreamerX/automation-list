@@ -1,0 +1,53 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CountryGrid from '../../components/CountryGrid.astro';
+import { supabase } from '../../lib/supabaseClient';
+
+// Fetch active countries
+const { data: countriesRaw } = await supabase
+  .from('countries')
+  .select('id, slug, name_en, name_de, card_description_en, card_description_de, flag_emoji')
+  .eq('is_active', true)
+  .order('order_index', { ascending: true, nullsFirst: false })
+  .order('name_en', { ascending: true });
+
+// Fetch vendor counts from the same view the country detail pages use
+const { data: countRows } = await supabase
+  .from('country_vendor_counts')
+  .select('country, vendor_count');
+
+const countMap = new Map<string, number>();
+(countRows || []).forEach((row: any) => {
+  if (row.country) countMap.set(row.country.toLowerCase(), row.vendor_count || 0);
+});
+
+const countries = (countriesRaw || []).map((c) => ({
+  slug: c.slug,
+  name: c.name_de || c.name_en,
+  card_description_en: c.card_description_en,
+  card_description_de: c.card_description_de,
+  flag_emoji: c.flag_emoji,
+  vendor_count: countMap.get((c.name_en || '').toLowerCase()) || 0,
+}));
+
+const countryNames = countries.slice(0, 6).map((c) => c.name).filter(Boolean);
+const description = countryNames.length > 0
+  ? `Durchsuchen Sie Automatisierungsanbieter nach Land, darunter ${countryNames.join(', ')}${countryNames.length < countries.length ? ' und mehr.' : '.'}`
+  : 'Durchsuchen Sie Industrieautomatisierungsanbieter nach Land.';
+
+const breadcrumbs = [
+  { label: 'Startseite', href: '/de/' },
+  { label: 'Länder', href: '/de/countries' },
+];
+---
+
+<BaseLayout
+  title="Automatisierungsanbieter nach Land | Automation List"
+  description={description}
+  lang="de"
+  breadcrumbs={breadcrumbs}
+>
+  <CountryGrid title="Länder" description={description} countries={countries} lang="de" headingLevel="h1" />
+</BaseLayout>

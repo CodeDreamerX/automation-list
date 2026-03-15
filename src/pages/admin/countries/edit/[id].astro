@@ -1,0 +1,38 @@
+---
+export const prerender = false;
+
+import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
+import { protectAdminRoute } from '../../../../lib/admin/authUtils';
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import CountryForm from '../../../../components/admin/CountryForm.astro';
+
+const redirectResponse = await protectAdminRoute(Astro.locals);
+if (redirectResponse) return redirectResponse;
+
+const { id } = Astro.params;
+
+const { data: country, error } = await supabaseAdmin
+  .from('countries')
+  .select('*')
+  .eq('id', id)
+  .maybeSingle();
+
+if (error) console.error('Error fetching country:', error);
+
+if (!country) return Astro.redirect('/admin/countries');
+---
+
+<AdminLayout title={`Edit Country: ${country.name_en || country.slug} - Admin Panel`} currentPath="/admin/countries">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Edit Country</h1>
+        <p class="mt-1 text-sm text-gray-600">{country.name_en || country.slug}</p>
+      </div>
+      <a href="/admin/countries" class="text-sm text-gray-600 hover:text-gray-900">← Back to Countries</a>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <CountryForm country={country} />
+    </div>
+  </div>
+</AdminLayout>

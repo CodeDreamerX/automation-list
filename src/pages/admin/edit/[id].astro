@@ -53,6 +53,13 @@ const { data: certificationOptions } = await supabaseAdmin
   .order('category', { ascending: true })
   .order('name', { ascending: true });
 
+// Fetch all active countries from Supabase
+const { data: countryOptions } = await supabaseAdmin
+  .from('countries')
+  .select('id, slug, name_en, name_de, flag_emoji')
+  .eq('is_active', true)
+  .order('name_en', { ascending: true });
+
 // Handle form submission
 if (Astro.request.method === 'POST') {
   // Verify authentication
@@ -320,6 +327,15 @@ const { data: vendor, error } = await supabaseAdmin
         reference_url,
         category
       )
+    ),
+    vendor_countries (
+      countries:countries (
+        id,
+        slug,
+        name_en,
+        name_de,
+        flag_emoji
+      )
     )
   `)
   .eq('id', id)
@@ -339,6 +355,7 @@ const normalizedVendor = normalizeVendor(vendor, {
   includeTechnologies: true,
   includeIndustries: true,
   includeCertifications: true,
+  includeCountries: true,
 });
 
 ---
@@ -363,7 +380,7 @@ const normalizedVendor = normalizeVendor(vendor, {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={normalizedVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} certifications={certificationOptions || []} />
+      <VendorForm vendor={normalizedVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} certifications={certificationOptions || []} countries={countryOptions || []} />
     </div>
   </div>
 </AdminLayout>

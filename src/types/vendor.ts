@@ -163,6 +163,19 @@ export interface VendorCertificationRelation {
 }
 
 /**
+ * Country relation structure (from vendor_countries join table)
+ */
+export interface VendorCountryRelation {
+  countries?: {
+    id: string;
+    slug: string;
+    name_en: string;
+    name_de?: string | null;
+    flag_emoji?: string | null;
+  } | null;
+}
+
+/**
  * Vendor with all relationships loaded from join tables
  */
 export interface VendorWithRelations extends Vendor {
@@ -178,11 +191,15 @@ export interface VendorWithRelations extends Vendor {
   // Certifications (many-to-many via vendor_certifications)
   vendor_certifications?: VendorCertificationRelation[] | null;
 
+  // Countries served (many-to-many via vendor_countries)
+  vendor_countries?: VendorCountryRelation[] | null;
+
   // Normalized arrays (computed from relationships)
   category_slugs?: string[];
   technology_slugs?: string[];
   industry_slugs?: string[];
   certification_slugs?: string[];
+  country_slugs?: string[];
 }
 
 /**
@@ -193,5 +210,6 @@ export interface VendorFormData extends Partial<Vendor> {
   technology_slugs?: string[];
   industry_slugs?: string[];
   certification_slugs?: string[];
+  country_slugs?: string[];
 }
 

@@ -2,10 +2,21 @@
  * Calculate a vendor profile completeness score (0–100).
  * Baseline fields (name, slug, country, website) are required so not counted.
  */
+function calculateDescriptionScore(vendor: any): number {
+  const description = [vendor.description_en, vendor.description_de]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .sort((a, b) => b.length - a.length)[0];
+
+  if (!description) return 0;
+
+  const wordCount = description.trim().split(/\s+/).length;
+  return Math.round((Math.min(wordCount, 300) / 300) * 15);
+}
+
 export function calculateCompletenessScore(vendor: any): number {
   let score = 0;
 
-  if (vendor.description_en || vendor.description_de) score += 15;
+  score += calculateDescriptionScore(vendor);
   if (vendor.logo_url) score += 10;
 
   const techCount = vendor.vendor_technologies?.length ?? vendor.technology_slugs?.length ?? 0;

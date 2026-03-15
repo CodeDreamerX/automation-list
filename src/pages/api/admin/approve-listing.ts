@@ -32,13 +32,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!name?.trim()) return errorResponse('Company name is required', 400);
   if (!country?.trim()) return errorResponse('Country is required', 400);
 
-  // Convert text[] → comma-separated text (vendors table stores these as TEXT)
+  // Convert text[] → comma-separated text (vendors table stores languages as TEXT)
   const languagesStr = Array.isArray(languages) && languages.length > 0
     ? languages.join(', ')
     : null;
-  const countriesServedStr = Array.isArray(countries_served) && countries_served.length > 0
-    ? countries_served.join(', ')
-    : null;
+  const countriesServedStr = typeof countries_served === 'string' ? countries_served.trim() || null : null;
 
   const now = new Date().toISOString();
 

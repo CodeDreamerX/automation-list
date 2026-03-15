@@ -47,10 +47,10 @@ const descriptionParagraphs = descriptionText ? descriptionText.split(/\n\s*\n/)
 
 // Get pagination params
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
-const pageSize = 20;
+const pageSize = 60;
 
 // Build cache key
-const cacheKey = `vendors:category:en:${categorySlug}:${page}`;
+const cacheKey = `vendors:category:en:${categorySlug}:${pageSize}:${page}`;
 
 // Try to get cached result
 interface CachedCategoryResult {

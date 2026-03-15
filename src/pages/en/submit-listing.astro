@@ -288,23 +288,15 @@ const LANGUAGES = [
             </div>
           </div>
 
-          <!-- Countries Served (multi-tag) -->
+          <!-- Countries Served (text) -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Countries Served</label>
-            <div id="countries-served-tags" class="flex flex-wrap gap-1.5 mb-2 min-h-0"></div>
-            <div class="relative">
-              <input
-                type="text"
-                id="countries-served-input"
-                class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
-                placeholder="Type to add countries..."
-                autocomplete="off"
-              />
-              <div
-                id="countries-served-dropdown"
-                class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-52 overflow-y-auto text-sm"
-              ></div>
-            </div>
+            <label for="countries_served" class="block text-sm font-medium text-gray-700 mb-1">Countries Served</label>
+            <input
+              type="text"
+              id="countries_served"
+              class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
+              placeholder="e.g., DACH region, Germany, Austria, Switzerland"
+            />
           </div>
 
           <!-- Year Founded / Employee Count -->
@@ -461,70 +453,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ================================================================
-// Countries served (multi-tag select)
-// ================================================================
-const selectedCountriesServed = new Set();
-const csTagsEl    = document.getElementById('countries-served-tags');
-const csInput     = document.getElementById('countries-served-input');
-const csDropdown  = document.getElementById('countries-served-dropdown');
-
-function renderCSTags() {
-  if (selectedCountriesServed.size === 0) {
-    csTagsEl.innerHTML = '';
-    return;
-  }
-  csTagsEl.innerHTML = [...selectedCountriesServed].map(c =>
-    `<span class="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-200 text-brand-700 text-xs rounded-full">
-       ${c}
-       <button type="button" class="cs-remove text-brand-400 hover:text-brand-700 ml-0.5 leading-none text-base" data-c="${c}" aria-label="Remove ${c}">&times;</button>
-     </span>`
-  ).join('');
-}
-
-function buildCSDropdown(query) {
-  const q = query.trim().toLowerCase();
-  const available = ISO_COUNTRIES.filter(c => !selectedCountriesServed.has(c));
-  const matches = q ? available.filter(c => c.toLowerCase().includes(q)) : available;
-  csDropdown.innerHTML = matches.length
-    ? matches.slice(0, 60).map(c =>
-        `<div class="cs-opt px-3 py-2 cursor-pointer hover:bg-gray-50 text-gray-800" data-value="${c}">${c}</div>`
-      ).join('')
-    : `<div class="px-3 py-2 text-gray-400 text-sm">No results</div>`;
-}
-
-csInput.addEventListener('focus', () => {
-  buildCSDropdown(csInput.value);
-  csDropdown.classList.remove('hidden');
-});
-
-csInput.addEventListener('input', () => {
-  buildCSDropdown(csInput.value);
-  csDropdown.classList.remove('hidden');
-});
-
-csDropdown.addEventListener('mousedown', (e) => {
-  const opt = e.target.closest('.cs-opt');
-  if (!opt) return;
-  selectedCountriesServed.add(opt.dataset.value);
-  renderCSTags();
-  csInput.value = '';
-  buildCSDropdown('');
-});
-
-csTagsEl.addEventListener('click', (e) => {
-  const btn = e.target.closest('.cs-remove');
-  if (btn) {
-    selectedCountriesServed.delete(btn.dataset.c);
-    renderCSTags();
-  }
-});
-
-document.addEventListener('click', (e) => {
-  if (!csInput.contains(e.target) && !csDropdown.contains(e.target)) {
-    csDropdown.classList.add('hidden');
-  }
-});
 
 // ================================================================
 // Section 2 toggle
@@ -654,7 +582,7 @@ function collectPayload(isSuspect) {
     industry_slugs:   [...document.querySelectorAll('[name="industry_slugs"]:checked')].map(el => el.value),
     certification_slugs: [...document.querySelectorAll('[name="certification_slugs"]:checked')].map(el => el.value),
     languages: [...document.querySelectorAll('[name="languages"]:checked')].map(el => el.value),
-    countries_served: [...selectedCountriesServed],
+    countries_served: document.getElementById('countries_served').value.trim() || null,
     year_founded: yearVal ? parseInt(yearVal, 10) : null,
     employee_count: document.getElementById('employee_count').value || null,
     taking_new_projects: tnpVal === 'true' ? true : tnpVal === 'false' ? false : null,

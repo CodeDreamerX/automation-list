@@ -50,6 +50,13 @@ const { data: certificationOptions } = await supabaseAdmin
   .order('category', { ascending: true })
   .order('name', { ascending: true });
 
+// Fetch all active countries from Supabase
+const { data: countryOptions } = await supabaseAdmin
+  .from('countries')
+  .select('id, slug, name_en, name_de, flag_emoji')
+  .eq('is_active', true)
+  .order('name_en', { ascending: true });
+
 // Handle form submission
 if (Astro.request.method === 'POST') {
   // Verify authentication
@@ -108,6 +115,11 @@ if (Astro.request.method === 'POST') {
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
 
+  // Extract country slugs from form data
+  const countrySlugs = formData.getAll("country_slugs")
+    .map((slug) => String(slug).trim())
+    .filter((slug) => slug.length > 0);
+
   // Extract languages from form data
   const selectedLanguages = formData.getAll("languages")
     .map((language) => String(language).trim())
@@ -132,7 +144,6 @@ if (Astro.request.method === 'POST') {
     year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
     employee_count: formData.get('employee_count')?.toString() || null,
     hourly_rate: formData.get('hourly_rate')?.toString() || null,
-    countries_served: formData.get('countries_served')?.toString() || null,
     taking_new_projects: formData.get('taking_new_projects') === 'on',
     linkedin_url: formData.get('linkedin_url')?.toString() || null,
     specialization_text: formData.get('specialization_text')?.toString() || null,
@@ -261,6 +272,26 @@ if (Astro.request.method === 'POST') {
     }
   }
 
+  // Insert vendor_countries entries if country slugs were provided
+  if (countrySlugs.length > 0 && vendor?.id) {
+    for (const slug of countrySlugs) {
+      const { data: country } = await supabaseAdmin
+        .from("countries")
+        .select("id")
+        .eq("slug", slug)
+        .single();
+
+      if (country?.id) {
+        await supabaseAdmin
+          .from("vendor_countries")
+          .insert({
+            vendor_id: vendor.id,
+            country_id: country.id
+          });
+      }
+    }
+  }
+
   // Redirect to edit page of the newly created vendor
   if (vendor?.id) {
     return Astro.redirect(`/admin/edit/${vendor.id}`);
@@ -309,7 +340,7 @@ if (error === 'slug_exists') {
 
     <!-- VENDOR FORM -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <VendorForm vendor={emptyVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} certifications={certificationOptions || []} />
+      <VendorForm vendor={emptyVendor} categories={categories || []} technologies={technologies || []} industries={industries || []} certifications={certificationOptions || []} countries={countryOptions || []} />
     </div>
   </div>
 </AdminLayout>
