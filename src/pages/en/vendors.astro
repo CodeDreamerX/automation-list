@@ -1,29 +1,37 @@
 ---
-// TODO: Server-Side Rendering (SSR) - This page is rendered on-demand at request time
-// This page uses SSR instead of SSG because:
-// 1. Complex pagination with dynamic query parameters (?page=2, etc.)
-// 2. Dynamic filtering by category, technology, country, and search terms
-// 3. Real-time vendor data that may change frequently
-// 4. Search functionality requires server-side processing
-// See STATIC_GENERATION_STRATEGY.md for details
 export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import VendorList from "../../components/vendors/VendorList.astro";
+import { supabase } from "../../lib/supabaseClient";
+
+// Fetch total active vendor count for meta tags
+const { count: totalVendors } = await supabase
+  .from('vendors')
+  .select('*', { count: 'exact', head: true })
+  .neq('plan', 'deactivated');
+
+const metaTitle = totalVendors
+  ? `${totalVendors} Industrial Automation Vendors – European Directory | Automation List`
+  : `Industrial Automation Vendors – European Directory | Automation List`;
+const metaDescription = totalVendors
+  ? `Browse ${totalVendors} verified industrial automation vendors across Europe — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`
+  : `Browse verified industrial automation vendors across Europe — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`;
+
+const introText = "Automation List is a vendor-neutral directory of verified industrial automation companies across Europe. Browse system integrators, machine builders, MES specialists, robotics integrators, and more — filterable by country, category, technology, and industry. Whether you're sourcing an automation partner for a greenfield project or evaluating specialists for a specific application, this directory covers the full landscape of European industrial automation.";
 
 // Build breadcrumbs
 const breadcrumbs = [
   { label: "Home", href: "/en/" },
   { label: "Vendors", href: "/en/vendors" },
 ];
-
 ---
 
-<BaseLayout 
-  title="Browse Industrial Automation Vendors | Automation List"
-  description="Browse a curated directory of industrial automation vendors, system integrators, and solution providers worldwide. Filter by technology, industry, and country to find the right automation partner."
+<BaseLayout
+  title={metaTitle}
+  description={metaDescription}
   lang="en"
   breadcrumbs={breadcrumbs}
 >
-  <VendorList lang="en" pageTitle="Industrial Automation Vendors Directory" description="Browse a curated directory of industrial automation vendors, system integrators, and solution providers worldwide. Filter by technology, industry, and country to find the right automation partner." />
+  <VendorList lang="en" pageTitle="Industrial Automation Vendors – European Directory" description={introText} />
 </BaseLayout>

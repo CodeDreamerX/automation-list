@@ -23,7 +23,7 @@ if (!categorySlug) {
 // Fetch category from database
 const { data: category, error: categoryError } = await supabase
   .from('categories')
-  .select('id, slug, name_en, name_de, description_en, description_de, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, faq_en, faq_de, meta_description_en, meta_description_de')
   .eq('slug', categorySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -151,8 +151,14 @@ const faqItems = ((category.faq_de ?? []) as any[]).filter(
 const hasFaq = faqItems.length > 0;
 
 // SEO metadata
-const metaTitle = `${categoryName} Anbieter | Automation List`;
-const metaDescription = (categoryDescription && categoryDescription.trim()) || `Entdecken Sie führende ${categoryName} Automatisierungsanbieter, Integratoren und Lösungsanbieter.`;
+const metaTitle = totalVendors
+  ? `${totalVendors} ${categoryName} in Europa | Automation List`
+  : `${categoryName} in Europa | Automation List`;
+const customMetaDescription = category.meta_description_de || category.meta_description_en;
+const metaDescription = (customMetaDescription && customMetaDescription.trim())
+  || (totalVendors
+    ? `${totalVendors} geprüfte ${categoryName} aus Europa — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`
+    : `Geprüfte ${categoryName} aus Europa — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/de/category/${categorySlug}`;
