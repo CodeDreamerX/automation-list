@@ -98,6 +98,7 @@ export const GET: APIRoute = async () => {
     { path: '/categories', changefreq: 'weekly', priority: '0.9' },
     { path: '/technologies', changefreq: 'weekly', priority: '0.9' },
     { path: '/industries', changefreq: 'weekly', priority: '0.9' },
+    { path: '/countries', changefreq: 'weekly', priority: '0.9' },
     { path: '/features', changefreq: 'monthly', priority: '0.7' },
     { path: '/pricing', changefreq: 'monthly', priority: '0.7' },
     { path: '/contact', changefreq: 'yearly', priority: '0.5' },
@@ -191,12 +192,12 @@ export const GET: APIRoute = async () => {
     const urlEn: SitemapUrl = {
       loc: `${PRODUCTION_DOMAIN}/en/country/${countrySlug}`,
       changefreq: 'weekly',
-      priority: '0.7',
+      priority: '0.8',
     };
     const urlDe: SitemapUrl = {
       loc: `${PRODUCTION_DOMAIN}/de/country/${countrySlug}`,
       changefreq: 'weekly',
-      priority: '0.7',
+      priority: '0.8',
     };
 
     // Only include lastmod if we have a reliable timestamp

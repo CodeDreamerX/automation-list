@@ -146,7 +146,9 @@ const xDefaultUrl = enUrl;
 // For vendor pages without query params: index, follow
 // For vendor pages with query params: noindex, follow
 // For other pages: index, follow (default)
-const robotsContent = robots || (isVendorPage && hasQueryParams ? "noindex, follow" : "index, follow");
+const pageParam = parseInt(Astro.url.searchParams.get('page') || '1', 10);
+const isPaginatedPage = pageParam > 1;
+const robotsContent = robots || ((isVendorPage && hasQueryParams) || isPaginatedPage ? "noindex, follow" : "index, follow");
 
 // Determine OG locale based on language
 const ogLocale = lang === "de" ? "de_DE" : "en_US";
