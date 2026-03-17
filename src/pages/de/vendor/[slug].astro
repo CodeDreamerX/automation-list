@@ -113,8 +113,7 @@ const { data: vendor, error } = await supabase
         id,
         slug,
         name_en,
-        name_de,
-        flag_emoji
+        name_de
       )
     )
   `)
@@ -332,8 +331,8 @@ if (isFromTechnology && techSlugParam) {
 // Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
 const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
 
-// Determine description: use meta_description if available, otherwise fallback to truncated vendor.description_de (or description_en)
-const pageDescription = normalizedVendor.meta_description || 
+// Determine description: use meta_description_de if available, otherwise fallback to truncated vendor.description_de (or description_en)
+const pageDescription = normalizedVendor.meta_description_de ||
   ((normalizedVendor.description_de || normalizedVendor.description_en) ? truncateDescription(normalizedVendor.description_de || normalizedVendor.description_en, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
 
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
@@ -422,7 +421,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
       <div class="flex flex-wrap justify-center gap-2 mb-4">
         {isFeatured && (
           <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-            Featured Vendor
+            Empfohlener Anbieter
           </span>
         )}
         {hasPaidPlan && !isFeatured && (
@@ -550,7 +549,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               ) : (
                 allTechnologies.slice(1).map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    &#128274; Nur Pro
+                    🔒 Nur Pro
                   </span>
                 ))
               )}
@@ -585,7 +584,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               ) : (
                 allCertifications.map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    &#128274; Nur Pro
+                    🔒 Nur Pro
                   </span>
                 ))
               )}
@@ -607,7 +606,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               ) : (
                 languages.map((_: string, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    &#128274; Nur Pro
+                    🔒 Nur Pro
                   </span>
                 ))
               )}
@@ -652,7 +651,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               ) : (
                 allIndustries.slice(1).map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    &#128274; Nur Pro
+                    🔒 Nur Pro
                   </span>
                 ))
               )}
@@ -674,7 +673,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               ) : (
                 tags.map((_: string, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    &#128274; Nur Pro
+                    🔒 Nur Pro
                   </span>
                 ))
               )}
@@ -717,7 +716,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               ) : (
                 allCategories.slice(2).map((_: any, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    &#128274; Nur Pro
+                    🔒 Nur Pro
                   </span>
                 ))
               )}
@@ -738,7 +737,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.year_founded}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
@@ -748,7 +747,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.employee_count}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
@@ -758,14 +757,18 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.hourly_rate}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
           {normalizedVendor.countries_served && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Tätigkeitsländer</p>
-              <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
+              {hasProAccess ? (
+                <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
+              ) : (
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
+              )}
             </div>
           )}
           {normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined && (
@@ -778,7 +781,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
                   <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 font-medium">Derzeit nicht</span>
                 )
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
@@ -814,7 +817,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
                   {normalizedVendor.email}
                 </a>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
@@ -826,7 +829,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
                   {normalizedVendor.phone}
                 </a>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
@@ -836,7 +839,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               {hasProAccess ? (
                 <p class="text-sm text-gray-900">{normalizedVendor.address}</p>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
@@ -848,7 +851,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
                   LinkedIn-Profil ansehen &rarr;
                 </a>
               ) : (
-                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">&#128274; Nur Pro</span>
+                <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
             </div>
           )}
@@ -905,7 +908,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
     <div class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-[0_-4px_12px_rgba(15,23,42,0.08)] backdrop-blur">
       <div class="mx-auto flex h-14 max-w-4xl items-center justify-between gap-3 px-4">
         <p class="flex items-center gap-2 text-xs text-gray-700 sm:text-sm">
-          <span aria-hidden="true">&#128274;</span>
+          <span aria-hidden="true">🔒</span>
           <span class="sm:hidden">Mit Pro freischalten &rarr;</span>
           <span class="hidden sm:inline">Ausgeblendete Details gibt es mit Pro.</span>
         </p>
