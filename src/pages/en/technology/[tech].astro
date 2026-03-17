@@ -24,7 +24,7 @@ if (!techSlug) {
 // Fetch technology from database
 const { data: technology, error: techError } = await supabase
   .from('technologies')
-  .select('id, slug, name_en, name_de, description_en, description_de, icon_name, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, icon_name, faq_en, faq_de')
   .eq('slug', techSlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -33,27 +33,16 @@ if (techError) {
   console.error('Error fetching technology:', techError);
 }
 
-// If technology not found in database, use fallback: convert slug to search term
-// This allows pages to work even if technologies aren't in the technologies table yet
-let techName: string;
-let techDescription: string;
-
-if (technology) {
-  // Technology found in database - use its data
-  techName = technology.name_en || technology.name_de || techSlug;
-  techDescription = technology.description_en || technology.description_de || '';
-} else {
-  // Fallback: convert slug to readable name (replace hyphens with spaces, title case)
-  techName = techSlug
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-  techDescription = '';
+// If technology not found, return 404
+if (!technology) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
+const techName = technology.name_en || technology.name_de || techSlug;
+const techDescription = technology.description_en || technology.description_de || '';
+
 // Split description into paragraphs (split on blank lines)
-const techDescriptionText = technology ? (technology.description_en || technology.description_de || '') : '';
+const techDescriptionText = technology.description_en || technology.description_de || '';
 const techDescriptionParagraphs = techDescriptionText ? techDescriptionText.split(/\n\s*\n/).filter((p: string) => p.trim()) : [];
 
 // Get pagination params
@@ -79,35 +68,13 @@ if (cachedResult) {
 } else {
   // Get vendor IDs that have this technology via vendor_technologies
   let techVendorIds: string[] = [];
-  if (technology) {
-    // Technology found in database - get vendors linked to this technology
-    const { data: techLinks } = await supabase
-      .from('vendor_technologies')
-      .select('vendor_id')
-      .eq('technology_id', technology.id);
-    
-    if (techLinks) {
-      techVendorIds = techLinks.map(link => link.vendor_id);
-    }
-  } else {
-    // Fallback: search by techName in technology names
-    const { data: matchingTechs } = await supabase
-      .from('technologies')
-      .select('id')
-      .or(`name_en.ilike.%${techName}%,name_de.ilike.%${techName}%`)
-      .eq('is_active', true);
-    
-    if (matchingTechs && matchingTechs.length > 0) {
-      const techIds = matchingTechs.map(t => t.id);
-      const { data: techLinks } = await supabase
-        .from('vendor_technologies')
-        .select('vendor_id')
-        .in('technology_id', techIds);
-      
-      if (techLinks) {
-        techVendorIds = techLinks.map(link => link.vendor_id);
-      }
-    }
+  const { data: techLinks } = await supabase
+    .from('vendor_technologies')
+    .select('vendor_id')
+    .eq('technology_id', technology.id);
+
+  if (techLinks) {
+    techVendorIds = techLinks.map(link => link.vendor_id);
   }
   
   // Build query function
@@ -183,14 +150,18 @@ const normalizedVendors = normalizeVendors(vendors || []);
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
 // FAQ
-const faqItems = ((technology?.faq_en ?? []) as any[]).filter(
+const faqItems = ((technology.faq_en ?? []) as any[]).filter(
   (item: any) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
 
 // SEO metadata
 const metaTitle = `${techName} Vendors | Automation List`;
-const metaDescription = (techDescription && techDescription.trim()) || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
+const metaDescription =
+  technology.meta_description_en?.trim() ||
+  technology.meta_description_de?.trim() ||
+  (techDescription && techDescription.trim()) ||
+  `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;
 const fullUrl = `${siteOrigin}/en/technology/${techSlug}`;
@@ -241,7 +212,7 @@ const breadcrumbs = [
     <!-- Technology Header -->
     <div class="mb-8">
       <div class="flex items-center gap-4 mb-4">
-        {technology?.icon_name && (
+        {technology.icon_name && (
           <div class="text-gray-700">
             <LucideIcon name={technology.icon_name} size={56} />
           </div>

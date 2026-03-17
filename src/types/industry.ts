@@ -32,6 +32,8 @@ export interface IndustryDB {
   icon_name?: string | null;
   order_index?: number | null;
   is_active?: boolean;
+  meta_description_en?: string | null;
+  meta_description_de?: string | null;
   faq_en?: FaqItem[] | null;   // FAQ entries in English
   faq_de?: FaqItem[] | null;   // FAQ entries in German
 }

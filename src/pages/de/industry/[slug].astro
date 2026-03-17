@@ -24,7 +24,7 @@ if (!industrySlug) {
 // Fetch industry from database
 const { data: industry, error: industryError } = await supabase
   .from('industries')
-  .select('id, slug, name_en, name_de, description_en, description_de, icon_name, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, icon_name, faq_en, faq_de')
   .eq('slug', industrySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -161,18 +161,13 @@ const faqItems = ((industry.faq_de ?? []) as any[]).filter(
 );
 const hasFaq = faqItems.length > 0;
 
-const industryContentOverrides: Record<string, { metaTitle: string; metaDescription: string }> = {
-  "energy-and-utilities": {
-    metaTitle: "Energie & Versorgung – Automatisierungsanbieter | SCADA, Netz & Energiewirtschaft | Automation-List",
-    metaDescription: "Verifizierte Automatisierungsanbieter für Energie & Versorgung — SCADA-Integratoren, Netzautomatisierung, Unterwerke und Predictive Maintenance in Europa.",
-  },
-};
-
-const contentOverride = industryContentOverrides[industrySlug];
-
 // SEO metadata
-const metaTitle = contentOverride?.metaTitle || `${industryName} Anbieter | Automation List`;
-const metaDescription = contentOverride?.metaDescription || ((industryDescription && industryDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`);
+const metaTitle = `${industryName} Anbieter | Automation List`;
+const metaDescription =
+  industry.meta_description_de?.trim() ||
+  industry.meta_description_en?.trim() ||
+  (industryDescription && industryDescription.trim()) ||
+  `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;
 const fullUrl = `${siteOrigin}/de/industry/${industrySlug}`;

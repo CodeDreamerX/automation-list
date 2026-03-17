@@ -334,7 +334,7 @@ const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Aut
 
 // Determine description: use meta_description if available, otherwise fallback to truncated vendor.description_de (or description_en)
 const pageDescription = normalizedVendor.meta_description || 
-  ((normalizedVendor.description_de || normalizedVendor.description_en) ? truncateDescription(normalizedVendor.description_de || normalizedVendor.description_en, 160) : `Erfahren Sie mehr ueber ${normalizedVendor.name}, einen fuehrenden Anbieter in der Industrieautomatisierung.`);
+  ((normalizedVendor.description_de || normalizedVendor.description_en) ? truncateDescription(normalizedVendor.description_de || normalizedVendor.description_en, 160) : `Erfahren Sie mehr über ${normalizedVendor.name}, einen führenden Anbieter in der Industrieautomatisierung.`);
 
 // Determine OG image: use vendor.logo_url if available, otherwise fallback to default
 const origin = Astro.url.origin;
@@ -400,7 +400,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
   </style>
   <div class={`container-px mx-auto max-w-4xl px-4 py-10 ${showUpgradeCta ? 'pb-28' : ''}`}>
     <a href={backUrl} class="text-sm text-brand-700 hover:text-brand-800 mb-6 inline-block">
-      &larr; Zurueck zu Anbietern
+      &larr; Zurück zu Anbietern
     </a>
 
     <!-- SECTION 1 - HEADER -->
@@ -432,7 +432,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
         )}
         {isOgMember && (
           <span class="inline-block px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-            OG Member - Preis fuer immer gesperrt
+            OG Member - Preis für immer gesperrt
           </span>
         )}
       </div>
@@ -477,7 +477,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
     <!-- SECTION 2 - DESCRIPTION -->
     {vendorDescription && (
       <div class="mb-4">
-        <h2 class="text-xl font-semibold text-gray-900 mb-3">Ueber</h2>
+        <h2 class="text-xl font-semibold text-gray-900 mb-3">Über</h2>
         <div
           id="vendor-description-de"
           class="vendor-description-content"
@@ -734,7 +734,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {normalizedVendor.year_founded && (
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Gruendungsjahr</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Gründungsjahr</p>
               {hasProAccess ? (
                 <p class="text-sm font-medium text-gray-900">{normalizedVendor.year_founded}</p>
               ) : (
@@ -859,7 +859,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
     <!-- SECTION 6 - UPGRADE CTA (free only) -->
     {showUpgradeCta && (
       <div id="upgrade-cta" class="border border-gray-200 rounded-lg p-8 mb-8 text-center transition-all duration-300">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Vollstaendiges Profil freischalten</h3>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Vollständiges Profil freischalten</h3>
         <p class="text-sm text-gray-500 mb-6">
           Erhalten Sie Zugang zu allen Technologien, Branchen und Unternehmensdetails.
         </p>

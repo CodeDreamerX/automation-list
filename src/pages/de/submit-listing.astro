@@ -2,15 +2,24 @@
 export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import slugRef from "../../data/slug-reference.json";
+import { supabase } from "../../lib/supabaseClient";
 
-type SlugItem = { slug: string; name: string };
-const { categories, technologies, industries, certifications } = slugRef as {
-  categories: SlugItem[];
-  technologies: SlugItem[];
-  industries: SlugItem[];
-  certifications: SlugItem[];
-};
+const [
+  { data: catData },
+  { data: techData },
+  { data: indData },
+  { data: certData },
+] = await Promise.all([
+  supabase.from('categories').select('slug, name_en, name_de').eq('is_active', true).order('name_de'),
+  supabase.from('technologies').select('slug, name_en, name_de').eq('is_active', true).order('name_de'),
+  supabase.from('industries').select('slug, name_en, name_de').eq('is_active', true).order('name_de'),
+  supabase.from('certifications').select('slug, name').order('name'),
+]);
+
+const categories = (catData ?? []).map(r => ({ slug: r.slug, name: r.name_de || r.name_en }));
+const technologies = (techData ?? []).map(r => ({ slug: r.slug, name: r.name_de || r.name_en }));
+const industries = (indData ?? []).map(r => ({ slug: r.slug, name: r.name_de || r.name_en }));
+const certifications = (certData ?? []).map(r => ({ slug: r.slug, name: r.name }));
 
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 

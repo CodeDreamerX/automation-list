@@ -42,6 +42,8 @@ export interface Technology {
   icon_name?: string | null;   // Icon identifier
   order_index?: number | null; // Display order
   is_active?: boolean | null;         // Whether technology is active
+  meta_description_en?: string | null;
+  meta_description_de?: string | null;
   faq_en?: FaqItem[] | null;   // FAQ entries in English
   faq_de?: FaqItem[] | null;   // FAQ entries in German
 }
