@@ -161,9 +161,18 @@ const faqItems = ((industry.faq_de ?? []) as any[]).filter(
 );
 const hasFaq = faqItems.length > 0;
 
+const industryContentOverrides: Record<string, { metaTitle: string; metaDescription: string }> = {
+  "energy-and-utilities": {
+    metaTitle: "Energie & Versorgung – Automatisierungsanbieter | SCADA, Netz & Energiewirtschaft | Automation-List",
+    metaDescription: "Verifizierte Automatisierungsanbieter für Energie & Versorgung — SCADA-Integratoren, Netzautomatisierung, Unterwerke und Predictive Maintenance in Europa.",
+  },
+};
+
+const contentOverride = industryContentOverrides[industrySlug];
+
 // SEO metadata
-const metaTitle = `${industryName} Anbieter | Automation List`;
-const metaDescription = (industryDescription && industryDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`;
+const metaTitle = contentOverride?.metaTitle || `${industryName} Anbieter | Automation List`;
+const metaDescription = contentOverride?.metaDescription || ((industryDescription && industryDescription.trim()) || `Finden Sie die besten Industrieautomatisierungsunternehmen, Systemintegratoren und SCADA/PLC-Experten, die sich auf ${industryName} spezialisiert haben. Durchsuchen Sie verifizierte Automatisierungsanbieter weltweit.`);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;
 const fullUrl = `${siteOrigin}/de/industry/${industrySlug}`;
@@ -206,6 +215,8 @@ const breadcrumbSchema = {
 <BaseLayout 
   title={metaTitle}
   description={metaDescription}
+  ogTitle={metaTitle}
+  ogDescription={metaDescription}
   canonical={fullUrl}
   ogImage={defaultOgImage}
   breadcrumbs={breadcrumbs}
