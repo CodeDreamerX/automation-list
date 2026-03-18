@@ -17,7 +17,8 @@
       "Bash(grep -n \"formData.get\\(''countries_served''\\)\" /d/Projects/automationlist/src/pages/admin/*.astro /d/Projects/automationlist/src/pages/admin/**/*.astro)",
       "Bash(find /d/Projects/automationlist -type f \\\\\\(-name *.ts -o -name *.js \\\\\\) -path */scripts/*)",
       "Bash(find /d/Projects/automationlist -name *.sql -type f)",
-      "Bash(find /d/Projects/automationlist -name schema.sql -o -name *migration* -type f)"
+      "Bash(find /d/Projects/automationlist -name schema.sql -o -name *migration* -type f)",
+      "Bash(npm run:*)"
     ]
   }
 }
