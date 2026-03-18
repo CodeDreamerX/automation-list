@@ -11,6 +11,8 @@ interface PageHeroProps {
   vendorCountLabel?: string;
   countryCount?: number | null;
   countriesHref?: string;
+  countryConnectorText?: string;
+  countryLabelText?: string;
 }
 
 const {
@@ -25,6 +27,8 @@ const {
   vendorCountLabel,
   countryCount,
   countriesHref,
+  countryConnectorText = "across",
+  countryLabelText = "countries",
 } = Astro.props;
 ---
 
@@ -44,8 +48,8 @@ const {
         {" "}{vendorCountLabel}
         {countryCount && countriesHref && (
           <>
-            {" "}across{" "}
-            <a href={countriesHref} class="text-gray-400 no-underline hover:underline transition-colors">{countryCount} countries →</a>
+            {" "}{countryConnectorText}{" "}
+            <a href={countriesHref} class="text-gray-400 no-underline hover:underline transition-colors">{countryCount} {countryLabelText} →</a>
           </>
         )}
       </div>
