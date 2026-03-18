@@ -24,7 +24,7 @@ if (!industrySlug) {
 // Fetch industry from database
 const { data: industry, error: industryError } = await supabase
   .from('industries')
-  .select('id, slug, name_en, name_de, description_en, description_de, icon_name, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, icon_name, faq_en, faq_de')
   .eq('slug', industrySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -161,18 +161,13 @@ const faqItems = ((industry.faq_en ?? []) as any[]).filter(
 );
 const hasFaq = faqItems.length > 0;
 
-const industryContentOverrides: Record<string, { metaTitle: string; metaDescription: string }> = {
-  "energy-and-utilities": {
-    metaTitle: "Energy & Utilities Automation Vendors | SCADA, Grid & Power Specialists | Automation-List",
-    metaDescription: "Browse verified automation vendors for the energy and utilities sector — SCADA integrators, grid control specialists, substation automation, and predictive maintenance across Europe.",
-  },
-};
-
-const contentOverride = industryContentOverrides[industrySlug];
-
 // SEO metadata
-const metaTitle = contentOverride?.metaTitle || `${industryName} Vendors | Automation List`;
-const metaDescription = contentOverride?.metaDescription || ((industryDescription && industryDescription.trim()) || `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${industryName}. Browse verified automation vendors worldwide.`);
+const metaTitle = `${industryName} Vendors | Automation List`;
+const metaDescription =
+  industry.meta_description_en?.trim() ||
+  industry.meta_description_de?.trim() ||
+  (industryDescription && industryDescription.trim()) ||
+  `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${industryName}. Browse verified automation vendors worldwide.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;
 const fullUrl = `${siteOrigin}/en/industry/${industrySlug}`;

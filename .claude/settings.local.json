@@ -14,7 +14,11 @@
       "Bash(grep -r \"RLS\\\\|Row Level\\\\|POLICY\\\\|policy\" /d/Projects/automationlist/src --include=*.ts --include=*.astro)",
       "Bash(grep -r \"supabase\\\\|Supabase\" /d/Projects/automationlist --include=*.md)",
       "Bash(grep -n \"vendor?.country_slugs\" /d/Projects/automationlist/src/pages/admin/edit/[id].astro)",
-      "Bash(grep -n \"formData.get\\(''countries_served''\\)\" /d/Projects/automationlist/src/pages/admin/*.astro /d/Projects/automationlist/src/pages/admin/**/*.astro)"
+      "Bash(grep -n \"formData.get\\(''countries_served''\\)\" /d/Projects/automationlist/src/pages/admin/*.astro /d/Projects/automationlist/src/pages/admin/**/*.astro)",
+      "Bash(find /d/Projects/automationlist -type f \\\\\\(-name *.ts -o -name *.js \\\\\\) -path */scripts/*)",
+      "Bash(find /d/Projects/automationlist -name *.sql -type f)",
+      "Bash(find /d/Projects/automationlist -name schema.sql -o -name *migration* -type f)",
+      "Bash(npm run:*)"
     ]
   }
 }

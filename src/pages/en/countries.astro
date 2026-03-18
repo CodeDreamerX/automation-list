@@ -30,7 +30,13 @@ const countries = (countriesRaw || []).map((c) => ({
   card_description_de: c.card_description_de,
   flag_emoji: c.flag_emoji,
   vendor_count: countMap.get((c.name_en || '').toLowerCase()) || 0,
-}));
+}))
+  .sort((a, b) => {
+    if ((b.vendor_count || 0) !== (a.vendor_count || 0)) {
+      return (b.vendor_count || 0) - (a.vendor_count || 0);
+    }
+    return (a.name || '').localeCompare(b.name || '');
+  });
 
 const countryNames = countries.slice(0, 6).map((c) => c.name).filter(Boolean);
 const description = countryNames.length > 0

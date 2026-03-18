@@ -59,9 +59,9 @@ export function truncateWords(text: string | null | undefined, maxChars: number 
  * - If vendor.meta_description exists → truncate to 155 chars and use it
  * - Else → truncate vendor.description_en to 155 chars
  * - Else → return null
- * 
+ *
  * DE (/de/*):
- * - If vendor.meta_description exists → truncate to 160 chars and use it
+ * - If vendor.meta_description_de exists → truncate to 160 chars and use it
  * - Else → truncate vendor.description_de to 160 chars
  * - Else → fallback to truncate vendor.description_en to 160 chars
  * - Else → return null
@@ -81,9 +81,9 @@ export function resolveMetaDescription(vendor: Vendor, lang: 'en' | 'de'): strin
     }
     return null;
   } else {
-    // DE: meta_description (160) → description_de (160) → description_en (160) → null
-    if (vendor.meta_description) {
-      return truncateWords(vendor.meta_description, 160);
+    // DE: meta_description_de (160) → description_de (160) → description_en (160) → null
+    if (vendor.meta_description_de) {
+      return truncateWords(vendor.meta_description_de, 160);
     }
     if (vendor.description_de) {
       return truncateWords(vendor.description_de, 160);

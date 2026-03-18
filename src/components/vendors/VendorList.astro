@@ -33,7 +33,7 @@ const activeCategory = safeDecode(Astro.url.searchParams.get('category'));
 const technologyFilter = safeDecode(Astro.url.searchParams.get('technology'));
 const industriesFilter = safeDecode(Astro.url.searchParams.get('industries'));
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
-const pageSize = 60;
+const pageSize = 102;
 
 // Fetch all categories from database for the dropdown (cached)
 const categoriesCacheKey = 'categories:all';

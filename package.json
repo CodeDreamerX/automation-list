@@ -8,7 +8,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "migrate:vendor-tags": "node ./scripts/tag-migration.js"
+    "migrate:vendor-tags": "node ./scripts/tag-migration.js",
+    "todos": "node generate-todo.js",
+    "upload-todos": "node upload-todos.js"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",

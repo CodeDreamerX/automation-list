@@ -113,8 +113,7 @@ const { data: vendor, error } = await supabase
         id,
         slug,
         name_en,
-        name_de,
-        flag_emoji
+        name_de
       )
     )
   `)
@@ -753,7 +752,11 @@ const shouldCollapseDescription = descriptionWordCount > 200;
         {normalizedVendor.countries_served && (
           <div>
             <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Countries Served</p>
-            <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
+            {hasProAccess ? (
+              <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
+            ) : (
+              <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
+            )}
           </div>
         )}
         {normalizedVendor.taking_new_projects !== null && normalizedVendor.taking_new_projects !== undefined && (

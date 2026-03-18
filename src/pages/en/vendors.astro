@@ -12,8 +12,8 @@ const { count: totalVendors } = await supabase
   .neq('plan', 'deactivated');
 
 const metaTitle = totalVendors
-  ? `${totalVendors} Industrial Automation Vendors – European Directory | Automation List`
-  : `Industrial Automation Vendors – European Directory | Automation List`;
+  ? `${totalVendors} Automation Vendors in Europe | Automation List`
+  : `Automation Vendors in Europe | Automation List`;
 const metaDescription = totalVendors
   ? `Browse ${totalVendors} verified industrial automation vendors across Europe — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`
   : `Browse verified industrial automation vendors across Europe — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`;

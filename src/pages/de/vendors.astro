@@ -12,8 +12,8 @@ const { count: totalVendors } = await supabase
   .neq('plan', 'deactivated');
 
 const metaTitle = totalVendors
-  ? `${totalVendors} Industrieautomatisierungs-Anbieter – Europäisches Verzeichnis | Automation List`
-  : `Industrieautomatisierungs-Anbieter – Europäisches Verzeichnis | Automation List`;
+  ? `${totalVendors} Automatisierungsanbieter in Europa | Automation List`
+  : `Automatisierungsanbieter in Europa | Automation List`;
 const metaDescription = totalVendors
   ? `${totalVendors} geprüfte Industrieautomatisierungs-Anbieter aus Europa — Systemintegratoren, Maschinenbauer, MES-Spezialisten und mehr. Nach Land, Kategorie, Technologie und Branche filtern.`
   : `Geprüfte Industrieautomatisierungs-Anbieter aus Europa — Systemintegratoren, Maschinenbauer, MES-Spezialisten und mehr. Nach Land, Kategorie, Technologie und Branche filtern.`;

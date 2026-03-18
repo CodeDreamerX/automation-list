@@ -83,3 +83,8 @@ coverage/
 
 # Reports
 reports/
+
+# Todoist sync
+TODO.md
+generate-todo.js
+upload-todos.js
