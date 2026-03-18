@@ -31,7 +31,7 @@ const { data: countryRecord } = await supabase
   .maybeSingle();
 
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
-const pageSize = 60;
+const pageSize = 102;
 
 function capitalizeCountry(country: string): string {
   return country.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
