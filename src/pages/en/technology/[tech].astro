@@ -156,7 +156,10 @@ const faqItems = ((technology.faq_en ?? []) as any[]).filter(
 const hasFaq = faqItems.length > 0;
 
 // SEO metadata
-const metaTitle = `${techName} Vendors | Automation List`;
+const vendorCount = totalVendors || 0;
+const metaTitle = vendorCount >= 8
+  ? `${vendorCount} ${techName} Vendors in Europe | Automation List`
+  : `${techName} Vendors in Europe | Automation List`;
 const metaDescription =
   technology.meta_description_en?.trim() ||
   technology.meta_description_de?.trim() ||
