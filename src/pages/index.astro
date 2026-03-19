@@ -26,13 +26,12 @@ function detectLanguageFromHeader(header: string): string {
 // Determine language (default to "en")
 const lang = detectLanguageFromHeader(acceptLanguage);
 
-// Redirect to language-specific homepage
-// Using 307 (Temporary Redirect) instead of 301 (Permanent Redirect)
-// because language detection can change and we're in MVP phase
+// Redirect to language-specific homepage.
+// Keep this as a permanent redirect to preserve link equity.
 const redirectUrl = `/${lang}/`;
 
 // Preserve query string if present
 const queryString = Astro.url.search;
 const finalRedirectUrl = queryString ? `${redirectUrl}${queryString}` : redirectUrl;
 
-return Astro.redirect(finalRedirectUrl, 307);
+return Astro.redirect(finalRedirectUrl, 301);
