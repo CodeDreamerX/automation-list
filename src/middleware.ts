@@ -4,8 +4,40 @@ import { initSentry } from './lib/sentry';
 // Initialize Sentry once, globally
 initSentry();
 
+function detectLanguageFromHeader(header: string): 'de' | 'en' {
+  if (!header) return 'en';
+
+  const languages = header
+    .split(',')
+    .map((lang) => {
+      const [code, quality = '1'] = lang.trim().split(';q=');
+      return {
+        code: code.split('-')[0].toLowerCase(),
+        quality: Number.parseFloat(quality),
+      };
+    })
+    .sort((a, b) => b.quality - a.quality);
+
+  const prefersGerman = languages.length > 0 && languages[0].code === 'de';
+  return prefersGerman ? 'de' : 'en';
+}
+
 export const onRequest: MiddlewareHandler = async (context, next) => {
   const { url, cookies, locals } = context;
+
+  // Root URL language redirect should be permanent for SEO.
+  if (url.pathname === '/') {
+    const acceptLanguage = context.request.headers.get('accept-language') || '';
+    const lang = detectLanguageFromHeader(acceptLanguage);
+    const location = `/${lang}/${url.search}`;
+
+    return new Response(null, {
+      status: 301,
+      headers: {
+        Location: location,
+      },
+    });
+  }
   
   // Check if this is an admin route (excluding login page, login API, and logout API)
   const isAdminRoute = url.pathname.startsWith('/admin') && 
