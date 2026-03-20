@@ -31,6 +31,7 @@ const countries = (countriesRaw || []).map((c) => ({
   flag_emoji: c.flag_emoji,
   vendor_count: countMap.get((c.name_en || '').toLowerCase()) || 0,
 }))
+  .filter((c) => (c.vendor_count || 0) > 0)
   .sort((a, b) => {
     if ((b.vendor_count || 0) !== (a.vendor_count || 0)) {
       return (b.vendor_count || 0) - (a.vendor_count || 0);
@@ -38,10 +39,7 @@ const countries = (countriesRaw || []).map((c) => ({
     return (a.name || '').localeCompare(b.name || '');
   });
 
-const countryNames = countries.slice(0, 6).map((c) => c.name).filter(Boolean);
-const description = countryNames.length > 0
-  ? `Durchsuchen Sie Automatisierungsanbieter nach Land, darunter ${countryNames.join(', ')}${countryNames.length < countries.length ? ' und mehr.' : '.'}`
-  : 'Durchsuchen Sie Industrieautomatisierungsanbieter nach Land.';
+const description = "Die europaeische Industrieautomatisierungslandschaft wird von regionalen Staerken gepraegt - von der Schweizer Praezisionsfertigungstradition ueber das tiefe MES- und SCADA-Oekosystem Deutschlands bis hin zur nordischen Vorreiterrolle in Robotik und Digitalisierung. Die Wahl des richtigen Automatisierungspartners haengt oft von geografischer Naehe, lokaler Sprachkompetenz und Kenntnis regionaler Regularien ab - sei es die EU-Maschinenrichtlinie, GMP-Anforderungen in der Pharmabranche oder Lebensmittelsicherheitsstandards wie IFS und BRC. Ein Anbieter mit Sitz in Ihrer Region kennt lokale Lieferketten, bietet Vor-Ort-Support und bewegt sich sicher im regulatorischen Umfeld. Durchsuchen Sie Automatisierungsanbieter nach Land und finden Sie Systemintegratoren, MES-Spezialisten, SCADA-Anbieter, Robotik-Integratoren und Schaltschrankbauer mit nachgewiesener Kompetenz in Ihrer Region. Jede Laenderseite zeigt verifizierte Anbieter, filterbar nach Kategorie, Technologie und Branche.";
 
 const breadcrumbs = [
   { label: 'Startseite', href: '/de/' },
