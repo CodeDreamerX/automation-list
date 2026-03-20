@@ -36,7 +36,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const languagesStr = Array.isArray(languages) && languages.length > 0
     ? languages.join(', ')
     : null;
-  const countriesServedStr = typeof countries_served === 'string' ? countries_served.trim() || null : null;
 
   const now = new Date().toISOString();
 
@@ -53,7 +52,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     phone: phone?.trim() || null,
     linkedin_url: linkedin_url?.trim() || null,
     languages: languagesStr,
-    countries_served: countriesServedStr,
     year_founded: year_founded ? (Number(year_founded) || null) : null,
     employee_count: employee_count || null,
     taking_new_projects: taking_new_projects === true ? true : taking_new_projects === false ? false : null,
@@ -86,7 +84,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   // Helper: lookup ID by slug and insert junction row
   async function insertM2M(
     table: string,
-    slugCol: string,
     junctionTable: string,
     junctionFk: string,
     slugs: string[]
@@ -105,15 +102,55 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
   }
 
+  async function resolveCountryId(rawName: string): Promise<string | null> {
+    const name = rawName.trim();
+    if (!name) return null;
+
+    const { data: byNameEn } = await supabaseAdmin
+      .from('countries')
+      .select('id')
+      .eq('name_en', name)
+      .maybeSingle();
+    if (byNameEn?.id) return byNameEn.id;
+
+    const { data: byNameDe } = await supabaseAdmin
+      .from('countries')
+      .select('id')
+      .eq('name_de', name)
+      .maybeSingle();
+    if (byNameDe?.id) return byNameDe.id;
+
+    const slugGuess = name.toLowerCase().replace(/\s+/g, '-');
+    const { data: bySlug } = await supabaseAdmin
+      .from('countries')
+      .select('id')
+      .eq('slug', slugGuess)
+      .maybeSingle();
+    return bySlug?.id ?? null;
+  }
+
   const catSlugs  = Array.isArray(category_slugs)     ? category_slugs     : [];
   const techSlugs = Array.isArray(technology_slugs)   ? technology_slugs   : [];
   const indSlugs  = Array.isArray(industry_slugs)     ? industry_slugs     : [];
   const certSlugs = Array.isArray(certification_slugs)? certification_slugs: [];
+  const countriesServed = Array.isArray(countries_served)
+    ? countries_served.map((value: unknown) => String(value).trim()).filter(Boolean)
+    : [];
 
-  await insertM2M('categories',    'slug', 'vendor_categories',    'category_id',    catSlugs);
-  await insertM2M('technologies',  'slug', 'vendor_technologies',  'technology_id',  techSlugs);
-  await insertM2M('industries',    'slug', 'vendor_industries',    'industry_id',    indSlugs);
-  await insertM2M('certifications','slug', 'vendor_certifications','certification_id',certSlugs);
+  await insertM2M('categories',    'vendor_categories',    'category_id',    catSlugs);
+  await insertM2M('technologies',  'vendor_technologies',  'technology_id',  techSlugs);
+  await insertM2M('industries',    'vendor_industries',    'industry_id',    indSlugs);
+  await insertM2M('certifications','vendor_certifications','certification_id',certSlugs);
+
+  // Persist countries served as structured M2M rows (source of truth).
+  for (const countryName of countriesServed) {
+    const countryId = await resolveCountryId(countryName);
+    if (countryId) {
+      await supabaseAdmin
+        .from('vendor_countries')
+        .insert({ vendor_id: vendorId, country_id: countryId });
+    }
+  }
 
   // Delete the approved pending listing
   const { error: deleteError } = await supabaseAdmin

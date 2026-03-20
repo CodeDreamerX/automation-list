@@ -47,17 +47,20 @@ if (Astro.request.method === 'POST') {
     { data: allTechnologies },
     { data: allIndustries },
     { data: allCertifications },
+    { data: allCountries },
   ] = await Promise.all([
     supabaseAdmin.from('categories').select('id, slug'),
     supabaseAdmin.from('technologies').select('id, slug'),
     supabaseAdmin.from('industries').select('id, slug'),
     supabaseAdmin.from('certifications').select('id, slug'),
+    supabaseAdmin.from('countries').select('id, slug'),
   ]);
 
   const categoryMap = new Map((allCategories || []).map((r: any) => [r.slug, r.id]));
   const technologyMap = new Map((allTechnologies || []).map((r: any) => [r.slug, r.id]));
   const industryMap = new Map((allIndustries || []).map((r: any) => [r.slug, r.id]));
   const certificationMap = new Map((allCertifications || []).map((r: any) => [r.slug, r.id]));
+  const countryMap = new Map((allCountries || []).map((r: any) => [r.slug, r.id]));
 
   // Normalize all rows
   const normalizedData: any[] = [];
@@ -119,7 +122,6 @@ if (Astro.request.method === 'POST') {
         description_de: row.description_de || null,
         languages: row.languages || null,
         tags: row.tags || null,
-        countries_served: row.countries_served || null,
         year_founded: row.year_founded || null,
         employee_count: row.employee_count || null,
         hourly_rate: row.hourly_rate || null,
@@ -216,6 +218,21 @@ if (Astro.request.method === 'POST') {
           }
         } else {
           results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Unknown certification slug: ${slug}`);
+        }
+      }
+
+      // Insert vendor_countries
+      for (const slug of row._countrySlugs || []) {
+        const countryId = countryMap.get(slug);
+        if (countryId) {
+          const { error: err } = await supabaseAdmin
+            .from('vendor_countries')
+            .insert({ vendor_id: vendorId, country_id: countryId });
+          if (err) {
+            results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Failed to link country "${slug}": ${err.message}`);
+          }
+        } else {
+          results.warnings.push(`Row ${rowNum} (${row.name || 'unnamed'}): Unknown country slug: ${slug}`);
         }
       }
 

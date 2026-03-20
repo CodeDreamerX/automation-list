@@ -18,6 +18,7 @@ export const allowedFields = [
   "category_slugs",
   "technology_slugs",
   "certification_slugs",
+  "country_slugs",
   "year_founded",
   "employee_count",
   "hourly_rate",
@@ -26,7 +27,6 @@ export const allowedFields = [
   "priority",
   "og_member",
   "featured_until",
-  "countries_served",
   "taking_new_projects",
   "linkedin_url",
   "specialization_text",
@@ -50,7 +50,7 @@ export function normalizeJsonRow(row: any): any {
   }
 
   // Join array fields to comma-separated strings for TEXT DB columns
-  for (const field of ['languages', 'tags', 'countries_served'] as const) {
+  for (const field of ['languages', 'tags'] as const) {
     if (Array.isArray(normalized[field])) {
       normalized[field] = normalized[field].length > 0
         ? (normalized[field] as string[]).join(', ')
@@ -70,6 +70,9 @@ export function normalizeJsonRow(row: any): any {
     : [];
   normalized._certificationSlugs = Array.isArray(normalized.certification_slugs)
     ? (normalized.certification_slugs as string[])
+    : [];
+  normalized._countrySlugs = Array.isArray(normalized.country_slugs)
+    ? (normalized.country_slugs as string[])
     : [];
 
   return normalized;

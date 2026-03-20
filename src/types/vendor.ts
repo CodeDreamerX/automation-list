@@ -78,7 +78,7 @@ export interface Vendor {
   hourly_rate?: string | null;   // text (e.g., "€50-100")
 
   // New profile fields
-  countries_served?: string | null;     // comma-separated (e.g., "Germany, Austria, Switzerland")
+  countries_served?: string | null;     // deprecated legacy text field; use vendor_countries/country_slugs
   taking_new_projects?: boolean | null; // availability flag
   linkedin_url?: string | null;         // LinkedIn company page URL
   specialization_text?: string | null;  // "What makes us different" free text
