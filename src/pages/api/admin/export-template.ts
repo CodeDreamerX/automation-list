@@ -34,10 +34,10 @@ export const GET: APIRoute = async ({ cookies }) => {
       technology_slugs: [],
       industry_slugs: [],
       certification_slugs: [],
+      country_slugs: [],
 
-      // --- Comma-joined arrays stored as text ---
+      // --- Arrays stored as text ---
       languages: [],
-      countries_served: [],
 
       // --- Metrics ---
       year_founded: null,

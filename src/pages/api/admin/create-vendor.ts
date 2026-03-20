@@ -77,7 +77,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         logo_height: form.get('logo_height')?.toString() ? Number(form.get('logo_height')!.toString()) : null,
         logo_format: form.get('logo_format')?.toString() || null,
         logo_alt: form.get('logo_alt')?.toString() || null,
-        countries_served: form.get('countries_served')?.toString() || null,
         taking_new_projects: form.get('taking_new_projects') === 'on',
         linkedin_url: form.get('linkedin_url')?.toString() || null,
         specialization_text: form.get('specialization_text')?.toString() || null,
@@ -90,7 +89,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle JSON (backward compatibility)
       const body = await request.json();
-      const { category_slugs, technology_slugs, industry_slugs, certification_slugs, ...rest } = body;
+      const { category_slugs, technology_slugs, industry_slugs, certification_slugs, countries_served: _countries_served, ...rest } = body;
       insertData = { ...rest };
 
       // Normalize types for JSON requests

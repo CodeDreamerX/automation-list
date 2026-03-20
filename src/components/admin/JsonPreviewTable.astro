@@ -22,9 +22,9 @@ const displayFields = [
   'technology_slugs',
   'industry_slugs',
   'certification_slugs',
+  'country_slugs',
   'languages',
   'tags',
-  'countries_served',
   'year_founded',
   'employee_count',
   'plan',
@@ -36,21 +36,23 @@ const displayFields = [
   'specialization_text',
 ];
 
-const slugFields = ['category_slugs', 'technology_slugs', 'industry_slugs', 'certification_slugs'] as const;
+const slugFields = ['category_slugs', 'technology_slugs', 'industry_slugs', 'certification_slugs', 'country_slugs'] as const;
 type SlugField = typeof slugFields[number];
 
 function getSlugArray(row: any, field: SlugField): string[] {
   if (field === 'category_slugs') return row._categorySlugs || [];
   if (field === 'technology_slugs') return row._technologySlugs || [];
   if (field === 'industry_slugs') return row._industrySlugs || [];
-  return row._certificationSlugs || [];
+  if (field === 'certification_slugs') return row._certificationSlugs || [];
+  return row._countrySlugs || [];
 }
 
 function getUnknownSet(validation: ValidationResult, field: SlugField): string[] {
   if (field === 'category_slugs') return validation.unknownCategories;
   if (field === 'technology_slugs') return validation.unknownTechnologies;
   if (field === 'industry_slugs') return validation.unknownIndustries;
-  return validation.unknownCertifications;
+  if (field === 'certification_slugs') return validation.unknownCertifications;
+  return [];
 }
 ---
 
@@ -73,6 +75,8 @@ function getUnknownSet(validation: ValidationResult, field: SlugField): string[]
                       ? 'industries'
                       : key === 'certification_slugs'
                         ? 'certifications'
+                        : key === 'country_slugs'
+                          ? 'countries'
                         : key}
                 {REQUIRED_FIELDS.includes(key) && (
                   <span class="text-red-600 ml-1">*</span>

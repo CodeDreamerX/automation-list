@@ -4,13 +4,13 @@ export const allowedUpdateScalarFields = [
   'description_en', 'description_de',
   'website', 'email', 'phone',
   'employee_count', 'year_founded', 'hourly_rate',
-  'languages', 'tags', 'countries_served',
+  'languages', 'tags',
   'taking_new_projects', 'linkedin_url', 'specialization_text',
   'plan', 'featured', 'priority', 'og_member', 'featured_until',
 ] as const;
 
 // Fields stored as comma-separated TEXT in DB
-export const CSV_FIELDS = new Set(['languages', 'tags', 'countries_served']);
+export const CSV_FIELDS = new Set(['languages', 'tags']);
 
 // M2M relation array keys and their junction table config
 export const RELATION_KEYS = [
@@ -18,6 +18,7 @@ export const RELATION_KEYS = [
   'technology_slugs',
   'industry_slugs',
   'certification_slugs',
+  'country_slugs',
 ] as const;
 
 export type RelationKey = typeof RELATION_KEYS[number];
@@ -32,6 +33,7 @@ export const RELATION_CONFIG: Record<RelationKey, RelationConfig> = {
   technology_slugs:    { junctionTable: 'vendor_technologies',  fkColumn: 'technology_id' },
   industry_slugs:      { junctionTable: 'vendor_industries',    fkColumn: 'industry_id' },
   certification_slugs: { junctionTable: 'vendor_certifications', fkColumn: 'certification_id' },
+  country_slugs:       { junctionTable: 'vendor_countries',      fkColumn: 'country_id' },
 };
 
 export interface ParsedUpdateRow {
@@ -69,7 +71,6 @@ function resolveCountryName(value: unknown): unknown {
  * - Only includes a scalar field if the key is literally present in the row object
  *   (uses `field in row`), so false/0/null/"" are all valid patch values
  * - `country`: ISO alpha-2 codes (e.g. "DE") are automatically resolved to full names
- * - `countries_served`: each entry in the array is resolved the same way before joining to CSV
  * - Converts other CSV fields (languages, tags) to comma-separated strings
  * - Extracts relation arrays into presentRelations only if the key exists in the row
  * - Omits `slug` from scalarFields (it is the match key, not a DB write)
@@ -86,15 +87,6 @@ export function parseUpdateRow(row: Record<string, unknown>): ParsedUpdateRow {
 
       if (field === 'country') {
         scalarFields[field] = resolveCountryName(val);
-      } else if (field === 'countries_served') {
-        if (Array.isArray(val)) {
-          scalarFields[field] = val.map(resolveCountryName).join(',');
-        } else if (typeof val === 'string') {
-          // Already a CSV string — resolve each entry
-          scalarFields[field] = val.split(',').map(s => resolveCountryName(s.trim())).join(',');
-        } else {
-          scalarFields[field] = val;
-        }
       } else if (CSV_FIELDS.has(field)) {
         scalarFields[field] = Array.isArray(val) ? val.join(',') : val;
       } else {
@@ -134,7 +126,6 @@ export const UPDATE_TEMPLATE = [
     hourly_rate: '100-150',
     languages: ['de', 'en'],
     tags: ['automation', 'rpa'],
-    countries_served: ['Germany', 'Austria', 'Switzerland'],
     taking_new_projects: true,
     linkedin_url: 'https://linkedin.com/company/example',
     specialization_text: 'Specializes in robotic process automation for finance.',
@@ -147,5 +138,6 @@ export const UPDATE_TEMPLATE = [
     technology_slugs: ['uipath', 'python'],
     industry_slugs: ['finance', 'logistics'],
     certification_slugs: ['iso-27001'],
+    country_slugs: ['germany', 'austria', 'switzerland'],
   },
 ];

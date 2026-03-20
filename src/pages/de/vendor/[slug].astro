@@ -350,6 +350,9 @@ const languages = normalizedVendor.languages ? splitValue(normalizedVendor.langu
 
 // Prepare industries data
 const allIndustries = normalizedVendor.vendor_industries || [];
+const servedCountries = (normalizedVendor.vendor_countries || [])
+  .map((vc: any) => vc?.countries?.name_de || vc?.countries?.name_en)
+  .filter(Boolean);
 
 // Prepare tags data
 const tags = normalizedVendor.tags ? splitValue(normalizedVendor.tags) : [];
@@ -761,11 +764,11 @@ const shouldCollapseDescription = descriptionWordCount > 200;
               )}
             </div>
           )}
-          {normalizedVendor.countries_served && (
+          {servedCountries.length > 0 && (
             <div>
               <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Tätigkeitsländer</p>
               {hasProAccess ? (
-                <p class="text-sm font-medium text-gray-900">{normalizedVendor.countries_served}</p>
+                <p class="text-sm font-medium text-gray-900">{servedCountries.join(', ')}</p>
               ) : (
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Nur Pro</span>
               )}
