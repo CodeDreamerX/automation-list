@@ -31,6 +31,7 @@ const countries = (countriesRaw || []).map((c) => ({
   flag_emoji: c.flag_emoji,
   vendor_count: countMap.get((c.name_en || '').toLowerCase()) || 0,
 }))
+  .filter((c) => (c.vendor_count || 0) > 0)
   .sort((a, b) => {
     if ((b.vendor_count || 0) !== (a.vendor_count || 0)) {
       return (b.vendor_count || 0) - (a.vendor_count || 0);
@@ -38,10 +39,31 @@ const countries = (countriesRaw || []).map((c) => ({
     return (a.name || '').localeCompare(b.name || '');
   });
 
-const countryNames = countries.slice(0, 6).map((c) => c.name).filter(Boolean);
-const description = countryNames.length > 0
-  ? `Durchsuchen Sie Automatisierungsanbieter nach Land, darunter ${countryNames.join(', ')}${countryNames.length < countries.length ? ' und mehr.' : '.'}`
-  : 'Durchsuchen Sie Industrieautomatisierungsanbieter nach Land.';
+const introDescription = "Die europaeische Industrieautomatisierungslandschaft wird von regionalen Staerken gepraegt - von der Schweizer Praezisionsfertigungstradition ueber das tiefe MES- und SCADA-Oekosystem Deutschlands bis hin zur nordischen Vorreiterrolle in Robotik und Digitalisierung. Die Wahl des richtigen Automatisierungspartners haengt oft von geografischer Naehe, lokaler Sprachkompetenz und Kenntnis regionaler Regularien ab - sei es die EU-Maschinenrichtlinie, GMP-Anforderungen in der Pharmabranche oder Lebensmittelsicherheitsstandards wie IFS und BRC. Ein Anbieter mit Sitz in Ihrer Region kennt lokale Lieferketten, bietet Vor-Ort-Support und bewegt sich sicher im regulatorischen Umfeld. Durchsuchen Sie Automatisierungsanbieter nach Land und finden Sie Systemintegratoren, MES-Spezialisten, SCADA-Anbieter, Robotik-Integratoren und Schaltschrankbauer mit nachgewiesener Kompetenz in Ihrer Region. Jede Laenderseite zeigt verifizierte Anbieter, filterbar nach Kategorie, Technologie und Branche.";
+const metaDescription = "Finden Sie Anbieter fuer industrielle Automatisierung in ganz Europa. Durchsuchen Sie nach Land - Systemintegratoren, MES-Spezialisten, SCADA-Anbieter und Robotik-Integratoren.";
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Startseite", item: `${siteOrigin}/de/` },
+    { "@type": "ListItem", position: 2, name: "Laender", item: `${siteOrigin}/de/countries` },
+  ],
+};
+
+const countriesItemListSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Automatisierungsanbieter nach Land",
+  numberOfItems: countries.length,
+  itemListElement: countries.map((country, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: country.name,
+    url: `${siteOrigin}/de/country/${country.slug}`,
+  })),
+};
 
 const breadcrumbs = [
   { label: 'Startseite', href: '/de/' },
@@ -50,10 +72,17 @@ const breadcrumbs = [
 ---
 
 <BaseLayout
-  title="Automatisierungsanbieter nach Land | Automation List"
-  description={description}
+  title="Automatisierungsanbieter in Europa nach Land | Automation List"
+  description={metaDescription}
   lang="de"
   breadcrumbs={breadcrumbs}
 >
-  <CountryGrid title="Nach Land durchsuchen" description={description} countries={countries} lang="de" headingLevel="h1" />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(countriesItemListSchema)} />
+
+  <CountryGrid title="Nach Land durchsuchen" description={introDescription} countries={countries} lang="de" headingLevel="h1">
+    <p slot="belowDescription" class="text-sm text-gray-600 mb-6 md:mb-8 text-center">
+      Sie koennen Anbieter auch nach <a href="/de/categories" class="underline hover:no-underline">Kategorie</a>, <a href="/de/technologies" class="underline hover:no-underline">Technologie</a> oder <a href="/de/industries" class="underline hover:no-underline">Branche</a> durchsuchen.
+    </p>
+  </CountryGrid>
 </BaseLayout>
