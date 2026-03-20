@@ -39,7 +39,31 @@ const countries = (countriesRaw || []).map((c) => ({
     return (a.name || '').localeCompare(b.name || '');
   });
 
-const description = "Europe's industrial automation landscape is shaped by regional strengths - from Switzerland's precision manufacturing heritage and Germany's deep MES and SCADA ecosystem to the Nordic countries' leadership in robotics and digitalization. Choosing the right automation partner often depends on geographic proximity, local language capability, and familiarity with regional regulations such as EU machinery directives, GMP requirements in pharma, or food safety standards like IFS and BRC. A vendor based in your market understands local supply chains, can provide on-site support, and navigates the regulatory environment with confidence. Browse automation vendors by country to find system integrators, MES specialists, SCADA providers, robotics integrators, and panel builders with proven expertise in your region. Each country page shows verified vendors filterable by category, technology, and industry.";
+const introDescription = "Europe's industrial automation landscape is shaped by regional strengths - from Switzerland's precision manufacturing heritage and Germany's deep MES and SCADA ecosystem to the Nordic countries' leadership in robotics and digitalization. Choosing the right automation partner often depends on geographic proximity, local language capability, and familiarity with regional regulations such as EU machinery directives, GMP requirements in pharma, or food safety standards like IFS and BRC. A vendor based in your market understands local supply chains, can provide on-site support, and navigates the regulatory environment with confidence. Browse automation vendors by country to find system integrators, MES specialists, SCADA providers, robotics integrators, and panel builders with proven expertise in your region. Each country page shows verified vendors filterable by category, technology, and industry.";
+const metaDescription = "Find industrial automation vendors across Europe. Browse by country to discover system integrators, MES specialists, SCADA providers and robotics integrators near you.";
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: `${siteOrigin}/en/` },
+    { "@type": "ListItem", position: 2, name: "Countries", item: `${siteOrigin}/en/countries` },
+  ],
+};
+
+const countriesItemListSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Automation Vendors by Country",
+  numberOfItems: countries.length,
+  itemListElement: countries.map((country, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: country.name,
+    url: `${siteOrigin}/en/country/${country.slug}`,
+  })),
+};
 
 const breadcrumbs = [
   { label: 'Home', href: '/en/' },
@@ -48,10 +72,17 @@ const breadcrumbs = [
 ---
 
 <BaseLayout
-  title="Automation Vendors by Country | Automation List"
-  description={description}
+  title="Automation Vendors by Country in Europe | Automation List"
+  description={metaDescription}
   lang="en"
   breadcrumbs={breadcrumbs}
 >
-  <CountryGrid title="Browse by Country" description={description} countries={countries} lang="en" headingLevel="h1" />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(countriesItemListSchema)} />
+
+  <CountryGrid title="Browse by Country" description={introDescription} countries={countries} lang="en" headingLevel="h1">
+    <p slot="belowDescription" class="text-sm text-gray-600 mb-6 md:mb-8 text-center">
+      You can also browse vendors by <a href="/en/categories" class="underline hover:no-underline">category</a>, <a href="/en/technologies" class="underline hover:no-underline">technology</a>, or <a href="/en/industries" class="underline hover:no-underline">industry</a>.
+    </p>
+  </CountryGrid>
 </BaseLayout>

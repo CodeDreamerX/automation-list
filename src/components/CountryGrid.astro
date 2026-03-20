@@ -13,10 +13,10 @@ interface CountryGridProps {
 const {
   title = 'Browse by Country',
   description,
-  countries,
+  countries = [],
   lang = 'en',
   headingLevel = 'h2',
-} = Astro.props;
+} = Astro.props as CountryGridProps;
 ---
 
 {countries.length > 0 && (
@@ -29,8 +29,9 @@ const {
     {description && (
       <p class="text-lg md:text-xl text-gray-600 mb-6 md:mb-10 text-center w-full">{description}</p>
     )}
+    <slot name="belowDescription" />
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {countries.map((country, i) => (
+      {countries.map((country: CountryBasic & { vendor_count?: number }, i: number) => (
         <CountryCard country={country} lang={lang} index={i} />
       ))}
     </div>
