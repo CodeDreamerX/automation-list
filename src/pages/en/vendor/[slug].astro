@@ -11,6 +11,7 @@ import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
 import { truncateDescription } from '../../../lib/vendors/vendorFormatters';
 import { getBooleanEnvVar } from '../../../lib/env';
 import { slugifyCountry } from '../../../lib/countryUtils';
+import { buildVendorTitle } from '../../../utils/seo';
 
 // Helper function to parse logo background variant from logo URL
 // Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
@@ -175,7 +176,8 @@ function getLocation(): string {
 const location = getLocation();
 
 // Get primary category
-const primaryCategory = normalizedVendor.vendor_categories?.find((vc: any) => vc.is_primary === true);
+const primaryCategory = normalizedVendor.vendor_categories?.find((vc: any) => vc.is_primary === true)
+  ?? normalizedVendor.vendor_categories?.[0];
 const primaryCategoryName = primaryCategory?.categories?.name_en || primaryCategory?.categories?.name_de;
 const primaryCategorySlug = primaryCategory?.categories?.slug;
 
@@ -317,8 +319,14 @@ if (isFromTechnology && techSlugParam) {
   ];
 }
 
-// Determine title: use meta_title if available, otherwise fallback to vendor.name + " | Automation List"
-const pageTitle = normalizedVendor.meta_title || `${normalizedVendor.name} | Automation List`;
+// Determine title: cascade through name + category + country, capped at 60 chars; manual meta_title overrides
+const countryName = normalizedVendor.country || '';
+const pageTitle = buildVendorTitle(
+  normalizedVendor.name,
+  primaryCategoryName || '',
+  countryName,
+  normalizedVendor.meta_title
+);
 
 // Determine description: use meta_description if available, otherwise fallback to truncated vendor.description_en
 const pageDescription = normalizedVendor.meta_description || 

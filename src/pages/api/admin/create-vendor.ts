@@ -70,6 +70,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         og_member: form.get('og_member') === 'on' || form.get('og_member') === 'true' || form.get('og_member') === '1',
         featured_until: form.get('featured_until')?.toString() || null,
         meta_title: form.get('meta_title')?.toString() || null,
+        meta_title_de: form.get('meta_title_de')?.toString() || null,
         meta_description: form.get('meta_description')?.toString() || null,
         canonical_url: form.get('canonical_url')?.toString() || null,
         logo_url: form.get('logo_url')?.toString() || null,

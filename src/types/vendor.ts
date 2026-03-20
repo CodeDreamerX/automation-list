@@ -104,6 +104,7 @@ export interface Vendor {
   
   // SEO metadata
   meta_title?: string | null;
+  meta_title_de?: string | null;
   meta_description?: string | null;
   meta_description_de?: string | null;
   canonical_url?: string | null;
