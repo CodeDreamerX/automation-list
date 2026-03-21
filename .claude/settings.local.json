@@ -18,7 +18,8 @@
       "Bash(find /d/Projects/automationlist -type f \\\\\\(-name *.ts -o -name *.js \\\\\\) -path */scripts/*)",
       "Bash(find /d/Projects/automationlist -name *.sql -type f)",
       "Bash(find /d/Projects/automationlist -name schema.sql -o -name *migration* -type f)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(cat /d/Projects/automationlist/src/pages/en/industry/[slug].astro)"
     ]
   }
 }

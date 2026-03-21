@@ -128,6 +128,7 @@ if (redirectResponse) {
       <ul class="text-xs text-gray-600 space-y-1">
         <li>• File must be a JSON array of vendor objects (<code class="bg-gray-100 px-1 rounded">[{`{ ... }, { ... }`}]</code>)</li>
         <li>• Required fields per vendor: <code class="bg-gray-100 px-1 rounded">name</code>, <code class="bg-gray-100 px-1 rounded">slug</code>, <code class="bg-gray-100 px-1 rounded">country</code>, <code class="bg-gray-100 px-1 rounded">category_slugs</code></li>
+        <li>• <code class="bg-gray-100 px-1 rounded">country</code> is matched to the canonical English name from your database (case-insensitive; you may use the country slug or English/German name)</li>
         <li>• Array fields (<code class="bg-gray-100 px-1 rounded">category_slugs</code>, <code class="bg-gray-100 px-1 rounded">technology_slugs</code>, <code class="bg-gray-100 px-1 rounded">industry_slugs</code>, <code class="bg-gray-100 px-1 rounded">certification_slugs</code>, <code class="bg-gray-100 px-1 rounded">country_slugs</code>, <code class="bg-gray-100 px-1 rounded">languages</code>) must be native JSON arrays</li>
         <li>• Maximum file size: 10MB</li>
         <li>• Duplicate slugs (already in the database) are skipped automatically</li>

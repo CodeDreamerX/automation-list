@@ -5,6 +5,10 @@ import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import { supabase } from '../../../../lib/supabaseClient';
 import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 import { normalizeJsonRow, validateRow } from '../../../../lib/admin/jsonUtils';
+import {
+  buildCountryCanonicalLookup,
+  resolveCanonicalCountryName,
+} from '../../../../lib/admin/countryResolve';
 
 const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
@@ -53,8 +57,10 @@ if (Astro.request.method === 'POST') {
     supabaseAdmin.from('technologies').select('id, slug'),
     supabaseAdmin.from('industries').select('id, slug'),
     supabaseAdmin.from('certifications').select('id, slug'),
-    supabaseAdmin.from('countries').select('id, slug'),
+    supabaseAdmin.from('countries').select('id, slug, name_en, name_de'),
   ]);
+
+  const countryCanonicalLookup = buildCountryCanonicalLookup(allCountries || []);
 
   const categoryMap = new Map((allCategories || []).map((r: any) => [r.slug, r.id]));
   const technologyMap = new Map((allTechnologies || []).map((r: any) => [r.slug, r.id]));
@@ -68,6 +74,10 @@ if (Astro.request.method === 'POST') {
 
   for (const row of parsedData) {
     const normalized = normalizeJsonRow(row);
+    if (normalized.country) {
+      normalized.country =
+        resolveCanonicalCountryName(normalized.country, countryCanonicalLookup) ?? normalized.country;
+    }
     normalizedData.push(normalized);
     if (normalized.slug) {
       allSlugs.push(normalized.slug);
