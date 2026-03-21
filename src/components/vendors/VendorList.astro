@@ -295,9 +295,9 @@ function buildCountQuery() {
     }
   }
 
-  // Apply search filter if present (search across name, descriptions, and tags)
+  // Apply search filter if present (search across name and descriptions)
   if (searchQuery) {
-    query = query.or(`name.ilike.%${searchQuery}%,description_en.ilike.%${searchQuery}%,description_de.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
+    query = query.or(`name.ilike.%${searchQuery}%,description_en.ilike.%${searchQuery}%,description_de.ilike.%${searchQuery}%`);
   }
 
   // Apply country filter if present (use case-insensitive matching)
@@ -356,9 +356,9 @@ function buildBaseQuery() {
     }
   }
 
-  // Apply search filter if present (search across name, descriptions, and tags)
+  // Apply search filter if present (search across name and descriptions)
   if (searchQuery) {
-    query = query.or(`name.ilike.%${searchQuery}%,description_en.ilike.%${searchQuery}%,description_de.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
+    query = query.or(`name.ilike.%${searchQuery}%,description_en.ilike.%${searchQuery}%,description_de.ilike.%${searchQuery}%`);
   }
 
   // Apply country filter if present (use case-insensitive matching)

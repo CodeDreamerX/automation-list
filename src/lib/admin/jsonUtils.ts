@@ -1,5 +1,7 @@
 // JSON import schema and validation utilities
 
+import { vendorLanguageSet } from './languageOptions';
+
 export const allowedFields = [
   "name",
   "slug",
@@ -13,7 +15,6 @@ export const allowedFields = [
   "description_en",
   "description_de",
   "languages",
-  "tags",
   "industry_slugs",
   "category_slugs",
   "technology_slugs",
@@ -50,7 +51,7 @@ export function normalizeJsonRow(row: any): any {
   }
 
   // Join array fields to comma-separated strings for TEXT DB columns
-  for (const field of ['languages', 'tags'] as const) {
+  for (const field of ['languages'] as const) {
     if (Array.isArray(normalized[field])) {
       normalized[field] = normalized[field].length > 0
         ? (normalized[field] as string[]).join(', ')
@@ -83,6 +84,7 @@ export type ValidSlugSets = {
   technologies: Set<string>;
   industries: Set<string>;
   certifications: Set<string>;
+  countries: Set<string>;
 };
 
 export type ValidationResult = {
@@ -94,6 +96,8 @@ export type ValidationResult = {
   unknownTechnologies: string[];
   unknownIndustries: string[];
   unknownCertifications: string[];
+  unknownCountries: string[];
+  unknownLanguages: string[];
 };
 
 export function validateRow(
@@ -145,6 +149,18 @@ export function validateRow(
   const unknownCertifications = validSlugs
     ? (row._certificationSlugs || []).filter((s: string) => !validSlugs.certifications.has(s))
     : [];
+  const unknownCountries = validSlugs
+    ? (row._countrySlugs || []).filter((s: string) => !validSlugs.countries.has(s))
+    : [];
+
+  let unknownLanguages: string[] = [];
+  if (row.languages && typeof row.languages === 'string' && row.languages.trim()) {
+    const parts = row.languages
+      .split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    unknownLanguages = parts.filter((label) => !vendorLanguageSet.has(label));
+  }
 
   return {
     missingRequired,
@@ -155,5 +171,7 @@ export function validateRow(
     unknownTechnologies,
     unknownIndustries,
     unknownCertifications,
+    unknownCountries,
+    unknownLanguages,
   };
 }

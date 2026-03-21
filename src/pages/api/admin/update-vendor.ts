@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         region: form.get('region')?.toString() || null,
         country: form.get('country')?.toString() || null,
         languages: selectedLanguages.length > 0 ? selectedLanguages.join(', ') : null,
-        tags: form.get('tags')?.toString() || null,
+        tags: null,
         year_founded: form.get('year_founded')?.toString() || null,
         employee_count: form.get('employee_count')?.toString() || null,
         hourly_rate: form.get('hourly_rate')?.toString() || null,
@@ -103,8 +103,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         return errorResponse('Vendor ID is required', 400);
       }
 
-      const { id: _, category_slugs, technology_slugs, industry_slugs, certification_slugs, countries_served: _countries_served, ...rest } = body;
-      updateData = rest;
+      const {
+        id: _id,
+        category_slugs,
+        technology_slugs,
+        industry_slugs,
+        certification_slugs,
+        countries_served: _countries_served,
+        tags: _tags,
+        ...rest
+      } = body;
+      updateData = { ...rest, tags: null };
 
       // Normalize logo fields for JSON requests
       updateData.logo_url = updateData.logo_url || null;

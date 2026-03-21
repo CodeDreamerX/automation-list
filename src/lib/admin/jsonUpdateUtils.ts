@@ -4,13 +4,13 @@ export const allowedUpdateScalarFields = [
   'description_en', 'description_de',
   'website', 'email', 'phone',
   'employee_count', 'year_founded', 'hourly_rate',
-  'languages', 'tags',
+  'languages',
   'taking_new_projects', 'linkedin_url', 'specialization_text',
   'plan', 'featured', 'priority', 'og_member', 'featured_until',
 ] as const;
 
 // Fields stored as comma-separated TEXT in DB
-export const CSV_FIELDS = new Set(['languages', 'tags']);
+export const CSV_FIELDS = new Set(['languages']);
 
 // M2M relation array keys and their junction table config
 export const RELATION_KEYS = [
@@ -71,7 +71,7 @@ function resolveCountryName(value: unknown): unknown {
  * - Only includes a scalar field if the key is literally present in the row object
  *   (uses `field in row`), so false/0/null/"" are all valid patch values
  * - `country`: ISO alpha-2 codes (e.g. "DE") are automatically resolved to full names
- * - Converts other CSV fields (languages, tags) to comma-separated strings
+ * - Converts other CSV fields (languages) to comma-separated strings
  * - Extracts relation arrays into presentRelations only if the key exists in the row
  * - Omits `slug` from scalarFields (it is the match key, not a DB write)
  * - Ignores all logo_* keys
@@ -125,7 +125,6 @@ export const UPDATE_TEMPLATE = [
     year_founded: 2015,
     hourly_rate: '100-150',
     languages: ['de', 'en'],
-    tags: ['automation', 'rpa'],
     taking_new_projects: true,
     linkedin_url: 'https://linkedin.com/company/example',
     specialization_text: 'Specializes in robotic process automation for finance.',

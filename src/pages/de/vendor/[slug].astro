@@ -365,9 +365,6 @@ const servedCountries = (normalizedVendor.vendor_countries || [])
   .map((vc: any) => vc?.countries?.name_de || vc?.countries?.name_en)
   .filter(Boolean);
 
-// Prepare tags data
-const tags = normalizedVendor.tags ? splitValue(normalizedVendor.tags) : [];
-
 // Prepare categories data (show everywhere, not just for Pro)
 const allCategories = normalizedVendor.vendor_categories || [];
 const vendorDescription = normalizedVendor.description_de || normalizedVendor.description_en;
@@ -524,7 +521,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
     )}
 
     <!-- SECTION 3 - GRID BLOCKS -->
-    {(allTechnologies.length > 0 || allCertifications.length > 0 || languages.length > 0 || allIndustries.length > 0 || tags.length > 0 || allCategories.length > 0) && (
+    {(allTechnologies.length > 0 || allCertifications.length > 0 || languages.length > 0 || allIndustries.length > 0 || allCategories.length > 0) && (
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- Technologies -->
         {allTechnologies.length > 0 && (
@@ -664,28 +661,6 @@ const shouldCollapseDescription = descriptionWordCount > 200;
                 })
               ) : (
                 allIndustries.slice(1).map((_: any, i: number) => (
-                  <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
-                    🔒 Nur Pro
-                  </span>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        <!-- Tags -->
-        {tags.length > 0 && (
-          <div class="border border-gray-200 rounded-lg p-4 flex flex-col min-h-0">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Tags</h3>
-            <div class="flex flex-wrap gap-2">
-              {hasProAccess ? (
-                tags.map((tag) => (
-                  <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                    {tag}
-                  </span>
-                ))
-              ) : (
-                tags.map((_: string, i: number) => (
                   <span class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 bg-gray-50 rounded border border-gray-100 select-none">
                     🔒 Nur Pro
                   </span>

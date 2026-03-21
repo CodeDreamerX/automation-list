@@ -24,7 +24,6 @@ const displayFields = [
   'certification_slugs',
   'country_slugs',
   'languages',
-  'tags',
   'year_founded',
   'employee_count',
   'plan',
@@ -52,7 +51,7 @@ function getUnknownSet(validation: ValidationResult, field: SlugField): string[]
   if (field === 'technology_slugs') return validation.unknownTechnologies;
   if (field === 'industry_slugs') return validation.unknownIndustries;
   if (field === 'certification_slugs') return validation.unknownCertifications;
-  return [];
+  return validation.unknownCountries;
 }
 ---
 
@@ -93,7 +92,8 @@ function getUnknownSet(validation: ValidationResult, field: SlugField): string[]
           const hasWarnings =
             validation.invalidEmail || validation.invalidWebsite || validation.duplicateSlug ||
             validation.unknownCategories.length > 0 || validation.unknownTechnologies.length > 0 ||
-            validation.unknownIndustries.length > 0 || validation.unknownCertifications.length > 0;
+            validation.unknownIndustries.length > 0 || validation.unknownCertifications.length > 0 ||
+            validation.unknownCountries.length > 0 || validation.unknownLanguages.length > 0;
 
           let rowClass = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
           if (hasErrors) {
@@ -133,6 +133,42 @@ function getUnknownSet(validation: ValidationResult, field: SlugField): string[]
                               title={unknownSet.has(slug) ? `Unknown slug: ${slug}` : slug}
                             >
                               {slug}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span class="text-gray-400 italic">(empty)</span>
+                      )}
+                    </td>
+                  );
+                }
+
+                // languages: comma-separated labels (match slug-reference "languages")
+                if (field === 'languages') {
+                  const unknownLang = new Set(validation.unknownLanguages);
+                  const raw = row[field];
+                  const parts =
+                    typeof raw === 'string' && raw.trim()
+                      ? raw.split(',').map((s: string) => s.trim()).filter(Boolean)
+                      : [];
+                  const hasUnknownLang = unknownLang.size > 0;
+                  let langCellClass = 'px-3 py-2 text-xs text-left max-w-xs';
+                  if (hasUnknownLang) {
+                    langCellClass += ' bg-yellow-200';
+                  }
+
+                  return (
+                    <td class={langCellClass}>
+                      {parts.length > 0 ? (
+                        <div class="flex flex-wrap gap-1">
+                          {parts.map((label: string) => (
+                            <span
+                              class={unknownLang.has(label)
+                                ? 'text-red-600 line-through'
+                                : 'text-gray-900'}
+                              title={unknownLang.has(label) ? `Unknown language: ${label}` : label}
+                            >
+                              {label}
                             </span>
                           ))}
                         </div>

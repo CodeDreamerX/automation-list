@@ -140,7 +140,7 @@ if (Astro.request.method === 'POST') {
     region: formData.get('region')?.toString() || null,
     country: formData.get('country')?.toString() || null,
     languages: selectedLanguages.length > 0 ? selectedLanguages.join(', ') : null,
-    tags: formData.get('tags')?.toString() || null,
+    tags: null,
     year_founded: formData.get('year_founded')?.toString() ? Number(formData.get('year_founded')!.toString()) : null,
     employee_count: formData.get('employee_count')?.toString() || null,
     hourly_rate: formData.get('hourly_rate')?.toString() || null,
