@@ -117,7 +117,7 @@ for (let i = 0; i < parsedData.length; i++) {
       if (hasScalarUpdate) {
         const { error: updateError } = await supabaseAdmin
           .from('vendors')
-          .update(scalarFields)
+          .update({ ...scalarFields, tags: null })
           .eq('id', vendorId);
 
         if (updateError) {
@@ -129,7 +129,7 @@ for (let i = 0; i < parsedData.length; i++) {
         // No scalar fields but relations present — still bump updated_at
         const { error: updateError } = await supabaseAdmin
           .from('vendors')
-          .update({ updated_at: scalarFields['updated_at'] })
+          .update({ updated_at: scalarFields['updated_at'], tags: null })
           .eq('id', vendorId);
 
         if (updateError) {

@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         region: form.get('region')?.toString() || null,
         country: form.get('country')?.toString() || null,
         languages: selectedLanguages.length > 0 ? selectedLanguages.join(', ') : null,
-        tags: form.get('tags')?.toString() || null,
+        tags: null,
         year_founded: form.get('year_founded')?.toString() ? Number(form.get('year_founded')!.toString()) : null,
         employee_count: form.get('employee_count')?.toString() || null,
         hourly_rate: form.get('hourly_rate')?.toString() || null,
@@ -90,8 +90,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Handle JSON (backward compatibility)
       const body = await request.json();
-      const { category_slugs, technology_slugs, industry_slugs, certification_slugs, countries_served: _countries_served, ...rest } = body;
-      insertData = { ...rest };
+      const {
+        category_slugs,
+        technology_slugs,
+        industry_slugs,
+        certification_slugs,
+        countries_served: _countries_served,
+        tags: _tags,
+        specialization_text: _specializationText,
+        ...rest
+      } = body;
+      insertData = { ...rest, tags: null };
 
       // Normalize types for JSON requests
       if (insertData.year_founded !== null && insertData.year_founded !== undefined) {

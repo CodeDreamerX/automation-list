@@ -5,6 +5,7 @@ import type { IndustryFormOption } from '../../types/industry';
 import type { CertificationFormOption } from '../../types/certification';
 import type { CountryFormOption } from '../../types/country';
 import FormSection from './FormSection.astro';
+import { VENDOR_LANGUAGE_OPTIONS } from '../../lib/admin/languageOptions';
 
 interface CategorizationSectionProps {
   vendor: any;
@@ -16,21 +17,6 @@ interface CategorizationSectionProps {
 }
 
 const { vendor, categories = [], technologies = [], industries = [], certifications = [], countries = [] } = Astro.props;
-
-const LANGUAGE_OPTIONS = [
-  'English',
-  'German',
-  'French',
-  'Spanish',
-  'Italian',
-  'Portuguese',
-  'Dutch',
-  'Polish',
-  'Czech',
-  'Turkish',
-  'Chinese',
-  'Japanese',
-];
 
 const selectedLanguages = new Set(
   String(vendor?.languages || '')
@@ -49,11 +35,7 @@ const certificationsByCategory = certifications.reduce((acc: Record<string, Cert
 
 const certificationEntries = Object.entries(certificationsByCategory) as [string, CertificationFormOption[]][];
 
-// Pass-through: preserve existing tags value in DB without any UI
 ---
-
-<!-- Pass-through hidden input: preserves existing tags in DB, no UI exposed -->
-<input type="hidden" name="tags" value={vendor?.tags || ''} />
 
 <FormSection title="Categorization">
   <!-- Search -->
@@ -132,7 +114,7 @@ const certificationEntries = Object.entries(certificationsByCategory) as [string
     </button>
     <div class="cat-section-content hidden pt-3 pb-1">
       <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {LANGUAGE_OPTIONS.map((language) => {
+        {VENDOR_LANGUAGE_OPTIONS.map((language) => {
           const checked = selectedLanguages.has(language);
           return (
             <label class="flex items-center gap-2 cursor-pointer" data-search-text={language.toLowerCase()}>

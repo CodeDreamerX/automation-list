@@ -41,17 +41,19 @@ try {
   return Astro.redirect('/admin/vendors/json/upload?error=invalid_json');
 }
 
-// Batch-fetch valid slugs for all 4 M2M types (parallel)
+// Batch-fetch valid slugs for all M2M types (parallel)
 const [
   { data: categoriesData },
   { data: technologiesData },
   { data: industriesData },
   { data: certificationsData },
+  { data: countriesData },
 ] = await Promise.all([
   supabaseAdmin.from('categories').select('slug'),
   supabaseAdmin.from('technologies').select('slug'),
   supabaseAdmin.from('industries').select('slug'),
   supabaseAdmin.from('certifications').select('slug'),
+  supabaseAdmin.from('countries').select('slug').eq('is_active', true),
 ]);
 
 const validSlugs: ValidSlugSets = {
@@ -59,6 +61,7 @@ const validSlugs: ValidSlugSets = {
   technologies: new Set((technologiesData || []).map((r: any) => r.slug)),
   industries: new Set((industriesData || []).map((r: any) => r.slug)),
   certifications: new Set((certificationsData || []).map((r: any) => r.slug)),
+  countries: new Set((countriesData || []).map((r: any) => r.slug)),
 };
 
 // Normalize all rows
@@ -83,7 +86,8 @@ const totalRowsWithErrors = validationResults.filter(r => r.missingRequired.leng
 const totalRowsWithWarnings = validationResults.filter(r =>
   r.invalidEmail || r.invalidWebsite || r.duplicateSlug ||
   r.unknownCategories.length > 0 || r.unknownTechnologies.length > 0 ||
-  r.unknownIndustries.length > 0 || r.unknownCertifications.length > 0
+  r.unknownIndustries.length > 0 || r.unknownCertifications.length > 0 ||
+  r.unknownCountries.length > 0 || r.unknownLanguages.length > 0
 ).length;
 ---
 
@@ -217,7 +221,7 @@ const totalRowsWithWarnings = validationResults.filter(r =>
       <h3 class="text-sm font-semibold text-gray-900 mb-2">Validation Notes</h3>
       <ul class="text-xs text-gray-600 space-y-1">
         <li>• <span class="bg-red-200 px-1 rounded">Red background</span> indicates missing required fields — row will be skipped</li>
-        <li>• <span class="bg-yellow-200 px-1 rounded">Yellow background</span> indicates warnings (invalid email, website format, or duplicate slug)</li>
+        <li>• <span class="bg-yellow-200 px-1 rounded">Yellow background</span> indicates warnings (invalid email, website format, duplicate slug, unknown relation slugs, or unknown language labels)</li>
         <li>• Required fields: <code class="bg-gray-100 px-1 rounded">name</code>, <code class="bg-gray-100 px-1 rounded">slug</code>, <code class="bg-gray-100 px-1 rounded">country</code>, <code class="bg-gray-100 px-1 rounded">category_slugs</code></li>
         <li>• Vendors with slugs already in the database are skipped automatically</li>
       </ul>

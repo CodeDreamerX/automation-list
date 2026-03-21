@@ -83,7 +83,7 @@ if (redirectResponse) {
 
       <div class="flex items-start justify-between gap-4">
         <p class="text-xs text-gray-600">
-          Current list of all valid slugs for categories, technologies, industries, and certifications — use these values in the relation array fields.
+          Valid slugs for categories, technologies, industries, certifications, and countries, plus allowed <code class="bg-gray-100 px-1 rounded">languages</code> labels — use these in relation arrays and language lists.
         </p>
         <a
           href="/api/admin/export-slugs"
@@ -115,7 +115,7 @@ if (redirectResponse) {
         <li>• File must be a JSON array of vendor objects (<code class="bg-gray-100 px-1 rounded">[{`{ ... }, { ... }`}]</code>)</li>
         <li>• Each object must have a <code class="bg-gray-100 px-1 rounded">slug</code> field — vendors without a matching slug are skipped</li>
         <li>• Only include the fields you want to change — omitted fields are not touched</li>
-        <li>• Relation arrays (<code class="bg-gray-100 px-1 rounded">category_slugs</code>, <code class="bg-gray-100 px-1 rounded">technology_slugs</code>, <code class="bg-gray-100 px-1 rounded">industry_slugs</code>, <code class="bg-gray-100 px-1 rounded">certification_slugs</code>): if present, existing links are replaced; if absent, existing links are kept</li>
+        <li>• Relation arrays (<code class="bg-gray-100 px-1 rounded">category_slugs</code>, <code class="bg-gray-100 px-1 rounded">technology_slugs</code>, <code class="bg-gray-100 px-1 rounded">industry_slugs</code>, <code class="bg-gray-100 px-1 rounded">certification_slugs</code>, <code class="bg-gray-100 px-1 rounded">country_slugs</code>): if present, existing links are replaced; if absent, existing links are kept</li>
         <li>• Logo fields are always ignored, even if present in the JSON</li>
         <li>• Maximum file size: 10MB</li>
       </ul>

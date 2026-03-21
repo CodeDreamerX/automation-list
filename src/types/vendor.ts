@@ -31,7 +31,7 @@
  * - hourly_rate: Pricing information
  * 
  * Categorization:
- * - languages, certifications, tags: Comma-separated strings
+ * - languages, certifications: Comma-separated strings
  * 
  * Plan & featuring:
  * - plan: 'free' | 'pro' | 'featured' | 'deactivated'
@@ -86,7 +86,6 @@ export interface Vendor {
   // Categorization (stored as comma-separated strings)
   languages?: string | null;     // Comma-separated, e.g., "English, German, French"
   certifications?: string | null; // Comma-separated
-  tags?: string | null;          // Comma-separated (indexed)
   
   // Plan & featuring
   plan?: 'free' | 'pro' | 'featured' | 'deactivated' | null; // Default: 'free'

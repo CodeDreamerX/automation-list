@@ -121,7 +121,6 @@ if (Astro.request.method === 'POST') {
         description_en: row.description_en || null,
         description_de: row.description_de || null,
         languages: row.languages || null,
-        tags: row.tags || null,
         year_founded: row.year_founded || null,
         employee_count: row.employee_count || null,
         hourly_rate: row.hourly_rate || null,
@@ -132,7 +131,6 @@ if (Astro.request.method === 'POST') {
         featured_until: row.featured_until || null,
         taking_new_projects: row.taking_new_projects ?? null,
         linkedin_url: row.linkedin_url || null,
-        specialization_text: row.specialization_text || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         // logo_* and meta_* fields intentionally omitted
