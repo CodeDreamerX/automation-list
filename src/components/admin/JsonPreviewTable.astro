@@ -32,7 +32,6 @@ const displayFields = [
   'og_member',
   'linkedin_url',
   'taking_new_projects',
-  'specialization_text',
 ];
 
 const slugFields = ['category_slugs', 'technology_slugs', 'industry_slugs', 'certification_slugs', 'country_slugs'] as const;
@@ -196,7 +195,7 @@ function getUnknownSet(validation: ValidationResult, field: SlugField): string[]
                 }
 
                 let maxWidthClass = 'max-w-xs';
-                if (field === 'description_en' || field === 'specialization_text') {
+                if (field === 'description_en') {
                   maxWidthClass = 'max-w-md';
                 } else if (field === 'name') {
                   maxWidthClass = 'max-w-sm';

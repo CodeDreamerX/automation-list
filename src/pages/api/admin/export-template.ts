@@ -39,9 +39,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       // --- Arrays: languages = exact strings from slug-reference.json "languages" ---
       languages: [],
 
-      // --- Other text ---
-      specialization_text: null,
-
       // --- Metrics ---
       year_founded: null,
       employee_count: null,

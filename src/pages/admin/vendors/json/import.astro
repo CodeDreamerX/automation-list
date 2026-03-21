@@ -131,7 +131,6 @@ if (Astro.request.method === 'POST') {
         featured_until: row.featured_until || null,
         taking_new_projects: row.taking_new_projects ?? null,
         linkedin_url: row.linkedin_url || null,
-        specialization_text: row.specialization_text || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         // logo_* and meta_* fields intentionally omitted

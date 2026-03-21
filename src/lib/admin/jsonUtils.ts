@@ -30,7 +30,7 @@ export const allowedFields = [
   "featured_until",
   "taking_new_projects",
   "linkedin_url",
-  "specialization_text",
+  // specialization_text: admin UI only — not JSON import/export
   // logo_* and meta_* fields intentionally excluded from JSON import
 ];
 

@@ -111,6 +111,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         certification_slugs,
         countries_served: _countries_served,
         tags: _tags,
+        specialization_text: _specializationText,
         ...rest
       } = body;
       updateData = { ...rest, tags: null };

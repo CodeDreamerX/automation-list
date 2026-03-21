@@ -5,7 +5,7 @@ export const allowedUpdateScalarFields = [
   'website', 'email', 'phone',
   'employee_count', 'year_founded', 'hourly_rate',
   'languages',
-  'taking_new_projects', 'linkedin_url', 'specialization_text',
+  'taking_new_projects', 'linkedin_url',
   'plan', 'featured', 'priority', 'og_member', 'featured_until',
 ] as const;
 
@@ -127,7 +127,6 @@ export const UPDATE_TEMPLATE = [
     languages: ['de', 'en'],
     taking_new_projects: true,
     linkedin_url: 'https://linkedin.com/company/example',
-    specialization_text: 'Specializes in robotic process automation for finance.',
     plan: 'free',
     featured: false,
     priority: 5,
