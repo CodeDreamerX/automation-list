@@ -5,6 +5,10 @@ import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import AdminLayout from '../../../../components/admin/AdminLayout.astro';
 import JsonPreviewTable from '../../../../components/admin/JsonPreviewTable.astro';
 import { normalizeJsonRow, validateRow, type ValidationResult, type ValidSlugSets } from '../../../../lib/admin/jsonUtils';
+import {
+  buildCountryCanonicalLookup,
+  resolveCanonicalCountryName,
+} from '../../../../lib/admin/countryResolve';
 import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 
 const redirectResponse = await protectAdminRoute(Astro.locals);
@@ -53,15 +57,20 @@ const [
   supabaseAdmin.from('technologies').select('slug'),
   supabaseAdmin.from('industries').select('slug'),
   supabaseAdmin.from('certifications').select('slug'),
-  supabaseAdmin.from('countries').select('slug').eq('is_active', true),
+  supabaseAdmin.from('countries').select('slug, name_en, name_de, is_active'),
 ]);
+
+const countryRows = countriesData || [];
+const countryCanonicalLookup = buildCountryCanonicalLookup(countryRows);
 
 const validSlugs: ValidSlugSets = {
   categories: new Set((categoriesData || []).map((r: any) => r.slug)),
   technologies: new Set((technologiesData || []).map((r: any) => r.slug)),
   industries: new Set((industriesData || []).map((r: any) => r.slug)),
   certifications: new Set((certificationsData || []).map((r: any) => r.slug)),
-  countries: new Set((countriesData || []).map((r: any) => r.slug)),
+  countries: new Set(
+    countryRows.filter((r: any) => r.is_active !== false).map((r: any) => r.slug)
+  ),
 };
 
 // Normalize all rows
@@ -70,6 +79,10 @@ const allSlugs: string[] = [];
 
 for (const row of parsedData) {
   const normalized = normalizeJsonRow(row);
+  if (normalized.country) {
+    normalized.country =
+      resolveCanonicalCountryName(normalized.country, countryCanonicalLookup) ?? normalized.country;
+  }
   normalizedData.push(normalized);
   if (normalized.slug) {
     allSlugs.push(normalized.slug);

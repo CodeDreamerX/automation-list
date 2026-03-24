@@ -9,8 +9,11 @@ import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
+import { linkifyText } from "../../../lib/linkify";
+import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import LucideIcon from "../../../components/LucideIcon.astro";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
+import { getCountryNameMap } from "../../../lib/countryUtils";
 
 
 // Get technology slug from URL param
@@ -40,6 +43,7 @@ if (!technology) {
 
 const techName = technology.name_en || technology.name_de || techSlug;
 const techDescription = technology.description_en || technology.description_de || '';
+const countryNameMap = await getCountryNameMap(supabase, getCached, setCached);
 
 // Split description into paragraphs (split on blank lines)
 const techDescriptionText = technology.description_en || technology.description_de || '';
@@ -88,6 +92,12 @@ if (cachedResult) {
           categories:categories (
             id,
             slug,
+            name_en,
+            name_de
+          )
+        ),
+        vendor_countries (
+          countries:countries (
             name_en,
             name_de
           )
@@ -154,6 +164,16 @@ const faqItems = ((technology.faq_en ?? []) as any[]).filter(
   (item: any) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
+
+const keywordMap = buildPageKeywordMap('en', `/en/technology/${techSlug}`);
+const seenKeywords = new Set<string>();
+const linkedParagraphs = techDescriptionParagraphs.map((p: string) =>
+  linkifyText(p.trim(), keywordMap, { maxLinks: 5, firstMatchOnly: true, seenKeywords, minWordGap: 10 })
+);
+const linkedFaqItems = faqItems.map((item: any) => ({
+  ...item,
+  linkedAnswer: linkifyText(item.answer, keywordMap, { maxLinks: 1, firstMatchOnly: true, seenKeywords, minWordGap: 10 }),
+}));
 
 // SEO metadata
 const vendorCount = totalVendors || 0;
@@ -224,12 +244,10 @@ const breadcrumbs = [
           <h1 class="text-3xl font-bold text-gray-900 mb-2">
             {techName} Vendors in Europe
           </h1>
-          {techDescriptionParagraphs.length > 0 && (
+          {linkedParagraphs.length > 0 && (
             <div>
-              {techDescriptionParagraphs.map((paragraph: string) => (
-                <p class="mb-4 text-gray-700 leading-relaxed">
-                  {paragraph.trim()}
-                </p>
+              {linkedParagraphs.map((html: string) => (
+                <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
               ))}
             </div>
           )}
@@ -257,6 +275,7 @@ const breadcrumbs = [
             vendor={vendor}
             hrefPrefix="/en/vendor"
             lang="en"
+            countryNameMap={countryNameMap}
           />
         ))
       ) : (
@@ -281,10 +300,10 @@ const breadcrumbs = [
     <div class="container-px mx-auto max-w-7xl px-4 py-10 border-t border-gray-100">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
       <div class="space-y-6">
-        {faqItems.map((item: any) => (
+        {linkedFaqItems.map((item: any) => (
           <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-2">{item.question}</h3>
-            <p class="text-gray-700 leading-relaxed">{item.answer}</p>
+            <p class="text-gray-700 leading-relaxed" set:html={item.linkedAnswer}></p>
           </div>
         ))}
       </div>

@@ -6,8 +6,10 @@ import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
+import { linkifyText } from "../../../lib/linkify";
+import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
-import { parseCountryParam, slugifyCountry } from "../../../lib/countryUtils";
+import { getCountryNameMap, parseCountryParam, slugifyCountry } from "../../../lib/countryUtils";
 import type { FaqItem } from "../../../types/industry";
 
 const countryParam = Astro.params.country || '';
@@ -17,6 +19,7 @@ if (!normalizedCountry) return Astro.redirect('/de/vendors');
 
 const countrySlug = slugifyCountry(normalizedCountry);
 if (!countrySlug) return Astro.redirect('/de/vendors');
+const countryNameMap = await getCountryNameMap(supabase, getCached, setCached);
 
 if (countryParam !== countrySlug) {
   return Astro.redirect(`/de/country/${countrySlug}${Astro.url.search}`);
@@ -65,6 +68,12 @@ if (cachedResult) {
             name_en,
             name_de
           )
+        ),
+        vendor_countries (
+          countries:countries (
+            name_en,
+            name_de
+          )
         )
       `)
       .ilike('country', normalizedCountry)
@@ -106,6 +115,7 @@ let displayCountry = countryRecord?.name_de
   || capitalizeCountry(normalizedCountry);
 
 const flagEmoji = countryRecord?.flag_emoji || '';
+const pageHeading = `Industrieautomation ${displayCountry}`;
 
 // Description paragraphs (prefer DE, fallback EN)
 const descriptionText = countryRecord?.description_de || countryRecord?.description_en || '';
@@ -116,6 +126,16 @@ const faqItems = ((countryRecord?.faq_de ?? countryRecord?.faq_en ?? []) as FaqI
   (item) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
+
+const keywordMap = buildPageKeywordMap('de');
+const seenKeywords = new Set<string>();
+const linkedParagraphs = descriptionParagraphs.map((p: string) =>
+  linkifyText(p.trim(), keywordMap, { maxLinks: 5, firstMatchOnly: true, seenKeywords, minWordGap: 10 })
+);
+const linkedFaqItems = faqItems.map((item) => ({
+  ...item,
+  linkedAnswer: linkifyText(item.answer, keywordMap, { maxLinks: 1, firstMatchOnly: true, seenKeywords, minWordGap: 10 }),
+}));
 
 // SEO
 const countryAdjectives: Record<string, string> = {
@@ -143,6 +163,27 @@ const metaTitle = totalVendors
 const metaDescription = totalVendors
   ? `${totalVendors} geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`
   : `Geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`;
+const germanLocationMap: Record<string, string> = {
+  'Schweiz': 'der Schweiz',
+  'Switzerland': 'der Schweiz',
+  'Türkei': 'der Türkei',
+  'Turkey': 'der Türkei',
+  'Slowakei': 'der Slowakei',
+  'Slovakia': 'der Slowakei',
+  'Ukraine': 'der Ukraine',
+  'Niederlande': 'den Niederlanden',
+  'Netherlands': 'den Niederlanden',
+  'Tschechische Republik': 'der Tschechischen Republik',
+  'Czech Republic': 'der Tschechischen Republik',
+  'Vereinigtes Königreich': 'dem Vereinigten Königreich',
+  'United Kingdom': 'dem Vereinigten Königreich',
+  'Vereinigte Staaten': 'den Vereinigten Staaten',
+  'United States': 'den Vereinigten Staaten',
+};
+const germanLocation = germanLocationMap[displayCountry] ?? displayCountry;
+const vendorCountForMeta = totalVendors || 0;
+const seoTitle = `${vendorCountForMeta} Automatisierungsanbieter in ${germanLocation} | Automation List`;
+const seoDescription = `${vendorCountForMeta} geprüfte Anbieter für Industrieautomation in ${germanLocation} - Systemintegratoren, MES, SCADA, Robotik und mehr.`;
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/de/country/${countrySlug}`;
@@ -190,8 +231,8 @@ const faqSchema = hasFaq ? {
 ---
 
 <BaseLayout
-  title={metaTitle}
-  description={metaDescription}
+  title={seoTitle}
+  description={seoDescription}
   canonical={currentUrl}
   ogImage={defaultOg}
   lang="de"
@@ -204,9 +245,26 @@ const faqSchema = hasFaq ? {
   )}
 
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
-    <h1 class="text-3xl font-bold text-gray-900 mb-4">
-      {flagEmoji && <img src={`https://flagcdn.com/32x24/${flagEmoji.toLowerCase()}.png`} width="32" height="24" alt="" class="inline-block align-middle mr-2" />}Industrieautomatisierungsunternehmen in {displayCountry}
-    </h1>
+    <div class="mb-4 flex items-center gap-2">
+      {flagEmoji && (
+        <img
+          src={`https://flagcdn.com/32x24/${flagEmoji.toLowerCase()}.png`}
+          width="32"
+          height="24"
+          alt=""
+          class="inline-block align-middle"
+        />
+      )}
+      <h1 class="text-3xl font-bold text-gray-900">{pageHeading}</h1>
+    </div>
+
+    {linkedParagraphs.length > 0 && (
+      <div class="prose prose-gray max-w-none mb-8 text-gray-700">
+        {linkedParagraphs.map((html: string) => (
+          <p set:html={html}></p>
+        ))}
+      </div>
+    )}
 
     <div class="mb-4">
       <p class="text-sm text-gray-600">
@@ -217,18 +275,10 @@ const faqSchema = hasFaq ? {
       </p>
     </div>
 
-    {descriptionParagraphs.length > 0 && (
-      <div class="prose prose-gray max-w-none mb-8 text-gray-700">
-        {descriptionParagraphs.map((para: string) => (
-          <p>{para}</p>
-        ))}
-      </div>
-    )}
-
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {normalizedVendors.length > 0 ? (
         normalizedVendors.map(vendor => (
-          <VendorCard vendor={vendor} hrefPrefix="/de/vendor" lang="de" />
+          <VendorCard vendor={vendor} hrefPrefix="/de/vendor" lang="de" countryNameMap={countryNameMap} />
         ))
       ) : (
         <div class="col-span-full text-center py-12">
@@ -243,10 +293,10 @@ const faqSchema = hasFaq ? {
       <section class="mt-16">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Häufig gestellte Fragen</h2>
         <div class="space-y-6">
-          {faqItems.map((item) => (
+          {linkedFaqItems.map((item) => (
             <div class="border-b border-gray-200 pb-6">
               <h3 class="text-lg font-semibold text-gray-900 mb-2">{item.question}</h3>
-              <p class="text-gray-700">{item.answer}</p>
+              <p class="text-gray-700" set:html={item.linkedAnswer}></p>
             </div>
           ))}
         </div>

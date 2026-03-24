@@ -53,37 +53,24 @@ const maxLogoHeight = sizeConfig.maxHeight;
 {(() => {
   const logoUrl = src && typeof src === 'string' ? src.trim() : null;
   const hasLogo = logoUrl && logoUrl.length > 0;
-  const imageId = `logo-img-${Math.random().toString(36).substr(2, 9)}`;
-  
+
   return hasLogo ? (
-    <>
-      <div class={`${containerSize} flex items-center justify-center rounded-lg ${bgClass} p-2`} style="overflow: hidden;">
-        <img
-          id={imageId}
-          src={logoUrl}
-          alt={alt || "Logo"}
-          style={`pointer-events: none; display: block; width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <script define:vars={{ imageId, logoUrl }}>
-        (function() {
-          const img = document.getElementById(imageId);
-          if (img) {
-            img.addEventListener('error', function() {
-              console.error('Logo image failed to load:', logoUrl);
-              img.style.display = 'none';
-            });
-            img.addEventListener('load', function() {
-              if (img.naturalWidth === 0 || img.naturalHeight === 0) {
-                console.warn('Logo image loaded but has zero dimensions:', logoUrl);
-              }
-            });
-          }
-        })();
-      </script>
-    </>
+    <div
+      class={`${containerSize} flex items-center justify-center rounded-lg ${bgClass} p-2`}
+      style="overflow: hidden;"
+      data-logo-box
+      data-logo-url={logoUrl}
+    >
+      <img
+        src={logoUrl}
+        alt={alt || "Logo"}
+        style={`pointer-events: none; display: block; width: auto; height: auto; max-width: ${maxLogoWidth}px; max-height: ${maxLogoHeight}px; object-fit: contain;`}
+        loading="lazy"
+        decoding="async"
+        data-logo-image
+      />
+      <span class="hidden text-xs text-gray-400" data-logo-fallback>No Logo</span>
+    </div>
   ) : (
     <div class={`${containerSize} flex items-center justify-center rounded-lg bg-gray-100 border border-gray-200`}>
       <span class="text-xs text-gray-400">No Logo</span>

@@ -74,6 +74,8 @@ export function normalizeJsonRow(row: any): any {
     : [];
   normalized._countrySlugs = Array.isArray(normalized.country_slugs)
     ? (normalized.country_slugs as string[])
+        .map((s) => String(s).trim().toLowerCase())
+        .filter(Boolean)
     : [];
 
   return normalized;

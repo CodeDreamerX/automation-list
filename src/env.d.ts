@@ -16,8 +16,17 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-declare namespace App {
-  interface Locals {
-    isAdmin: boolean;
+declare global {
+  namespace App {
+    interface Locals {
+      isAdmin: boolean;
+    }
+  }
+
+  interface Window {
+    dataLayer: unknown[][];
+    gtag?: (...args: unknown[]) => void;
   }
 }
+
+export {};

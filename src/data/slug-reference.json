@@ -241,6 +241,41 @@
       "name": "Water and Wastewater"
     }
   ],
+  "countries": [
+    { "slug": "austria", "name": "Austria" },
+    { "slug": "belgium", "name": "Belgium" },
+    { "slug": "czech-republic", "name": "Czech Republic" },
+    { "slug": "denmark", "name": "Denmark" },
+    { "slug": "finland", "name": "Finland" },
+    { "slug": "france", "name": "France" },
+    { "slug": "germany", "name": "Germany" },
+    { "slug": "hungary", "name": "Hungary" },
+    { "slug": "ireland", "name": "Ireland" },
+    { "slug": "italy", "name": "Italy" },
+    { "slug": "netherlands", "name": "Netherlands" },
+    { "slug": "norway", "name": "Norway" },
+    { "slug": "poland", "name": "Poland" },
+    { "slug": "portugal", "name": "Portugal" },
+    { "slug": "romania", "name": "Romania" },
+    { "slug": "spain", "name": "Spain" },
+    { "slug": "sweden", "name": "Sweden" },
+    { "slug": "switzerland", "name": "Switzerland" },
+    { "slug": "united-kingdom", "name": "United Kingdom" }
+  ],
+  "languages": [
+    "English",
+    "German",
+    "French",
+    "Spanish",
+    "Italian",
+    "Portuguese",
+    "Dutch",
+    "Polish",
+    "Czech",
+    "Turkish",
+    "Chinese",
+    "Japanese"
+  ],
   "certifications": [
     {
       "slug": "atex",
