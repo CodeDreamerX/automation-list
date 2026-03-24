@@ -2,6 +2,8 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import { supabase } from "../../lib/supabaseClient";
+import { linkifyText } from "../../lib/linkify";
+import { getKeywordMap } from "../../lib/keyword-map";
 
 
 // Fetch active categories from database
@@ -37,6 +39,15 @@ const categories = (dbCategories || []).map(cat => ({
   count: cat.id ? (countMap.get(cat.id) || 0) : 0,
 })).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
 
+// Build linkified descriptions, excluding each card's own self-link (URL-based filter).
+const baseKeywordMap = getKeywordMap('de');
+const linkifiedDescriptions: Record<string, string> = {};
+for (const cat of categories) {
+  if (!cat.card_description_de?.trim()) continue;
+  const cardMap = new Map<string, string>([...baseKeywordMap].filter(([_, url]) => url !== `/de/category/${cat.slug}`));
+  linkifiedDescriptions[cat.slug] = linkifyText(cat.card_description_de, cardMap, { minWordGap: 10, linkClass: "text-blue-600 hover:underline pointer-events-auto relative z-10" });
+}
+
 // Generate dynamic description from actual categories
 const categoryNames = categories
   .slice(0, 6) // Limit to first 6 categories
@@ -60,6 +71,6 @@ const breadcrumbs = [
   lang="de"
   breadcrumbs={breadcrumbs}
 >
-  <CategoryGrid title="Nach Kategorie durchsuchen" description={description} categories={categories} lang="de" headingLevel="h1" />
+  <CategoryGrid title="Nach Kategorie durchsuchen" description={description} categories={categories} lang="de" headingLevel="h1" linkifiedDescriptions={linkifiedDescriptions} />
 </BaseLayout>
 

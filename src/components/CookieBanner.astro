@@ -2,20 +2,30 @@
 // Cookie Consent Banner Component
 // Always rendered in HTML, hidden by default
 // Shown by client-side JavaScript if no consent decision exists
+interface Props {
+  lang?: "en" | "de";
+}
+
+const { lang = "en" } = Astro.props as Props;
+const isGerman = lang === "de";
 ---
 
 <!-- Banner HTML - Always rendered, hidden by default -->
 <div id="cookie-banner" class="cookie-banner hidden">
   <div class="cookie-banner-content">
     <p class="cookie-banner-text">
-      We use cookies to analyze site usage. You can accept or reject analytics cookies.
+      {
+        isGerman
+          ? "Wir verwenden Cookies, um die Nutzung der Website zu analysieren. Sie konnen Analyse-Cookies akzeptieren oder ablehnen."
+          : "We use cookies to analyze site usage. You can accept or reject analytics cookies."
+      }
     </p>
     <div class="cookie-banner-buttons">
       <button id="cookie-accept" class="cookie-button cookie-button-accept">
-        Accept
+        {isGerman ? "Akzeptieren" : "Accept"}
       </button>
       <button id="cookie-reject" class="cookie-button cookie-button-reject">
-        Reject
+        {isGerman ? "Ablehnen" : "Reject"}
       </button>
     </div>
   </div>
@@ -58,7 +68,7 @@
     }
     
     window.dataLayer = window.dataLayer || [];
-    function gtag(...args: any[]) {
+    function gtag(...args: unknown[]) {
       window.dataLayer.push(args);
     }
     

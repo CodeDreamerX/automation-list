@@ -10,7 +10,8 @@
     "astro": "astro",
     "migrate:vendor-tags": "node ./scripts/tag-migration.js",
     "todos": "node generate-todo.js",
-    "upload-todos": "node upload-todos.js"
+    "upload-todos": "node upload-todos.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
@@ -25,5 +26,8 @@
     "lucide": "^0.575.0",
     "sharp": "^0.34.5",
     "tailwindcss": "4.1.10"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
   }
 }

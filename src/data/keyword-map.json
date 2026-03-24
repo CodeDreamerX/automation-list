@@ -1,0 +1,499 @@
+{
+  "en": {
+
+    "_comment_categories": "--- Categories ---",
+
+    "agv": "/en/category/agv-amr",
+    "amr": "/en/category/agv-amr",
+    "agv / amr": "/en/category/agv-amr",
+    "agv/amr": "/en/category/agv-amr",
+    "automated guided vehicle": "/en/category/agv-amr",
+    "autonomous mobile robot": "/en/category/agv-amr",
+
+    "cobot": "/en/category/cobots-hrc",
+    "hrc": "/en/category/cobots-hrc",
+    "collaborative robot": "/en/category/cobots-hrc",
+    "human-robot collaboration": "/en/category/cobots-hrc",
+
+    "industrial iot": "/en/category/industrial-it-iot",
+    "iiot": "/en/category/industrial-it-iot",
+    "industrial it": "/en/category/industrial-it-iot",
+    "industrial it & iot": "/en/category/industrial-it-iot",
+
+    "mes": "/en/category/mes-specialists",
+    "manufacturing execution system": "/en/category/mes-specialists",
+
+    "motion & drives": "/en/category/motion-drives",
+    "motion and drives": "/en/category/motion-drives",
+    "servo drive": "/en/category/motion-drives",
+    "variable frequency drive": "/en/category/motion-drives",
+    "vfd": "/en/category/motion-drives",
+
+    "oem": "/en/category/oem",
+    "machine builder": "/en/category/oem",
+
+    "panel building": "/en/category/panel-building",
+    "panel builder": "/en/category/panel-building",
+    "control panel": "/en/category/panel-building",
+    "switchgear": "/en/category/panel-building",
+
+    "plc": "/en/category/plcs",
+    "programmable logic controller": "/en/category/plcs",
+
+    "predictive maintenance": "/en/category/predictive-maintenance",
+    "condition monitoring": "/en/category/predictive-maintenance",
+    "pdm": "/en/category/predictive-maintenance",
+
+    "process automation": "/en/category/process-dcs-automation",
+    "dcs": "/en/category/process-dcs-automation",
+    "distributed control system": "/en/category/process-dcs-automation",
+    "process control": "/en/category/process-dcs-automation",
+
+    "robotics integrator": "/en/category/robotics",
+    "robot": "/en/category/robotics",
+    "robotic": "/en/category/robotics",
+    "industrial robot": "/en/category/robotics",
+
+    "safety system": "/en/category/safety-systems",
+    "functional safety": "/en/category/safety-systems",
+    "machine safety": "/en/category/safety-systems",
+    "sil": "/en/category/safety-systems",
+    "safety integrity level": "/en/category/safety-systems",
+    "ce marking": "/en/category/safety-systems",
+
+    "scada": "/en/category/scada-hmi",
+    "hmi": "/en/category/scada-hmi",
+    "scada/hmi": "/en/category/scada-hmi",
+    "scada / hmi": "/en/category/scada-hmi",
+    "supervisory control": "/en/category/scada-hmi",
+
+    "sensor": "/en/category/sensors-io",
+    "i/o": "/en/category/sensors-io",
+    "field device": "/en/category/sensors-io",
+    "remote i/o": "/en/category/sensors-io",
+
+    "simulation": "/en/category/simulation-digital-twin",
+    "digital twin": "/en/category/simulation-digital-twin",
+    "virtual commissioning": "/en/category/simulation-digital-twin",
+
+    "system integrator": "/en/category/system-integrator",
+
+    "vision system": "/en/category/vision-systems",
+    "machine vision": "/en/category/vision-systems",
+    "image processing": "/en/category/vision-systems",
+    "optical inspection": "/en/category/vision-systems",
+
+    "_comment_technologies": "--- Technologies ---",
+
+    "abb": "/en/technology/abb",
+
+    "beckhoff": "/en/technology/beckhoff",
+    "twincat": "/en/technology/beckhoff",
+
+    "bosch rexroth": "/en/technology/bosch-rexroth",
+    "rexroth": "/en/technology/bosch-rexroth",
+
+    "b&r": "/en/technology/br-automation",
+    "b&r industrial automation": "/en/technology/br-automation",
+    "b&r automation": "/en/technology/br-automation",
+
+    "cognex": "/en/technology/cognex",
+
+    "emerson": "/en/technology/emerson-deltav",
+    "deltav": "/en/technology/emerson-deltav",
+
+    "endress+hauser": "/en/technology/endress-hauser",
+    "endress hauser": "/en/technology/endress-hauser",
+
+    "fanuc": "/en/technology/fanuc",
+
+    "honeywell": "/en/technology/honeywell",
+    "honeywell process solution": "/en/technology/honeywell",
+    "experion": "/en/technology/honeywell",
+
+    "ignition": "/en/technology/ignition",
+    "inductive automation": "/en/technology/ignition",
+
+    "keyence": "/en/technology/keyence",
+
+    "kuka": "/en/technology/kuka",
+
+    "lenze": "/en/technology/lenze",
+
+    "mitsubishi electric": "/en/technology/mitsubishi-electric",
+    "melsec": "/en/technology/mitsubishi-electric",
+
+    "mqtt": "/en/technology/mqtt",
+
+    "omron": "/en/technology/omron",
+
+    "opc ua": "/en/technology/opc-ua",
+    "opc-ua": "/en/technology/opc-ua",
+    "opc unified architecture": "/en/technology/opc-ua",
+
+    "pilz": "/en/technology/pilz",
+    "pnoz": "/en/technology/pilz",
+    "pss 4000": "/en/technology/pilz",
+
+    "profinet": "/en/technology/profinet-profibus",
+    "profibus": "/en/technology/profinet-profibus",
+    "profinet / profibus": "/en/technology/profinet-profibus",
+    "profinet/profibus": "/en/technology/profinet-profibus",
+
+    "rockwell": "/en/technology/rockwell",
+    "rockwell automation": "/en/technology/rockwell",
+    "allen-bradley": "/en/technology/rockwell",
+    "allen bradley": "/en/technology/rockwell",
+    "controllogix": "/en/technology/rockwell",
+    "compactlogix": "/en/technology/rockwell",
+
+    "schneider electric": "/en/technology/schneider",
+    "schneider": "/en/technology/schneider",
+    "modicon": "/en/technology/schneider",
+    "ecostruxure": "/en/technology/schneider",
+
+    "sew-eurodrive": "/en/technology/sew-eurodrive",
+    "sew eurodrive": "/en/technology/sew-eurodrive",
+
+    "siemens": "/en/technology/siemens",
+    "simatic": "/en/technology/siemens",
+    "tia portal": "/en/technology/siemens",
+    "wincc": "/en/technology/siemens",
+    "step 7": "/en/technology/siemens",
+    "s7-1500": "/en/technology/siemens",
+
+    "stäubli": "/en/technology/staeubli",
+    "staubli": "/en/technology/staeubli",
+
+    "universal robots": "/en/technology/universal-robots",
+    "ur5": "/en/technology/universal-robots",
+    "ur10": "/en/technology/universal-robots",
+    "ur16": "/en/technology/universal-robots",
+
+    "wonderware": "/en/technology/wonderware-aveva",
+    "aveva": "/en/technology/wonderware-aveva",
+    "intouch": "/en/technology/wonderware-aveva",
+
+    "yaskawa": "/en/technology/yaskawa",
+    "motoman": "/en/technology/yaskawa",
+
+    "yokogawa": "/en/technology/yokogawa",
+    "centum vp": "/en/technology/yokogawa",
+
+    "_comment_industries": "--- Industries ---",
+
+    "automotive": "/en/industry/automotive-and-mobility",
+    "automotive and mobility": "/en/industry/automotive-and-mobility",
+    "car manufacturing": "/en/industry/automotive-and-mobility",
+
+    "chemical": "/en/industry/chemicals-and-process-industry",
+    "chemicals and process industry": "/en/industry/chemicals-and-process-industry",
+    "chemical industry": "/en/industry/chemicals-and-process-industry",
+    "process industry": "/en/industry/chemicals-and-process-industry",
+
+    "electronics and semiconductor": "/en/industry/electronics-and-semiconductor",
+    "semiconductor": "/en/industry/electronics-and-semiconductor",
+    "electronics manufacturing": "/en/industry/electronics-and-semiconductor",
+    "chip manufacturing": "/en/industry/electronics-and-semiconductor",
+
+    "energy and utilities": "/en/industry/energy-and-utilities",
+    "energy": "/en/industry/energy-and-utilities",
+    "utilities": "/en/industry/energy-and-utilities",
+    "power generation": "/en/industry/energy-and-utilities",
+    "power plant": "/en/industry/energy-and-utilities",
+
+    "food and beverage": "/en/industry/food-and-beverage",
+    "f&b": "/en/industry/food-and-beverage",
+    "food processing": "/en/industry/food-and-beverage",
+    "food production": "/en/industry/food-and-beverage",
+    "beverage": "/en/industry/food-and-beverage",
+    "dairy": "/en/industry/food-and-beverage",
+
+    "logistics and intralogistics": "/en/industry/logistics-and-intralogistics",
+    "logistics": "/en/industry/logistics-and-intralogistics",
+    "intralogistics": "/en/industry/logistics-and-intralogistics",
+    "warehouse automation": "/en/industry/logistics-and-intralogistics",
+
+    "metal and steel": "/en/industry/metal-and-steel",
+    "steel": "/en/industry/metal-and-steel",
+    "metalworking": "/en/industry/metal-and-steel",
+    "metal processing": "/en/industry/metal-and-steel",
+
+    "mining and minerals": "/en/industry/mining-and-minerals",
+    "mining": "/en/industry/mining-and-minerals",
+
+    "oil and gas": "/en/industry/oil-and-gas",
+    "oil & gas": "/en/industry/oil-and-gas",
+    "upstream": "/en/industry/oil-and-gas",
+    "downstream": "/en/industry/oil-and-gas",
+    "refinery": "/en/industry/oil-and-gas",
+
+    "packaging": "/en/industry/packaging-and-materials-handling",
+    "packaging and materials handling": "/en/industry/packaging-and-materials-handling",
+    "materials handling": "/en/industry/packaging-and-materials-handling",
+    "palletizing": "/en/industry/packaging-and-materials-handling",
+
+    "pharma": "/en/industry/pharma-and-lifesciences",
+    "pharmaceutical": "/en/industry/pharma-and-lifesciences",
+    "pharma and life sciences": "/en/industry/pharma-and-lifesciences",
+    "life sciences": "/en/industry/pharma-and-lifesciences",
+    "gmp": "/en/industry/pharma-and-lifesciences",
+    "cleanroom": "/en/industry/pharma-and-lifesciences",
+
+    "pulp and paper": "/en/industry/pulp-paper-print",
+    "paper and print": "/en/industry/pulp-paper-print",
+    "printing": "/en/industry/pulp-paper-print",
+
+    "renewable energy": "/en/industry/renewable-energy",
+    "solar": "/en/industry/renewable-energy",
+    "wind energy": "/en/industry/renewable-energy",
+    "wind turbine": "/en/industry/renewable-energy",
+
+    "water and wastewater": "/en/industry/water-and-wastewater",
+    "water treatment": "/en/industry/water-and-wastewater",
+    "wastewater": "/en/industry/water-and-wastewater",
+    "water": "/en/industry/water-and-wastewater"
+  },
+
+  "de": {
+
+    "_comment_categories": "--- Kategorien ---",
+
+    "agv": "/de/category/agv-amr",
+    "amr": "/de/category/agv-amr",
+    "agv / amr": "/de/category/agv-amr",
+    "agv/amr": "/de/category/agv-amr",
+    "fahrerloses transportsystem": "/de/category/agv-amr",
+    "fts": "/de/category/agv-amr",
+
+    "cobot": "/de/category/cobots-hrc",
+    "mrk": "/de/category/cobots-hrc",
+    "mensch-roboter-kollaboration": "/de/category/cobots-hrc",
+    "kollaborativer roboter": "/de/category/cobots-hrc",
+
+    "industrielle it": "/de/category/industrial-it-iot",
+    "iiot": "/de/category/industrial-it-iot",
+    "industrial iot": "/de/category/industrial-it-iot",
+    "industrielle it & iot": "/de/category/industrial-it-iot",
+
+    "mes": "/de/category/mes-specialists",
+    "manufacturing execution system": "/de/category/mes-specialists",
+    "mes-system": "/de/category/mes-specialists",
+    "fertigungssteuerung": "/de/category/mes-specialists",
+
+    "antriebstechnik": "/de/category/motion-drives",
+    "servoantrieb": "/de/category/motion-drives",
+    "frequenzumrichter": "/de/category/motion-drives",
+
+    "oem": "/de/category/oem",
+    "maschinenbauer": "/de/category/oem",
+    "maschinenbau": "/de/category/oem",
+
+    "schaltschrankbau": "/de/category/panel-building",
+    "schaltschrank": "/de/category/panel-building",
+    "schaltanlagenbau": "/de/category/panel-building",
+
+    "sps": "/de/category/plcs",
+    "plc": "/de/category/plcs",
+    "speicherprogrammierbare steuerung": "/de/category/plcs",
+
+    "predictive maintenance": "/de/category/predictive-maintenance",
+    "vorausschauende wartung": "/de/category/predictive-maintenance",
+    "zustandsüberwachung": "/de/category/predictive-maintenance",
+
+    "prozessautomation": "/de/category/process-dcs-automation",
+    "leittechnik": "/de/category/process-dcs-automation",
+    "dcs": "/de/category/process-dcs-automation",
+    "prozessleitsystem": "/de/category/process-dcs-automation",
+
+    "robotik": "/de/category/robotics",
+    "roboter": "/de/category/robotics",
+    "industrieroboter": "/de/category/robotics",
+
+    "sicherheitssystem": "/de/category/safety-systems",
+    "funktionale sicherheit": "/de/category/safety-systems",
+    "maschinensicherheit": "/de/category/safety-systems",
+    "sil": "/de/category/safety-systems",
+    "ce-kennzeichnung": "/de/category/safety-systems",
+
+    "scada": "/de/category/scada-hmi",
+    "hmi": "/de/category/scada-hmi",
+    "scada/hmi": "/de/category/scada-hmi",
+    "scada / hmi": "/de/category/scada-hmi",
+    "prozessvisualisierung": "/de/category/scada-hmi",
+
+    "sensor": "/de/category/sensors-io",
+    "sensoren": "/de/category/sensors-io",
+    "i/o": "/de/category/sensors-io",
+    "feldgerät": "/de/category/sensors-io",
+    "remote i/o": "/de/category/sensors-io",
+
+    "simulation": "/de/category/simulation-digital-twin",
+    "digitaler zwilling": "/de/category/simulation-digital-twin",
+    "virtuelle inbetriebnahme": "/de/category/simulation-digital-twin",
+
+    "systemintegrator": "/de/category/system-integrator",
+    "systemintegratoren": "/de/category/system-integrator",
+
+    "bildverarbeitung": "/de/category/vision-systems",
+    "machine vision": "/de/category/vision-systems",
+    "kamerasystem": "/de/category/vision-systems",
+    "optische prüfung": "/de/category/vision-systems",
+
+    "_comment_technologies": "--- Technologien ---",
+
+    "abb": "/de/technology/abb",
+
+    "beckhoff": "/de/technology/beckhoff",
+    "twincat": "/de/technology/beckhoff",
+
+    "bosch rexroth": "/de/technology/bosch-rexroth",
+    "rexroth": "/de/technology/bosch-rexroth",
+
+    "b&r": "/de/technology/br-automation",
+    "b&r industrial automation": "/de/technology/br-automation",
+    "b&r automation": "/de/technology/br-automation",
+
+    "cognex": "/de/technology/cognex",
+
+    "emerson": "/de/technology/emerson-deltav",
+    "deltav": "/de/technology/emerson-deltav",
+
+    "endress+hauser": "/de/technology/endress-hauser",
+    "endress hauser": "/de/technology/endress-hauser",
+
+    "fanuc": "/de/technology/fanuc",
+
+    "honeywell": "/de/technology/honeywell",
+    "experion": "/de/technology/honeywell",
+
+    "ignition": "/de/technology/ignition",
+    "inductive automation": "/de/technology/ignition",
+
+    "keyence": "/de/technology/keyence",
+
+    "kuka": "/de/technology/kuka",
+
+    "lenze": "/de/technology/lenze",
+
+    "mitsubishi electric": "/de/technology/mitsubishi-electric",
+    "melsec": "/de/technology/mitsubishi-electric",
+
+    "mqtt": "/de/technology/mqtt",
+
+    "omron": "/de/technology/omron",
+
+    "opc ua": "/de/technology/opc-ua",
+    "opc-ua": "/de/technology/opc-ua",
+
+    "pilz": "/de/technology/pilz",
+    "pnoz": "/de/technology/pilz",
+    "pss 4000": "/de/technology/pilz",
+
+    "profinet": "/de/technology/profinet-profibus",
+    "profibus": "/de/technology/profinet-profibus",
+    "profinet / profibus": "/de/technology/profinet-profibus",
+    "profinet/profibus": "/de/technology/profinet-profibus",
+
+    "rockwell": "/de/technology/rockwell",
+    "rockwell automation": "/de/technology/rockwell",
+    "allen-bradley": "/de/technology/rockwell",
+    "allen bradley": "/de/technology/rockwell",
+    "controllogix": "/de/technology/rockwell",
+
+    "schneider electric": "/de/technology/schneider",
+    "schneider": "/de/technology/schneider",
+    "modicon": "/de/technology/schneider",
+    "ecostruxure": "/de/technology/schneider",
+
+    "sew-eurodrive": "/de/technology/sew-eurodrive",
+    "sew eurodrive": "/de/technology/sew-eurodrive",
+
+    "siemens": "/de/technology/siemens",
+    "simatic": "/de/technology/siemens",
+    "tia portal": "/de/technology/siemens",
+    "wincc": "/de/technology/siemens",
+    "step 7": "/de/technology/siemens",
+    "s7-1500": "/de/technology/siemens",
+
+    "stäubli": "/de/technology/staeubli",
+    "staubli": "/de/technology/staeubli",
+
+    "universal robots": "/de/technology/universal-robots",
+
+    "wonderware": "/de/technology/wonderware-aveva",
+    "aveva": "/de/technology/wonderware-aveva",
+    "intouch": "/de/technology/wonderware-aveva",
+
+    "yaskawa": "/de/technology/yaskawa",
+    "motoman": "/de/technology/yaskawa",
+
+    "yokogawa": "/de/technology/yokogawa",
+    "centum vp": "/de/technology/yokogawa",
+
+    "_comment_industries": "--- Branchen ---",
+
+    "automobilindustrie": "/de/industry/automotive-and-mobility",
+    "automotive": "/de/industry/automotive-and-mobility",
+    "fahrzeugbau": "/de/industry/automotive-and-mobility",
+
+    "chemie": "/de/industry/chemicals-and-process-industry",
+    "chemieindustrie": "/de/industry/chemicals-and-process-industry",
+    "prozessindustrie": "/de/industry/chemicals-and-process-industry",
+
+    "elektronik": "/de/industry/electronics-and-semiconductor",
+    "halbleiter": "/de/industry/electronics-and-semiconductor",
+    "halbleiterindustrie": "/de/industry/electronics-and-semiconductor",
+
+    "energie": "/de/industry/energy-and-utilities",
+    "versorgungswirtschaft": "/de/industry/energy-and-utilities",
+    "energiewirtschaft": "/de/industry/energy-and-utilities",
+    "kraftwerk": "/de/industry/energy-and-utilities",
+
+    "lebensmittel und getränke": "/de/industry/food-and-beverage",
+    "lebensmittel": "/de/industry/food-and-beverage",
+    "lebensmittelindustrie": "/de/industry/food-and-beverage",
+    "getränkeindustrie": "/de/industry/food-and-beverage",
+    "lebensmittelproduktion": "/de/industry/food-and-beverage",
+    "molkerei": "/de/industry/food-and-beverage",
+    "food and beverage": "/de/industry/food-and-beverage",
+
+    "logistik": "/de/industry/logistics-and-intralogistics",
+    "intralogistik": "/de/industry/logistics-and-intralogistics",
+    "lagerautomatisierung": "/de/industry/logistics-and-intralogistics",
+
+    "metall": "/de/industry/metal-and-steel",
+    "stahl": "/de/industry/metal-and-steel",
+    "metallverarbeitung": "/de/industry/metal-and-steel",
+    "stahlverarbeitung": "/de/industry/metal-and-steel",
+
+    "bergbau": "/de/industry/mining-and-minerals",
+
+    "öl und gas": "/de/industry/oil-and-gas",
+    "raffinerie": "/de/industry/oil-and-gas",
+
+    "verpackung": "/de/industry/packaging-and-materials-handling",
+    "materialhandling": "/de/industry/packaging-and-materials-handling",
+    "palettierung": "/de/industry/packaging-and-materials-handling",
+
+    "pharma": "/de/industry/pharma-and-lifesciences",
+    "pharmaindustrie": "/de/industry/pharma-and-lifesciences",
+    "life sciences": "/de/industry/pharma-and-lifesciences",
+    "gmp": "/de/industry/pharma-and-lifesciences",
+    "reinraum": "/de/industry/pharma-and-lifesciences",
+
+    "zellstoff und papier": "/de/industry/pulp-paper-print",
+    "papierindustrie": "/de/industry/pulp-paper-print",
+    "druckindustrie": "/de/industry/pulp-paper-print",
+
+    "erneuerbare energien": "/de/industry/renewable-energy",
+    "solarenergie": "/de/industry/renewable-energy",
+    "windenergie": "/de/industry/renewable-energy",
+    "windkraftanlage": "/de/industry/renewable-energy",
+
+    "wasser und abwasser": "/de/industry/water-and-wastewater",
+    "wasseraufbereitung": "/de/industry/water-and-wastewater",
+    "abwasser": "/de/industry/water-and-wastewater",
+    "wasser": "/de/industry/water-and-wastewater"
+  }
+}

@@ -1,0 +1,72 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="About Automation-List | Independent Industrial Automation Directory"
+  description="Automation-List is an independent, engineer-built directory of industrial automation companies across Europe. Built by a practising automation engineer with 15+ years of MES and SCADA experience."
+  lang="en"
+>
+  <section class="py-16 md:py-24 bg-white">
+    <div class="container-px mx-auto max-w-3xl">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          About This Directory
+        </h1>
+        <p class="text-lg text-gray-700 leading-relaxed">
+          Automation-List is an independent, vendor-neutral directory of industrial automation companies across Europe.
+        </p>
+      </div>
+
+      <div class="card space-y-6">
+        <p class="text-gray-700 leading-relaxed">
+          Automation-List is an independent, vendor-neutral directory of industrial automation companies across Europe. It was created by a practising automation engineer with over 15 years of hands-on experience in MES, SCADA, and PLC-based control systems - primarily in regulated food manufacturing environments.
+        </p>
+
+        <p class="text-gray-700 leading-relaxed">
+          The idea came from a simple frustration: finding the right automation partner in Europe is harder than it should be. Trade fair brochures go stale. Google results are dominated by paid listings and SEO agencies. Word-of-mouth only reaches so far. And generic business directories don't understand the difference between a system integrator and a panel builder.
+        </p>
+
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            This directory is built differently:
+          </h2>
+          <ul class="space-y-3 text-gray-700">
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2">&bull;</span>
+              <span><strong>Editorially independent.</strong> Listings are reviewed against the same quality criteria regardless of size or status. Featured placements may be offered in the future - they will always be clearly labelled.</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2">&bull;</span>
+              <span><strong>Engineer-built.</strong> The category taxonomy, technology mapping, and vendor profiles are structured by someone who has actually commissioned plants, debugged PLC code at 2 AM, and sat through MES vendor demos.</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2">&bull;</span>
+              <span><strong>European focus.</strong> Country-level coverage with an understanding of regional strengths - from Switzerland's precision manufacturing heritage to Germany's deep SCADA ecosystem and the Nordics' leadership in robotics and digitalisation.</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-brand-600 mr-2">&bull;</span>
+              <span><strong>Bilingual.</strong> Full English and German versions, because the DACH market deserves more than machine-translated content.</span>
+            </li>
+          </ul>
+        </div>
+
+        <p class="text-gray-700 leading-relaxed">
+          All listings are manually reviewed before going live. Vendor descriptions are based on publicly available information and are written to be factual, not promotional. If something is inaccurate, we fix it.
+        </p>
+
+        <p class="text-gray-700 leading-relaxed">
+          This is a living project. New vendors, categories, and features are added continuously. If your company belongs here and isn't listed yet,
+          <a href="/en/submit-listing" class="text-brand-600 hover:text-brand-700 hover:underline font-medium">submit your listing for free</a>.
+        </p>
+
+        <p class="text-gray-700 leading-relaxed">
+          Have a question?
+          <a href="/en/contact" class="text-brand-600 hover:text-brand-700 hover:underline font-medium">Get in touch &rarr;</a>
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

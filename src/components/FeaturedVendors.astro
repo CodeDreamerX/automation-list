@@ -1,7 +1,9 @@
 ---
-import type { VendorWithRelations } from '../types/vendor';
+import type { VendorWithRelations, VendorCountryRelation } from '../types/vendor';
 import LogoBox from './LogoBox.astro';
 import { formatTechnologies as formatTechnologiesShared, truncateDescription as truncateDescriptionShared } from '../lib/vendors/vendorFormatters';
+import { normalizeCountryName } from '../lib/countryUtils';
+import type { CountryNameEntry } from '../lib/countryUtils';
 
 interface FeaturedVendorsProps {
   title?: string;
@@ -13,6 +15,8 @@ interface FeaturedVendorsProps {
   formatTechnologies?: (vendor: VendorWithRelations) => string;
   truncateDescription?: (text: string | null | undefined, maxLength?: number) => string;
   isFeatured?: (vendor: VendorWithRelations) => boolean;
+  lang?: "en" | "de";
+  countryNameMap?: Record<string, CountryNameEntry>;
 }
 
 // Helper function to parse logo background variant from logo URL
@@ -70,6 +74,30 @@ function getLogoVariant(vendor: VendorWithRelations): "light" | "dark" | "neutra
   return parseLogoVariant(vendor.logo_url);
 }
 
+function getDisplayCountry(vendor: VendorWithRelations, lang: "en" | "de"): string | null {
+  if (!vendor.country) return null;
+
+  const normalizedVendorCountry = normalizeCountryName(vendor.country);
+  const mappedCountry = countryNameMap[normalizedVendorCountry];
+  if (mappedCountry) {
+    return lang === "de"
+      ? (mappedCountry.name_de || mappedCountry.name_en || vendor.country)
+      : (mappedCountry.name_en || mappedCountry.name_de || vendor.country);
+  }
+
+  const matchedCountry = vendor.vendor_countries?.find((relation: VendorCountryRelation) => {
+    const nameEn = relation.countries?.name_en ? normalizeCountryName(relation.countries.name_en) : '';
+    const nameDe = relation.countries?.name_de ? normalizeCountryName(relation.countries.name_de) : '';
+    return nameEn === normalizedVendorCountry || nameDe === normalizedVendorCountry;
+  })?.countries;
+
+  if (!matchedCountry) return vendor.country;
+
+  return lang === "de"
+    ? (matchedCountry.name_de || matchedCountry.name_en || vendor.country)
+    : (matchedCountry.name_en || matchedCountry.name_de || vendor.country);
+}
+
 const {
   title = "Featured Vendors",
   vendors,
@@ -83,6 +111,8 @@ const {
   },
   truncateDescription = truncateDescriptionShared,
   isFeatured = () => false,
+  lang = "en",
+  countryNameMap = {},
 } = Astro.props;
 ---
 
@@ -125,7 +155,7 @@ const {
               <h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-brand-700 transition-colors">{vendor.name}</h3>
               
               {vendor.country && (
-                <p class="text-sm text-gray-600 mb-2">{vendor.country}</p>
+                <p class="text-sm text-gray-600 mb-2">{getDisplayCountry(vendor, lang)}</p>
               )}
               
               {/* Display primary category from vendor_categories */}

@@ -251,13 +251,13 @@ const navItems = navItemsProp || (isGerman ? [
   { label: "Anbieter", href: "/de/vendors" },
   { label: "Technologien", href: "/de/technologies" },
   { label: "Branchen", href: "/de/industries" },
-  { label: "Kontakt", href: "/de/contact" },
+  { label: "Über uns", href: "/de/about" },
 ] : [
   { label: "Categories", href: "/en/categories" },
   { label: "Vendors", href: "/en/vendors" },
   { label: "Technologies", href: "/en/technologies" },
   { label: "Industries", href: "/en/industries" },
-  { label: "Contact", href: "/en/contact" },
+  { label: "About", href: "/en/about" },
 ]);
 
 // Determine the target language and URL
@@ -289,6 +289,7 @@ if (isGerman) {
     {description && <meta name="description" content={description} />}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content={robotsContent} />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
@@ -496,12 +497,20 @@ if (isGerman) {
                 ? "Entdecken Sie führende Unternehmen für industrielle Automatisierung, Systemintegration und digitale Fabriklösungen weltweit."
                 : "Discover leading companies for industrial automation, system integration, and digital factory solutions worldwide."}
             </p>
-            <a 
-              href={isGerman ? "/de/contact" : "/en/contact"}
-              class="text-sm text-[#6B7280] hover:underline w-fit"
-            >
-              {isGerman ? "Über uns" : "About"}
-            </a>
+            <div class="flex flex-col space-y-2">
+              <a
+                href={isGerman ? "/de/about" : "/en/about"}
+                class="text-sm text-[#6B7280] hover:underline w-fit"
+              >
+                {isGerman ? "Über uns" : "About"}
+              </a>
+              <a
+                href={isGerman ? "/de/contact" : "/en/contact"}
+                class="text-sm text-[#6B7280] hover:underline w-fit"
+              >
+                {isGerman ? "Kontakt" : "Contact"}
+              </a>
+            </div>
           </div>
 
           <!-- Column 2: Explore -->
@@ -591,7 +600,7 @@ if (isGerman) {
     </footer>
 
     <!-- COOKIE CONSENT BANNER -->
-    <CookieBanner />
+    <CookieBanner lang={isGerman ? "de" : "en"} />
 
     <!-- MOBILE MENU SCRIPT -->
     <script>
@@ -601,6 +610,47 @@ if (isGerman) {
       mobileMenuToggle?.addEventListener("click", () => {
         mobileMenu?.classList.toggle("hidden");
       });
+    </script>
+    <script>
+      function initLogoBoxes() {
+        const boxes = document.querySelectorAll("[data-logo-box]");
+
+        boxes.forEach((box) => {
+          const img = box.querySelector("[data-logo-image]");
+          const fallback = box.querySelector("[data-logo-fallback]");
+
+          if (!(img instanceof HTMLImageElement) || img.dataset.logoBound === "true") {
+            return;
+          }
+
+          img.dataset.logoBound = "true";
+
+          const showFallback = () => {
+            img.style.display = "none";
+            fallback?.classList.remove("hidden");
+          };
+
+          if (img.complete) {
+            if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+              showFallback();
+            }
+            return;
+          }
+
+          img.addEventListener("error", showFallback, { once: true });
+          img.addEventListener("load", () => {
+            if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+              showFallback();
+            }
+          }, { once: true });
+        });
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initLogoBoxes);
+      } else {
+        initLogoBoxes();
+      }
     </script>
     <style>
       .nav-brand {

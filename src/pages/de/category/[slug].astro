@@ -7,9 +7,14 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
+import CategoryCard from "../../../components/CategoryCard.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
+import { getCountryNameMap } from "../../../lib/countryUtils";
+import { linkifyText } from "../../../lib/linkify";
+import { buildPageKeywordMap } from "../../../lib/keyword-map";
+import type { CategoryBasic } from "../../../types/category";
 
 
 // Get category slug from URL param
@@ -40,6 +45,7 @@ if (!category) {
 const categoryId = category.id;
 const categoryName = category.name_de || category.name_en || categorySlug;
 const categoryDescription = category.description_de || category.description_en || '';
+const countryNameMap = await getCountryNameMap(supabase, getCached, setCached);
 
 // Split description into paragraphs (split on blank lines)
 const descriptionText = category.description_de || category.description_en || '';
@@ -61,10 +67,12 @@ interface CachedCategoryResult {
 let cachedResult = getCached<CachedCategoryResult>(cacheKey);
 let vendors: any[] = [];
 let totalVendors = 0;
+let vendorIdsForPage: number[] = [];
 
 if (cachedResult) {
   vendors = cachedResult.vendors;
   totalVendors = cachedResult.totalVendors;
+  vendorIdsForPage = getCached<number[]>(`vendor_categories:category:${categoryId}`) || [];
 } else {
   // First, get vendor IDs that have this category
   const categoryLinksCacheKey = `vendor_categories:category:${categoryId}`;
@@ -82,6 +90,7 @@ if (cachedResult) {
     } else {
       vendorIds = (vendorCategoryLinks || []).map(link => link.vendor_id);
       setCached(categoryLinksCacheKey, vendorIds, 300);
+      vendorIdsForPage = vendorIds;
     }
   }
 
@@ -97,6 +106,12 @@ if (cachedResult) {
             categories:categories (
               id,
               slug,
+              name_en,
+              name_de
+            )
+          ),
+          vendor_countries (
+            countries:countries (
               name_en,
               name_de
             )
@@ -139,6 +154,56 @@ if (cachedResult) {
   }
 }
 
+const keywordMap = buildPageKeywordMap('de', `/de/category/${categorySlug}`);
+
+const seenKeywords = new Set<string>();
+const linkedParagraphs = descriptionParagraphs.map((p: string) =>
+  linkifyText(p.trim(), keywordMap, { maxLinks: 5, firstMatchOnly: true, seenKeywords, minWordGap: 10 })
+);
+
+// Related categories by vendor co-occurrence
+const relatedCacheKey = `related_categories:${categoryId}`;
+let relatedCategories = getCached<CategoryBasic[]>(relatedCacheKey);
+
+if (!relatedCategories) {
+  if (vendorIdsForPage.length > 0) {
+    const { data: coData } = await supabase
+      .from('vendor_categories')
+      .select('category_id')
+      .in('vendor_id', vendorIdsForPage)
+      .neq('category_id', categoryId);
+
+    const coCountMap = new Map<string, number>();
+    (coData || []).forEach((row: any) => {
+      if (row.category_id) coCountMap.set(row.category_id, (coCountMap.get(row.category_id) || 0) + 1);
+    });
+
+    const MIN_SHARED_VENDORS = 2;
+    const topIds = [...coCountMap.entries()]
+      .filter(([, count]) => count >= MIN_SHARED_VENDORS)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([id]) => id);
+
+    if (topIds.length > 0) {
+      const { data: relCatData } = await supabase
+        .from('categories')
+        .select('id, slug, name_en, name_de, card_description_en, card_description_de, icon_name')
+        .in('id', topIds)
+        .eq('is_active', true);
+
+      relatedCategories = topIds
+        .map(id => (relCatData || []).find((c: any) => c.id === id))
+        .filter(Boolean) as CategoryBasic[];
+    } else {
+      relatedCategories = [];
+    }
+  } else {
+    relatedCategories = [];
+  }
+  setCached(relatedCacheKey, relatedCategories, 3600);
+}
+
 // Normalize category data shape
 const normalizedVendors = normalizeVendors(vendors || []);
 
@@ -149,6 +214,10 @@ const faqItems = ((category.faq_de ?? []) as any[]).filter(
   (item: any) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
+const linkedFaqItems = faqItems.map((item: any) => ({
+  ...item,
+  linkedAnswer: linkifyText(item.answer, keywordMap, { maxLinks: 1, firstMatchOnly: true, seenKeywords, minWordGap: 10 }),
+}));
 
 // SEO metadata
 const metaTitle = totalVendors
@@ -211,10 +280,10 @@ const breadcrumbs = [
       {categoryName} in Europa
     </h1>
 
-    {descriptionParagraphs.length > 0 && (
+    {linkedParagraphs.length > 0 && (
       <div class="mb-6">
-        {descriptionParagraphs.map((paragraph: string) => (
-          <p class="mb-4 text-gray-700 leading-relaxed">{paragraph.trim()}</p>
+        {linkedParagraphs.map((html: string) => (
+          <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
         ))}
       </div>
     )}
@@ -239,6 +308,7 @@ const breadcrumbs = [
             vendor={vendor}
             hrefPrefix="/de/vendor"
             lang="de"
+            countryNameMap={countryNameMap}
           />
         ))
       ) : (
@@ -263,11 +333,22 @@ const breadcrumbs = [
     <div class="container-px mx-auto max-w-7xl px-4 py-10 border-t border-gray-100">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Häufig gestellte Fragen</h2>
       <div class="space-y-6">
-        {faqItems.map((item: any) => (
+        {linkedFaqItems.map((item: any) => (
           <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-2">{item.question}</h3>
-            <p class="text-gray-700 leading-relaxed">{item.answer}</p>
+            <p class="text-gray-700 leading-relaxed" set:html={item.linkedAnswer}></p>
           </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  {relatedCategories && relatedCategories.length > 0 && (
+    <div class="container-px mx-auto max-w-7xl px-4 py-10 border-t border-gray-100">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Verwandte Kategorien</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {relatedCategories.map((cat, i) => (
+          <CategoryCard category={cat} lang="de" index={i} />
         ))}
       </div>
     </div>

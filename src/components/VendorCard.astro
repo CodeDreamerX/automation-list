@@ -1,8 +1,10 @@
 ---
 import { isFeatured } from '../lib/isFeatured';
-import type { VendorWithRelations, VendorCategoryRelation } from '../types/vendor';
+import type { VendorWithRelations, VendorCategoryRelation, VendorCountryRelation } from '../types/vendor';
 import LogoBox from './LogoBox.astro';
 import { formatTechnologies } from '../lib/vendors/vendorFormatters';
+import type { CountryNameEntry } from '../lib/countryUtils';
+import { normalizeCountryName } from '../lib/countryUtils';
 
 interface VendorCardProps {
   vendor: VendorWithRelations;
@@ -10,6 +12,7 @@ interface VendorCardProps {
   showFeaturedBadge?: boolean;
   compact?: boolean;
   lang?: "en" | "de";
+  countryNameMap?: Record<string, CountryNameEntry>;
 }
 
 const {
@@ -18,6 +21,7 @@ const {
   showFeaturedBadge = true,
   compact = false,
   lang = "en",
+  countryNameMap = {},
 } = Astro.props;
 
 // Helper function to get language-aware vendor description
@@ -83,6 +87,30 @@ function getCountryFlag(country: string | null | undefined): string {
   };
   
   return countryFlags[countryLower] || '';
+}
+
+function getDisplayCountry(vendor: VendorWithRelations, lang: "en" | "de"): string | null {
+  if (!vendor.country) return null;
+
+  const normalizedVendorCountry = normalizeCountryName(vendor.country);
+  const mappedCountry = countryNameMap[normalizedVendorCountry];
+  if (mappedCountry) {
+    return lang === "de"
+      ? (mappedCountry.name_de || mappedCountry.name_en || vendor.country)
+      : (mappedCountry.name_en || mappedCountry.name_de || vendor.country);
+  }
+
+  const matchedCountry = vendor.vendor_countries?.find((relation: VendorCountryRelation) => {
+    const nameEn = relation.countries?.name_en ? normalizeCountryName(relation.countries.name_en) : '';
+    const nameDe = relation.countries?.name_de ? normalizeCountryName(relation.countries.name_de) : '';
+    return nameEn === normalizedVendorCountry || nameDe === normalizedVendorCountry;
+  })?.countries;
+
+  if (!matchedCountry) return vendor.country;
+
+  return lang === "de"
+    ? (matchedCountry.name_de || matchedCountry.name_en || vendor.country)
+    : (matchedCountry.name_en || matchedCountry.name_de || vendor.country);
 }
 
 // Helper function to parse logo background variant from logo URL
@@ -207,7 +235,7 @@ const categorySlugs = vendor.category_slugs ||
     <div class="flex flex-wrap gap-2 justify-center mt-3">
       {vendor.country && (
         <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-          {getCountryFlag(vendor.country)} {lang === "de" ? "Aktiv in:" : "Active in:"} {vendor.country}
+          {getCountryFlag(vendor.country)} {lang === "de" ? "Aktiv in:" : "Active in:"} {getDisplayCountry(vendor, lang)}
         </span>
       )}
       {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (

@@ -37,6 +37,44 @@ export function normalizeCountryName(country: string): string {
     .replace(/\s+/g, ' ');
 }
 
+export interface CountryNameEntry {
+  name_en: string;
+  name_de?: string | null;
+}
+
+export async function getCountryNameMap(
+  supabase: any,
+  getCached?: <T>(key: string) => T | null,
+  setCached?: (key: string, value: any, ttl: number) => void
+): Promise<Record<string, CountryNameEntry>> {
+  const cacheKey = 'countries:name-map';
+  const cached = getCached?.<Record<string, CountryNameEntry>>(cacheKey);
+  if (cached) return cached;
+
+  const { data } = await supabase
+    .from('countries')
+    .select('name_en, name_de')
+    .eq('is_active', true);
+
+  const map: Record<string, CountryNameEntry> = {};
+  for (const country of data || []) {
+    if (!country?.name_en) continue;
+
+    const entry: CountryNameEntry = {
+      name_en: country.name_en,
+      name_de: country.name_de || null,
+    };
+
+    map[normalizeCountryName(country.name_en)] = entry;
+    if (country.name_de) {
+      map[normalizeCountryName(country.name_de)] = entry;
+    }
+  }
+
+  setCached?.(cacheKey, map, 3600);
+  return map;
+}
+
 /**
  * Converts a country route param/slug into a normalized country name.
  *

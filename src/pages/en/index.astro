@@ -16,12 +16,14 @@ import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import { normalizeVendors } from "../../lib/vendors/vendorUtils";
 import ExploreCTA from "../../components/ExploreCTA.astro";
 import { getIndustries } from "../../lib/getIndustries";
+import { getCountryNameMap } from "../../lib/countryUtils";
 import type { VendorWithRelations } from "../../types/vendor";
 import { formatTechnologies as formatTechnologiesShared, truncateDescription } from "../../lib/vendors/vendorFormatters";
 
 // Fetch ONLY featured vendors: plan='pro' OR (featured=true AND featured_until>now)
 // Use two queries to handle the complex condition, then combine and limit to 6
 const now = new Date().toISOString();
+const countryNameMap = await getCountryNameMap(supabase);
 
 // Query 1: Get pro plan vendors (limit 6, ordered by priority)
 const { data: proVendors } = await supabase
@@ -31,6 +33,12 @@ const { data: proVendors } = await supabase
     vendor_categories (
       is_primary,
       categories:categories (
+        name_en,
+        name_de
+      )
+    ),
+    vendor_countries (
+      countries:countries (
         name_en,
         name_de
       )
@@ -54,6 +62,12 @@ const { data: featuredVendorsData } = await supabase
     vendor_categories (
       is_primary,
       categories:categories (
+        name_en,
+        name_de
+      )
+    ),
+    vendor_countries (
+      countries:countries (
         name_en,
         name_de
       )
@@ -102,6 +116,12 @@ if (featuredVendors.length === 0) {
       vendor_categories (
         is_primary,
         categories:categories (
+          name_en,
+          name_de
+        )
+      ),
+      vendor_countries (
+        countries:countries (
           name_en,
           name_de
         )
@@ -233,6 +253,8 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     vendors={featuredVendors}
     viewAllHref="/en/vendors"
     vendorHrefPrefix="/en/vendor"
+    lang="en"
+    countryNameMap={countryNameMap}
     formatTechnologies={formatTechnologies}
     truncateDescription={truncateDescription}
     isFeatured={isFeatured}

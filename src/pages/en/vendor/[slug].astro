@@ -10,7 +10,7 @@ import LogoBox from '../../../components/LogoBox.astro';
 import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
 import { truncateDescription } from '../../../lib/vendors/vendorFormatters';
 import { getBooleanEnvVar } from '../../../lib/env';
-import { slugifyCountry } from '../../../lib/countryUtils';
+import { getCountryNameMap, normalizeCountryName, slugifyCountry } from '../../../lib/countryUtils';
 import { buildVendorTitle } from '../../../utils/seo';
 
 // Helper function to parse logo background variant from logo URL
@@ -129,6 +129,8 @@ if (!vendor) {
   return Astro.redirect('/en/vendors');
 }
 
+const countryNameMap = await getCountryNameMap(supabase);
+
 // Normalize category, technology, and industry data shape
 const normalizedVendor = normalizeVendor(vendor, {
   includeCategories: true,
@@ -169,8 +171,14 @@ function getLocation(): string {
   const parts: string[] = [];
   if (normalizedVendor.city) parts.push(normalizedVendor.city);
   if (normalizedVendor.region) parts.push(normalizedVendor.region);
-  if (normalizedVendor.country) parts.push(normalizedVendor.country);
+  if (normalizedVendor.country) parts.push(getDisplayCountry());
   return parts.join(', ');
+}
+
+function getDisplayCountry(): string {
+  if (!normalizedVendor.country) return '';
+  const mapped = countryNameMap[normalizeCountryName(normalizedVendor.country)];
+  return mapped?.name_en || mapped?.name_de || normalizedVendor.country;
 }
 
 const location = getLocation();
@@ -320,7 +328,7 @@ if (isFromTechnology && techSlugParam) {
 }
 
 // Determine title: cascade through name + category + country, capped at 60 chars; manual meta_title overrides
-const countryName = normalizedVendor.country || '';
+const countryName = getDisplayCountry();
 const pageTitle = buildVendorTitle(
   normalizedVendor.name,
   primaryCategoryName || '',
@@ -453,7 +461,7 @@ const shouldCollapseDescription = descriptionWordCount > 200;
             <a
               href={`/en/country/${slugifyCountry(normalizedVendor.country)}`}
               class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >{normalizedVendor.country}</a>
+            >{getDisplayCountry()}</a>
           )}
         </p>
       )}
@@ -765,12 +773,12 @@ const shouldCollapseDescription = descriptionWordCount > 200;
             <p class="text-sm font-medium text-gray-900">
               {normalizedVendor.city}{normalizedVendor.city && (normalizedVendor.region || normalizedVendor.country) ? ', ' : ''}
               {normalizedVendor.region}{normalizedVendor.region && normalizedVendor.country ? ', ' : ''}
-              {normalizedVendor.country && (
-                <a
-                  href={`/en/country/${slugifyCountry(normalizedVendor.country)}`}
-                  class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                >{normalizedVendor.country}</a>
-              )}
+                {normalizedVendor.country && (
+                  <a
+                    href={`/en/country/${slugifyCountry(normalizedVendor.country)}`}
+                    class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >{getDisplayCountry()}</a>
+                )}
             </p>
           </div>
         )}

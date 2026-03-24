@@ -19,7 +19,11 @@
       "Bash(find /d/Projects/automationlist -name *.sql -type f)",
       "Bash(find /d/Projects/automationlist -name schema.sql -o -name *migration* -type f)",
       "Bash(npm run:*)",
-      "Bash(cat /d/Projects/automationlist/src/pages/en/industry/[slug].astro)"
+      "Bash(cat /d/Projects/automationlist/src/pages/en/industry/[slug].astro)",
+      "Bash(npx vitest:*)",
+      "Read(//d d:/Projects/**)",
+      "Bash(grep -l \"linkify\" src/pages/de/category/[slug].astro)",
+      "Bash(grep -r \"getCached\\\\|setCached\" /d/Projects/automationlist/src --include=*.astro --include=*.ts -l)"
     ]
   }
 }

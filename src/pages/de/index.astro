@@ -12,6 +12,7 @@ import CategoryGrid from "../../components/CategoryGrid.astro";
 import IndustryGrid from "../../components/IndustryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import ExploreCTA from "../../components/ExploreCTA.astro";
+import { getCountryNameMap } from "../../lib/countryUtils";
 import { getIndustries } from "../../lib/getIndustries";
 import { normalizeVendors } from "../../lib/vendors/vendorUtils";
 import type { VendorWithRelations } from "../../types/vendor";
@@ -21,6 +22,7 @@ import { formatTechnologies as formatTechnologiesShared, truncateDescription } f
 // Fetch ONLY featured vendors: plan='pro' OR (featured=true AND featured_until>now)
 // Use two queries to handle the complex condition, then combine and limit to 6
 const now = new Date().toISOString();
+const countryNameMap = await getCountryNameMap(supabase);
 
 // Query 1: Get pro plan vendors (limit 6, ordered by priority)
 const { data: proVendors } = await supabase
@@ -30,6 +32,12 @@ const { data: proVendors } = await supabase
     vendor_categories (
       is_primary,
       categories:categories (
+        name_en,
+        name_de
+      )
+    ),
+    vendor_countries (
+      countries:countries (
         name_en,
         name_de
       )
@@ -53,6 +61,12 @@ const { data: featuredVendorsData } = await supabase
     vendor_categories (
       is_primary,
       categories:categories (
+        name_en,
+        name_de
+      )
+    ),
+    vendor_countries (
+      countries:countries (
         name_en,
         name_de
       )
@@ -103,6 +117,12 @@ if (featuredVendors.length === 0) {
         categories:categories (
           id,
           slug,
+          name_en,
+          name_de
+        )
+      ),
+      vendor_countries (
+        countries:countries (
           name_en,
           name_de
         )
@@ -251,6 +271,8 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     viewAllText="Alle Anbieter anzeigen →"
     vendorHrefPrefix="/de/vendor"
     vendorLinkText="Profil anzeigen →"
+    lang="de"
+    countryNameMap={countryNameMap}
     formatTechnologies={formatTechnologies}
     truncateDescription={truncateDescription}
     isFeatured={isFeatured}

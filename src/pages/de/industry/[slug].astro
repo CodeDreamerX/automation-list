@@ -9,8 +9,11 @@ import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
+import { linkifyText } from "../../../lib/linkify";
+import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import LucideIcon from "../../../components/LucideIcon.astro";
+import { getCountryNameMap } from "../../../lib/countryUtils";
 
 
 // Get industry slug from URL param
@@ -44,6 +47,7 @@ if (!industry) {
 // Use industry data with bilingual support (German first, fallback to English)
 const industryName = industry.name_de || industry.name_en || industrySlug;
 const industryDescription = industry.description_de || industry.description_en || '';
+const countryNameMap = await getCountryNameMap(supabase, getCached, setCached);
 
 // Split description into paragraphs (split on blank lines)
 const industryDescriptionText = industry.description_de || industry.description_en || '';
@@ -94,6 +98,12 @@ if (cachedResult) {
           categories:categories (
             id,
             slug,
+            name_en,
+            name_de
+          )
+        ),
+        vendor_countries (
+          countries:countries (
             name_en,
             name_de
           )
@@ -160,6 +170,16 @@ const faqItems = ((industry.faq_de ?? []) as any[]).filter(
   (item: any) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
+
+const keywordMap = buildPageKeywordMap('de', `/de/industry/${industrySlug}`);
+const seenKeywords = new Set<string>();
+const linkedParagraphs = industryDescriptionParagraphs.map((p: string) =>
+  linkifyText(p.trim(), keywordMap, { maxLinks: 5, firstMatchOnly: true, seenKeywords, minWordGap: 10 })
+);
+const linkedFaqItems = faqItems.map((item: any) => ({
+  ...item,
+  linkedAnswer: linkifyText(item.answer, keywordMap, { maxLinks: 1, firstMatchOnly: true, seenKeywords, minWordGap: 10 }),
+}));
 
 // SEO metadata
 const vendorCount = totalVendors || 0;
@@ -261,10 +281,8 @@ const breadcrumbSchema = {
           </h1>
           {industryDescriptionParagraphs.length > 0 && (
             <div>
-              {industryDescriptionParagraphs.map((paragraph: string) => (
-                <p class="mb-4 text-gray-700 leading-relaxed">
-                  {paragraph.trim()}
-                </p>
+              {linkedParagraphs.map((html: string) => (
+                <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
               ))}
             </div>
           )}
@@ -292,6 +310,7 @@ const breadcrumbSchema = {
             vendor={vendor}
             hrefPrefix="/de/vendor"
             lang="de"
+            countryNameMap={countryNameMap}
           />
         ))
       ) : (
@@ -316,10 +335,10 @@ const breadcrumbSchema = {
     <div class="container-px mx-auto max-w-7xl px-4 py-10 border-t border-gray-100">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Häufig gestellte Fragen</h2>
       <div class="space-y-6">
-        {faqItems.map((item: any) => (
+        {linkedFaqItems.map((item: any) => (
           <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-2">{item.question}</h3>
-            <p class="text-gray-700 leading-relaxed">{item.answer}</p>
+            <p class="text-gray-700 leading-relaxed" set:html={item.linkedAnswer}></p>
           </div>
         ))}
       </div>
