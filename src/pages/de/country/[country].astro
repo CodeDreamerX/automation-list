@@ -4,6 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
+import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 import { linkifyText } from "../../../lib/linkify";
@@ -259,10 +260,14 @@ const faqSchema = hasFaq ? {
     </div>
 
     {linkedParagraphs.length > 0 && (
-      <div class="prose prose-gray max-w-none mb-8 text-gray-700">
-        {linkedParagraphs.map((html: string) => (
-          <p set:html={html}></p>
-        ))}
+      <div class="mb-8">
+        <CollapsibleIntro locale="de">
+          <div class="prose prose-gray max-w-none text-gray-700">
+            {linkedParagraphs.map((html: string) => (
+              <p set:html={html}></p>
+            ))}
+          </div>
+        </CollapsibleIntro>
       </div>
     )}
 

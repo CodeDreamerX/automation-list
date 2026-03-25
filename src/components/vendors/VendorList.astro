@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { getCached, setCached } from '../../lib/cache';
 import VendorCard from '../VendorCard.astro';
 import Pagination from '../Pagination.astro';
+import CollapsibleIntro from '../CollapsibleIntro.astro';
 import { normalizeTech } from '../../lib/normalizeTech';
 import { getIndustries } from '../../lib/getIndustries';
 import { normalizeVendors } from '../../lib/vendors/vendorUtils';
@@ -462,7 +463,11 @@ const categoryList = (dbCategories || []).map(cat => ({
 <div class="container-px mx-auto max-w-7xl px-4 py-10">
   <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
   {description && (
-    <p class="text-lg md:text-xl text-gray-600 mb-8">{description}</p>
+    <div class="mb-8">
+      <CollapsibleIntro locale={lang}>
+        <p class="text-lg md:text-xl text-gray-600">{description}</p>
+      </CollapsibleIntro>
+    </div>
   )}
 
   <!-- Search and Filter Form -->

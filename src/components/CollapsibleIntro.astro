@@ -1,0 +1,286 @@
+---
+interface CollapsibleIntroProps {
+  /**
+   * Collapsed height in px (mobile only).
+   * Defaults to ~3 lines / 140px.
+   */
+  maxHeight?: number;
+  /**
+   * Optional locale override for the toggle label.
+   * If omitted, we detect from `document.documentElement.lang`.
+   */
+  locale?: "en" | "de";
+}
+
+const { maxHeight = 140, locale } = Astro.props as CollapsibleIntroProps;
+---
+
+<section
+  class="collapsible-intro"
+  data-collapsible-intro
+  data-max-height={maxHeight}
+  data-locale={locale ?? ""}
+>
+  <div class="collapsible-intro__content-wrapper">
+    <div class="collapsible-intro__content" data-collapsible-intro-content>
+      <slot />
+    </div>
+    <div class="collapsible-intro__fade" aria-hidden="true"></div>
+  </div>
+
+  <div class="collapsible-intro__toggle-row">
+    <button
+      type="button"
+      class="collapsible-intro__toggle"
+      data-collapsible-intro-toggle
+      aria-expanded="false"
+    >
+      <span class="collapsible-intro__toggle-text" data-collapsible-intro-toggle-text>Read more</span>
+      <span class="collapsible-intro__toggle-chevron" data-collapsible-intro-toggle-chevron aria-hidden="true">▼</span>
+    </button>
+  </div>
+</section>
+
+<script>
+  (() => {
+    const roots = Array.from(document.querySelectorAll<HTMLElement>('[data-collapsible-intro]'));
+    if (!roots.length) return;
+
+    const COLLAPSE_MEDIA_QUERY = '(max-width: 768px)';
+
+    const isMobile = () =>
+      window.matchMedia && window.matchMedia(COLLAPSE_MEDIA_QUERY).matches;
+
+    function getLocale(root: HTMLElement): 'en' | 'de' {
+      const fromProp = (root.getAttribute('data-locale') || '').toLowerCase();
+      if (fromProp.startsWith('de')) return 'de';
+      if (fromProp.startsWith('en')) return 'en';
+
+      const htmlLang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
+      return htmlLang.startsWith('de') ? 'de' : 'en';
+    }
+
+    function setBackgroundRgbVars(root: HTMLElement) {
+      // Used for the fade-out gradient overlay.
+      // Default is white, but we try to match the current body background color.
+      const fallback = '255 255 255';
+      root.style.setProperty('--collapsible-intro-bg-rgb', fallback);
+
+      try {
+        const bg = window.getComputedStyle(document.body).backgroundColor;
+        const match = bg && bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        if (!match) return;
+        root.style.setProperty('--collapsible-intro-bg-rgb', `${match[1]} ${match[2]} ${match[3]}`);
+      } catch {
+        // Ignore; fallback is already set.
+      }
+    }
+
+    function debounce<T extends (...args: unknown[]) => void>(fn: T, wait: number) {
+      let t: number | undefined;
+      return (...args: Parameters<T>) => {
+        window.clearTimeout(t);
+        t = window.setTimeout(() => fn(...args), wait);
+      };
+    }
+
+    function initRoot(root: HTMLElement): (() => void) | undefined {
+      const content = root.querySelector<HTMLElement>('[data-collapsible-intro-content]');
+      const toggleBtn = root.querySelector<HTMLButtonElement>('[data-collapsible-intro-toggle]');
+      const toggleText = root.querySelector<HTMLElement>('[data-collapsible-intro-toggle-text]');
+      const toggleChevron = root.querySelector<HTMLElement>('[data-collapsible-intro-toggle-chevron]');
+
+      if (!(content instanceof HTMLElement) || !(toggleBtn instanceof HTMLButtonElement)) return;
+      if (!(toggleText instanceof HTMLElement) || !(toggleChevron instanceof HTMLElement)) return;
+
+      const contentEl = content as HTMLElement;
+      const toggleBtnEl = toggleBtn as HTMLButtonElement;
+      const toggleTextEl = toggleText as HTMLElement;
+      const toggleChevronEl = toggleChevron as HTMLElement;
+
+      const thresholdPx = Number(root.getAttribute('data-max-height') || '140');
+      if (!Number.isFinite(thresholdPx) || thresholdPx <= 0) return;
+
+      const locale = getLocale(root);
+
+      function setButtonText(isExpanded: boolean) {
+        if (locale === 'de') {
+          toggleTextEl.textContent = isExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen';
+          toggleChevronEl.textContent = isExpanded ? '▲' : '▼';
+        } else {
+          toggleTextEl.textContent = isExpanded ? 'Read less' : 'Read more';
+          toggleChevronEl.textContent = isExpanded ? '▲' : '▼';
+        }
+      }
+
+      function applyState({ forceCollapsed = false }: { forceCollapsed?: boolean } = {}) {
+        if (!isMobile()) {
+          root.classList.remove('is-long', 'is-expanded');
+          toggleBtnEl.setAttribute('aria-expanded', 'false');
+          return;
+        }
+
+        const wasExpanded = root.classList.contains('is-expanded');
+
+        // Remove long/expanded classes before measuring.
+        root.classList.remove('is-long', 'is-expanded');
+
+        const fullHeight = contentEl.scrollHeight;
+        const isLong = fullHeight > thresholdPx;
+
+        if (!isLong) {
+          toggleBtnEl.setAttribute('aria-expanded', 'false');
+          setButtonText(false);
+          return;
+        }
+
+        root.classList.add('is-long');
+
+        if (!forceCollapsed && wasExpanded) {
+          root.classList.add('is-expanded');
+          const expandedHeight = contentEl.scrollHeight;
+          root.style.setProperty('--collapsible-intro-expanded-max-height', `${expandedHeight}px`);
+          toggleBtnEl.setAttribute('aria-expanded', 'true');
+          setButtonText(true);
+          return;
+        }
+
+        toggleBtnEl.setAttribute('aria-expanded', 'false');
+        setButtonText(false);
+      }
+
+      // Toggle click.
+      toggleBtnEl.addEventListener('click', () => {
+        if (!root.classList.contains('is-long')) return;
+
+        const isExpandedNow = root.classList.contains('is-expanded');
+        if (isExpandedNow) {
+          root.classList.remove('is-expanded');
+          toggleBtnEl.setAttribute('aria-expanded', 'false');
+          setButtonText(false);
+          return;
+        }
+
+        root.classList.add('is-expanded');
+        const expandedHeight = contentEl.scrollHeight;
+        root.style.setProperty('--collapsible-intro-expanded-max-height', `${expandedHeight}px`);
+        toggleBtnEl.setAttribute('aria-expanded', 'true');
+        setButtonText(true);
+      });
+
+      setBackgroundRgbVars(root);
+      root.style.setProperty('--collapsible-intro-collapsed-max-height', `${thresholdPx}px`);
+
+      // Initial + resize recalculation.
+      return applyState;
+    }
+
+    const applyStateByRoot = new WeakMap<HTMLElement, (() => void)>();
+
+    const applyAll = () => {
+      for (const root of roots) {
+        if (!applyStateByRoot.has(root)) {
+          const applyState = initRoot(root);
+          if (typeof applyState === 'function') applyStateByRoot.set(root, applyState);
+        }
+      }
+
+      // Recalculate after initialization.
+      for (const root of roots) {
+        const applyState = applyStateByRoot.get(root);
+        applyState?.();
+      }
+    };
+
+    const debouncedApplyAll = debounce(applyAll, 150);
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', debouncedApplyAll);
+    } else {
+      debouncedApplyAll();
+    }
+
+    window.addEventListener('resize', debouncedApplyAll);
+    window.addEventListener('load', debouncedApplyAll);
+  })();
+</script>
+
+<style>
+  .collapsible-intro__content-wrapper {
+    position: relative;
+  }
+
+  .collapsible-intro__toggle-row {
+    display: block;
+    text-align: center;
+  }
+
+  .collapsible-intro__toggle {
+    display: none;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+
+    margin-top: 0.5rem;
+    padding: 0;
+
+    background: transparent;
+    border: none;
+    cursor: pointer;
+
+    color: #c2410c;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .collapsible-intro__toggle-chevron {
+    font-size: 0.95em;
+  }
+
+  .collapsible-intro__fade {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .collapsible-intro.is-long .collapsible-intro__content {
+      overflow: hidden;
+      max-height: var(--collapsible-intro-collapsed-max-height, 140px);
+      transition: max-height 0.3s ease;
+    }
+
+    .collapsible-intro.is-long.is-expanded .collapsible-intro__content {
+      max-height: var(--collapsible-intro-expanded-max-height, 1000px);
+    }
+
+    .collapsible-intro.is-long .collapsible-intro__toggle {
+      display: flex;
+    }
+
+    .collapsible-intro.is-long .collapsible-intro__fade {
+      display: block;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 40px;
+      pointer-events: none;
+
+      opacity: 1;
+      transition: opacity 0.15s ease;
+
+      background: linear-gradient(
+        to bottom,
+        rgba(var(--collapsible-intro-bg-rgb, 255 255 255), 0),
+        rgb(var(--collapsible-intro-bg-rgb, 255 255 255))
+      );
+    }
+
+    .collapsible-intro.is-long.is-expanded .collapsible-intro__fade {
+      opacity: 0;
+    }
+  }
+</style>
+
