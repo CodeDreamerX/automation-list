@@ -13,6 +13,7 @@ import { linkifyText } from "../../../lib/linkify";
 import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import LucideIcon from "../../../components/LucideIcon.astro";
+import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
 import { getCountryNameMap } from "../../../lib/countryUtils";
 
 
@@ -280,11 +281,11 @@ const breadcrumbSchema = {
             {industryName} Anbieter in Europa
           </h1>
           {industryDescriptionParagraphs.length > 0 && (
-            <div>
+            <CollapsibleIntro locale="de">
               {linkedParagraphs.map((html: string) => (
                 <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
               ))}
-            </div>
+            </CollapsibleIntro>
           )}
         </div>
       </div>

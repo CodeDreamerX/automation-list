@@ -12,6 +12,7 @@ import { getCached, setCached } from "../../../lib/cache";
 import { linkifyText } from "../../../lib/linkify";
 import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import LucideIcon from "../../../components/LucideIcon.astro";
+import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import { getCountryNameMap } from "../../../lib/countryUtils";
 
@@ -245,11 +246,11 @@ const breadcrumbs = [
             {techName} Vendors in Europe
           </h1>
           {linkedParagraphs.length > 0 && (
-            <div>
+            <CollapsibleIntro locale="en">
               {linkedParagraphs.map((html: string) => (
                 <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
               ))}
-            </div>
+            </CollapsibleIntro>
           )}
         </div>
       </div>

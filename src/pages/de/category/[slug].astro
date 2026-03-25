@@ -8,6 +8,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import CategoryCard from "../../../components/CategoryCard.astro";
+import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
@@ -282,9 +283,11 @@ const breadcrumbs = [
 
     {linkedParagraphs.length > 0 && (
       <div class="mb-6">
-        {linkedParagraphs.map((html: string) => (
-          <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
-        ))}
+        <CollapsibleIntro locale="de">
+          {linkedParagraphs.map((html: string) => (
+            <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
+          ))}
+        </CollapsibleIntro>
       </div>
     )}
 
