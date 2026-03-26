@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request }) => {
     technology_slugs, industry_slugs, certification_slugs,
     languages, countries_served,
     year_founded, employee_count, taking_new_projects,
-    turnstile_token, is_suspect,
+    is_suspect,
   } = body;
 
   // --- Required field validation ---
@@ -28,33 +28,6 @@ export const POST: APIRoute = async ({ request }) => {
   if (!description_en?.trim()) return errorResponse('English description is required', 400);
   if (!Array.isArray(category_slugs) || category_slugs.length === 0) {
     return errorResponse('At least one category is required', 400);
-  }
-
-  // --- Cloudflare Turnstile verification ---
-  const turnstileSecret =
-    (typeof process !== 'undefined' && process.env?.TURNSTILE_SECRET_KEY) ||
-    import.meta.env.TURNSTILE_SECRET_KEY;
-
-  if (turnstileSecret) {
-    if (!turnstile_token) {
-      return errorResponse('Cloudflare verification failed. Please refresh the page and try again.', 400);
-    }
-    try {
-      const verifyRes = await fetch(
-        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ secret: turnstileSecret, response: turnstile_token }),
-        }
-      );
-      const verifyData: any = await verifyRes.json();
-      if (!verifyData.success) {
-        return errorResponse('Cloudflare verification failed. Please refresh the page and try again.', 400);
-      }
-    } catch {
-      return errorResponse('Could not verify security check. Please try again.', 500);
-    }
   }
 
   // --- Insert into pending_listings ---

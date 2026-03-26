@@ -21,8 +21,6 @@ const technologies = (techData ?? []).map(r => ({ slug: r.slug, name: r.name_de 
 const industries = (indData ?? []).map(r => ({ slug: r.slug, name: r.name_de || r.name_en }));
 const certifications = (certData ?? []).map(r => ({ slug: r.slug, name: r.name }));
 
-const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
-
 const LANGUAGES = [
   'Englisch', 'Deutsch', 'Französisch', 'Italienisch', 'Spanisch',
   'Niederländisch', 'Polnisch', 'Tschechisch', 'Rumänisch', 'Ungarisch', 'Portugiesisch',
@@ -355,13 +353,6 @@ const LANGUAGES = [
       </div>
       <!-- end Section 2 -->
 
-      <!-- Cloudflare Turnstile -->
-      {turnstileSiteKey && (
-        <div class="mt-6">
-          <div class="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
-        </div>
-      )}
-
       <!-- Submit -->
       <div class="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
         <button
@@ -382,16 +373,7 @@ const LANGUAGES = [
   </div>
 </BaseLayout>
 
-<script define:vars={{ turnstileSiteKey }}>
-
-// ---- Load Cloudflare Turnstile script dynamically ----
-if (turnstileSiteKey && !document.querySelector('script[src*="turnstile"]')) {
-  const ts = document.createElement('script');
-  ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-  ts.async = true;
-  ts.defer = true;
-  document.head.appendChild(ts);
-}
+<script>
 
 // ---- ISO 3166 country list ----
 const ISO_COUNTRIES = [
@@ -571,7 +553,6 @@ function validateForm() {
 // Collect payload
 // ================================================================
 function collectPayload(isSuspect) {
-  const tknEl = document.querySelector('[name="cf-turnstile-response"]');
   const yearVal = document.getElementById('year_founded').value;
   const tnpVal = tnpInput.value;
 
@@ -595,7 +576,6 @@ function collectPayload(isSuspect) {
     year_founded: yearVal ? parseInt(yearVal, 10) : null,
     employee_count: document.getElementById('employee_count').value || null,
     taking_new_projects: tnpVal === 'true' ? true : tnpVal === 'false' ? false : null,
-    turnstile_token: tknEl?.value || '',
     is_suspect: isSuspect,
   };
 }
