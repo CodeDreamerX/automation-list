@@ -40,7 +40,12 @@ export function linkifyText(
   // Each keyword optionally matches a trailing plural suffix (s / es).
   // Longest-first sort already applied, so "SCADA/HMI" beats "SCADA" before suffixes widen anything.
   const flexPattern = keywords.map(kw => regexEscape(kw) + '(?:e?s)?').join("|");
-  const regex = new RegExp(`(?<![a-zA-Z0-9/])(${flexPattern})(?![a-zA-Z0-9/])`, "gi");
+  // Lookbehind: not preceded by letter/digit/slash, and not preceded by letter-hyphen (compound like "Siemens-SPS").
+  // Lookahead:  not followed by letter/digit/slash, and not followed by trailing hyphen (hyphen + non-letter, e.g. "Mess-, ").
+  const regex = new RegExp(
+    `(?<![\\p{L}\\p{N}/])(?<![\\p{L}]-)(${flexPattern})(?![\\p{L}\\p{N}/])(?!-(?![\\p{L}]))`,
+    "giu"
+  );
 
   const matched = new Set<string>();
   let linkCount = 0;

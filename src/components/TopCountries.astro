@@ -1,0 +1,56 @@
+---
+import type { VendorWithRelations } from '../types/vendor';
+import type { CountryNameEntry } from '../lib/countryUtils';
+import { slugifyCountry, normalizeCountryName } from '../lib/countryUtils';
+
+interface Props {
+  vendors: VendorWithRelations[];
+  categoryName: string;
+  lang: 'en' | 'de';
+  countryNameMap: Record<string, CountryNameEntry>;
+}
+
+const { vendors, categoryName, lang, countryNameMap } = Astro.props;
+
+// Aggregate by primary vendor.country (HQ), count each vendor once per country.
+const countryCount = new Map<string, { slug: string; label: string; flag: string; count: number }>();
+
+for (const vendor of vendors) {
+  if (!vendor.country) continue;
+  const slug = slugifyCountry(vendor.country);
+  if (!slug) continue;
+  const entry = countryNameMap[normalizeCountryName(vendor.country)];
+  const label = (lang === 'de' ? entry?.name_de : null) || entry?.name_en || vendor.country;
+  const flag = entry?.flag_emoji || '';
+  const existing = countryCount.get(slug);
+  if (existing) {
+    existing.count++;
+  } else {
+    countryCount.set(slug, { slug, label, flag, count: 1 });
+  }
+}
+
+const topCountries = [...countryCount.values()]
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 5);
+
+if (topCountries.length === 0) return;
+---
+
+<div class="mt-8 pt-6 border-t border-gray-100">
+  <p class="text-sm text-gray-500 mb-2">
+    {lang === 'de'
+      ? `${categoryName} Anbieter nach Land:`
+      : `${categoryName} vendors by country:`}
+  </p>
+  <div class="flex flex-wrap gap-x-6 gap-y-1">
+    {topCountries.map(c => (
+      <a
+        href={`/${lang}/country/${c.slug}`}
+        class="text-sm text-gray-700 hover:text-brand-700 transition-colors"
+      >
+        {c.flag} {c.label} ({c.count})
+      </a>
+    ))}
+  </div>
+</div>

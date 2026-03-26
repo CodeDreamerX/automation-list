@@ -90,6 +90,7 @@ export interface Vendor {
   // Plan & featuring
   plan?: 'free' | 'pro' | 'featured' | 'deactivated' | null; // Default: 'free'
   priority?: number | null;      // integer, default: 5, higher = more prominent
+  profile_score?: number | null; // integer, computed completeness score (0-100)
   featured?: boolean | null;     // boolean, default: false
   featured_until?: string | null; // timestamp with time zone (ISO date string)
   og_member?: boolean | null;    // boolean, default: false - Original/Founding member flag

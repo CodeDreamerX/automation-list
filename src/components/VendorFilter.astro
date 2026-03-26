@@ -1,0 +1,227 @@
+---
+interface FilterItem {
+  slug: string;
+  label: string;
+}
+
+interface Props {
+  filters: Array<'country' | 'category' | 'industry' | 'technology'>;
+  lang: 'en' | 'de';
+  filterData: Record<string, FilterItem[]>;
+  totalVendors: number;
+}
+
+const { filters, lang, filterData, totalVendors } = Astro.props;
+
+const dimLabels: Record<string, Record<string, string>> = {
+  country:    { en: 'Country',    de: 'Land'        },
+  category:   { en: 'Category',   de: 'Kategorie'   },
+  industry:   { en: 'Industry',   de: 'Branche'     },
+  technology: { en: 'Technology', de: 'Technologie' },
+};
+
+const foundText = lang === 'de'
+  ? `${totalVendors} Anbieter gefunden`
+  : `${totalVendors} vendor${totalVendors === 1 ? '' : 's'} found`;
+---
+
+<div id="vendor-filter" class="mb-5">
+  <!-- Filter pill row -->
+  <div class="flex flex-wrap items-center gap-2 mb-3">
+    {filters.map(dim => {
+      const items = filterData[dim] ?? [];
+      if (items.length === 0) return null;
+      const label = dimLabels[dim]?.[lang] ?? dim;
+      return (
+        <details class="group relative" data-filter-group={dim}>
+          <summary class="pill cursor-pointer select-none list-none flex items-center gap-1.5 text-sm font-medium bg-gray-100 border border-gray-200 text-gray-700 rounded-full px-3 py-1.5 hover:bg-gray-200 hover:border-gray-300 transition-colors">
+            <span class="dim-label">{label}</span>
+            <svg class="chevron w-3 h-3 text-gray-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </summary>
+          <div class="absolute z-20 mt-1 min-w-[180px] max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex flex-col gap-1">
+            {items.map(item => (
+              <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  class="vendor-filter-checkbox accent-brand-600"
+                  data-dimension={dim}
+                  value={item.slug}
+                />
+                {item.label}
+              </label>
+            ))}
+          </div>
+        </details>
+      );
+    })}
+  </div>
+
+  <!-- Count + clear — single source of truth -->
+  <div class="flex items-center gap-1.5 text-sm text-gray-600">
+    <span id="filter-count">{foundText}</span>
+    <button
+      id="filter-clear"
+      class="hidden text-brand-600 hover:text-brand-800 underline underline-offset-2 ml-1"
+    >
+      &middot; {lang === 'de' ? 'Filter zurücksetzen' : 'Clear filters'}
+    </button>
+  </div>
+</div>
+
+<style>
+  /* Active pill: brand fill, white text */
+  details[data-filter-group][data-active="true"] > summary {
+    background-color: var(--color-brand-600);
+    border-color: var(--color-brand-600);
+    color: #fff;
+  }
+  details[data-filter-group][data-active="true"] > summary .chevron {
+    color: #fff;
+    opacity: 0.75;
+  }
+  /* Remove native disclosure marker */
+  details[data-filter-group] > summary::-webkit-details-marker { display: none; }
+  details[data-filter-group] > summary::marker { display: none; }
+</style>
+
+<script is:inline data-total={totalVendors} data-lang={lang}>
+(function () {
+  const total  = parseInt(document.currentScript.getAttribute('data-total') || '0', 10);
+  const locale = document.currentScript.getAttribute('data-lang') || 'en';
+
+  function getCards() {
+    return Array.from(document.querySelectorAll('[data-country]'));
+  }
+
+  function getActiveFilters() {
+    const result = {};
+    document.querySelectorAll('.vendor-filter-checkbox:checked').forEach(function (cb) {
+      const dim = cb.getAttribute('data-dimension');
+      if (!dim) return;
+      if (!result[dim]) result[dim] = new Set();
+      result[dim].add(cb.value);
+    });
+    return result;
+  }
+
+  function cardMatchesDim(card, dim, values) {
+    const attr = card.getAttribute('data-' + dim) || '';
+    if (!attr) return false;
+    const slugs = attr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    for (var i = 0; i < slugs.length; i++) {
+      if (values.has(slugs[i])) return true;
+    }
+    return false;
+  }
+
+  function runFilter() {
+    const active = getActiveFilters();
+    const dims   = Object.keys(active);
+    const cards  = getCards();
+    let visible  = 0;
+
+    cards.forEach(function (card) {
+      var show = true;
+      for (var i = 0; i < dims.length; i++) {
+        if (!cardMatchesDim(card, dims[i], active[dims[i]])) { show = false; break; }
+      }
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    // Update count text
+    const countEl = document.getElementById('filter-count');
+    const clearEl = document.getElementById('filter-clear');
+    if (countEl) {
+      const word = locale === 'de' ? 'Anbieter' : 'vendor' + (total === 1 ? '' : 's');
+      if (dims.length > 0) {
+        countEl.textContent = locale === 'de'
+          ? visible + ' von ' + total + ' Anbietern angezeigt'
+          : 'Showing ' + visible + ' of ' + total + ' vendors';
+      } else {
+        countEl.textContent = total + ' ' + word + (locale === 'de' ? ' gefunden' : ' found');
+      }
+    }
+    if (clearEl) clearEl.classList.toggle('hidden', dims.length === 0);
+
+    // Update pill labels & active state
+    document.querySelectorAll('[data-filter-group]').forEach(function (group) {
+      const dim   = group.getAttribute('data-filter-group');
+      const count = active[dim] ? active[dim].size : 0;
+      const label = group.querySelector('.dim-label');
+
+      // Restore base label text from the summary's data attribute
+      var baseName = group.getAttribute('data-dim-label');
+      if (!baseName && label) {
+        // First time: store original label
+        baseName = label.textContent.replace(/\s*\(\d+\)$/, '').trim();
+        group.setAttribute('data-dim-label', baseName);
+      }
+
+      if (label && baseName) {
+        label.textContent = count > 0 ? baseName + ' (' + count + ')' : baseName;
+      }
+
+      if (count > 0) {
+        group.setAttribute('data-active', 'true');
+      } else {
+        group.removeAttribute('data-active');
+      }
+    });
+
+    syncUrl(active);
+  }
+
+  function syncUrl(active) {
+    const params = new URLSearchParams(window.location.search);
+    ['country', 'category', 'industry', 'technology'].forEach(function (dim) {
+      if (active[dim] && active[dim].size > 0) {
+        params.set(dim, Array.from(active[dim]).join(','));
+      } else {
+        params.delete(dim);
+      }
+    });
+    params.delete('page');
+    const qs = params.toString();
+    history.replaceState(null, '', qs ? '?' + qs : window.location.pathname);
+  }
+
+  function loadFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    ['country', 'category', 'industry', 'technology'].forEach(function (dim) {
+      const val = params.get(dim);
+      if (!val) return;
+      val.split(',').forEach(function (slug) {
+        const cb = document.querySelector(
+          '.vendor-filter-checkbox[data-dimension="' + dim + '"][value="' + slug + '"]'
+        );
+        if (cb) cb.checked = true;
+      });
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function (e) {
+    document.querySelectorAll('[data-filter-group]').forEach(function (group) {
+      if (!group.contains(e.target)) group.removeAttribute('open');
+    });
+  });
+
+  document.querySelectorAll('.vendor-filter-checkbox').forEach(function (cb) {
+    cb.addEventListener('change', runFilter);
+  });
+
+  const clearEl = document.getElementById('filter-clear');
+  if (clearEl) {
+    clearEl.addEventListener('click', function () {
+      document.querySelectorAll('.vendor-filter-checkbox').forEach(function (cb) { cb.checked = false; });
+      runFilter();
+    });
+  }
+
+  loadFromUrl();
+  runFilter();
+})();
+</script>

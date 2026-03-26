@@ -5,6 +5,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import VendorCard from "../../../components/VendorCard.astro";
 import Pagination from "../../../components/Pagination.astro";
 import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
+import VendorFilter from "../../../components/VendorFilter.astro";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCached, setCached } from "../../../lib/cache";
 import { linkifyText } from "../../../lib/linkify";
@@ -44,7 +45,7 @@ function capitalizeCountry(country: string): string {
   return country.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 }
 
-const cacheKey = `vendors:country:en:${countryParam}:${pageSize}:${page}`;
+const cacheKey = `vendors:country:en:${countryParam}:${pageSize}:${page}:v2`;
 
 interface CachedCountryResult {
   vendors: any[];
@@ -75,6 +76,25 @@ if (cachedResult) {
         ),
         vendor_countries (
           countries:countries (
+            id,
+            slug,
+            name_en,
+            name_de,
+            flag_emoji
+          )
+        ),
+        vendor_industries (
+          industries:industries (
+            id,
+            slug,
+            name_en,
+            name_de
+          )
+        ),
+        vendor_technologies (
+          technologies:technologies (
+            id,
+            slug,
             name_en,
             name_de
           )
@@ -82,7 +102,7 @@ if (cachedResult) {
       `)
       .ilike('country', normalizedCountry)
       .neq('plan', 'deactivated')
-      .order('priority', { ascending: false, nullsFirst: false })
+      .order('profile_score', { ascending: false, nullsFirst: false })
       .order('name', { ascending: true });
   }
 
@@ -109,8 +129,34 @@ if (cachedResult) {
   }
 }
 
-const normalizedVendors = normalizeVendors(vendors || []);
+const normalizedVendors = normalizeVendors(vendors || [], {
+  includeCategories: true,
+  includeIndustries: true,
+  includeTechnologies: true,
+  includeCountries: true,
+});
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
+
+// Build filterData for VendorFilter
+const filterCategoryMap = new Map<string, string>();
+const filterIndustryMap = new Map<string, string>();
+const filterTechnologyMap = new Map<string, string>();
+for (const v of normalizedVendors) {
+  v.vendor_categories?.forEach((vc: any) => {
+    if (vc.categories?.slug) filterCategoryMap.set(vc.categories.slug, vc.categories.name_en || vc.categories.slug);
+  });
+  v.vendor_industries?.forEach((vi: any) => {
+    if (vi.industries?.slug) filterIndustryMap.set(vi.industries.slug, vi.industries.name_en || vi.industries.slug);
+  });
+  v.vendor_technologies?.forEach((vt: any) => {
+    if (vt.technologies?.slug) filterTechnologyMap.set(vt.technologies.slug, vt.technologies.name_en || vt.technologies.slug);
+  });
+}
+const filterData = {
+  category:   [...filterCategoryMap.entries()].map(([slug, label]) => ({ slug, label })).sort((a, b) => a.label.localeCompare(b.label)),
+  industry:   [...filterIndustryMap.entries()].map(([slug, label]) => ({ slug, label })).sort((a, b) => a.label.localeCompare(b.label)),
+  technology: [...filterTechnologyMap.entries()].map(([slug, label]) => ({ slug, label })).sort((a, b) => a.label.localeCompare(b.label)),
+};
 
 // Display name: prefer DB record, fallback to vendor country field, fallback to capitalize slug
 let displayCountry = countryRecord?.name_en
@@ -255,14 +301,9 @@ const faqSchema = hasFaq ? {
       </div>
     )}
 
-    <div class="mb-4">
-      <p class="text-sm text-gray-600">
-        {totalVendors || 0} {totalVendors === 1 ? 'vendor' : 'vendors'} found
-        {totalPages > 1 && (
-          <span class="text-xs text-gray-500 ml-2">(Page {page} of {totalPages})</span>
-        )}
-      </p>
-    </div>
+    {normalizedVendors.length > 0 && (
+      <VendorFilter filters={['category', 'industry', 'technology']} lang="en" filterData={filterData} totalVendors={totalVendors || 0} />
+    )}
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {normalizedVendors.length > 0 ? (

@@ -112,6 +112,46 @@ describe("linkifyText", () => {
     expect(result).not.toContain("<a");
   });
 
+  it("unicode boundary: does not link 'fts' inside 'Geschäfts'", () => {
+    const ftsMap = new Map([["fts", "/de/category/agv-amr"]]);
+    const result = linkifyText("Geschäfts prozesse optimieren", ftsMap);
+    expect(result).not.toContain("<a");
+  });
+
+  it("unicode boundary: does not link 'mes' inside 'Messtechnik'", () => {
+    const result = linkifyText("Messtechnik und Sensorik", map);
+    expect(result).not.toContain("<a");
+  });
+
+  it("trailing hyphen: does not link 'mes' in 'Mess-' (German elision list)", () => {
+    const deMap = new Map([["mes", "/de/category/mes-specialists"]]);
+    const result = linkifyText("Inspektions-, Mess-, Identifikations-Systeme", deMap);
+    expect(result).not.toContain("<a");
+  });
+
+  it("compound hyphen: still links 'MES' in 'MES-Software' (hyphen followed by letter)", () => {
+    const deMap = new Map([["mes", "/de/category/mes-specialists"]]);
+    const result = linkifyText("MES-Software im Einsatz", deMap);
+    expect(result).toContain('href="/de/category/mes-specialists"');
+  });
+
+  it("lookbehind compound: does not link 'SPS' in 'Siemens-SPS'", () => {
+    const deMap = new Map([["sps", "/de/category/plcs"]]);
+    const result = linkifyText("Siemens-SPS Steuerung", deMap);
+    expect(result).not.toContain("<a");
+  });
+
+  it("German plural -e: 'MES-Systeme' links to mes-specialists", () => {
+    const deMap = new Map([
+      ["mes-systeme", "/de/category/mes-specialists"],
+      ["mes-system", "/de/category/mes-specialists"],
+      ["mes", "/de/category/mes-specialists"],
+    ]);
+    const result = linkifyText("Wir implementieren MES-Systeme für die Industrie.", deMap);
+    expect(result).toContain('href="/de/category/mes-specialists"');
+    expect(result).toContain(">MES-Systeme</a>");
+  });
+
   // --- Plural / suffix matching ---
 
   it("plural s: links 'PLCs' to PLC url, preserving full matched text", () => {

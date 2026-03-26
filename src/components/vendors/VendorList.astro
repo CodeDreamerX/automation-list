@@ -395,8 +395,8 @@ function buildBaseQuery() {
     }
   }
 
-  // Sort by priority (high priority first, nulls last), then by name ascending
-  query = query.order('priority', { ascending: false, nullsFirst: false })
+  // Sort by profile completeness score (higher = more complete), then by name ascending
+  query = query.order('profile_score', { ascending: false, nullsFirst: false })
     .order('name', { ascending: true });
 
   return query;

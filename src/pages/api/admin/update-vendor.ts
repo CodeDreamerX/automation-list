@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 import { mapFormVariantToDbVariant } from '../../../lib/vendors/logoBackgroundVariant';
 import { successResponse, errorResponse } from '../../../lib/api/responses';
+import { calculateCompletenessScore } from '../../../lib/vendors/completenessScore';
 
 export const prerender = false;
 
@@ -143,6 +144,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         updateData.website = 'https://' + website;
       }
     }
+
+    // Compute profile completeness score from all available fields + M2M relations
+    updateData.profile_score = calculateCompletenessScore({
+      ...updateData,
+      technology_slugs: technologySlugs,
+      industry_slugs: industrySlugs,
+      category_slugs: categorySlugs,
+      country_slugs: countrySlugs,
+    });
 
     // Add updated_at timestamp
     updateData.updated_at = new Date().toISOString();

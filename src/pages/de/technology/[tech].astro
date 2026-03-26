@@ -13,8 +13,9 @@ import { linkifyText } from "../../../lib/linkify";
 import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import LucideIcon from "../../../components/LucideIcon.astro";
 import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
+import VendorFilter from "../../../components/VendorFilter.astro";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
-import { getCountryNameMap } from "../../../lib/countryUtils";
+import { getCountryNameMap, slugifyCountry, normalizeCountryName } from "../../../lib/countryUtils";
 
 
 // Get technology slug from URL param
@@ -55,7 +56,7 @@ const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10)
 const pageSize = 102;
 
 // Build cache key
-const cacheKey = `vendors:technology:de:${techSlug}:${pageSize}:${page}`;
+const cacheKey = `vendors:technology:de:${techSlug}:${pageSize}:${page}:v2`;
 
 // Try to get cached result
 interface CachedTechnologyResult {
@@ -99,6 +100,17 @@ if (cachedResult) {
         ),
         vendor_countries (
           countries:countries (
+            id,
+            slug,
+            name_en,
+            name_de,
+            flag_emoji
+          )
+        ),
+        vendor_industries (
+          industries:industries (
+            id,
+            slug,
             name_en,
             name_de
           )
@@ -113,9 +125,9 @@ if (cachedResult) {
       query = query.in('id', techVendorIds);
     }
     
-    // Order by featured/priority first (high priority first, nulls last), then alphabetically by name
+    // Order by profile completeness score first (higher = more complete), then alphabetically by name
     return query
-      .order('priority', { ascending: false, nullsFirst: false })
+      .order('profile_score', { ascending: false, nullsFirst: false })
       .order('name', { ascending: true });
   }
 
@@ -156,9 +168,38 @@ if (cachedResult) {
 }
 
 // Normalize category data shape
-const normalizedVendors = normalizeVendors(vendors || []);
+const normalizedVendors = normalizeVendors(vendors || [], {
+  includeCategories: true,
+  includeIndustries: true,
+  includeCountries: true,
+});
 
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
+
+// Build filterData for VendorFilter
+const filterCountryMap = new Map<string, string>();
+const filterCategoryMap = new Map<string, string>();
+const filterIndustryMap = new Map<string, string>();
+for (const v of normalizedVendors) {
+  if (v.country) {
+    const slug = slugifyCountry(v.country);
+    if (slug && !filterCountryMap.has(slug)) {
+      const entry = countryNameMap[normalizeCountryName(v.country)];
+      filterCountryMap.set(slug, entry?.name_de || entry?.name_en || v.country);
+    }
+  }
+  v.vendor_categories?.forEach((vc: any) => {
+    if (vc.categories?.slug) filterCategoryMap.set(vc.categories.slug, vc.categories.name_de || vc.categories.name_en || vc.categories.slug);
+  });
+  v.vendor_industries?.forEach((vi: any) => {
+    if (vi.industries?.slug) filterIndustryMap.set(vi.industries.slug, vi.industries.name_de || vi.industries.name_en || vi.industries.slug);
+  });
+}
+const filterData = {
+  country:  [...filterCountryMap.entries()].map(([slug, label]) => ({ slug, label })).sort((a, b) => a.label.localeCompare(b.label)),
+  category: [...filterCategoryMap.entries()].map(([slug, label]) => ({ slug, label })).sort((a, b) => a.label.localeCompare(b.label)),
+  industry: [...filterIndustryMap.entries()].map(([slug, label]) => ({ slug, label })).sort((a, b) => a.label.localeCompare(b.label)),
+};
 
 // FAQ
 const faqItems = ((technology.faq_de ?? []) as any[]).filter(
@@ -256,17 +297,9 @@ const breadcrumbs = [
       </div>
     </div>
 
-    <!-- Result Count -->
-    <div class="mb-4">
-      <p class="text-sm text-gray-600">
-        {totalVendors || 0} Anbieter gefunden
-        {totalPages > 1 && (
-          <span class="text-xs text-gray-500 ml-2">
-            (Seite {page} von {totalPages})
-          </span>
-        )}
-      </p>
-    </div>
+    {normalizedVendors.length > 0 && (
+      <VendorFilter filters={['country', 'category', 'industry']} lang="de" filterData={filterData} totalVendors={totalVendors || 0} />
+    )}
 
     <!-- Vendor Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

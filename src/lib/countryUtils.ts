@@ -40,6 +40,8 @@ export function normalizeCountryName(country: string): string {
 export interface CountryNameEntry {
   name_en: string;
   name_de?: string | null;
+  slug?: string | null;
+  flag_emoji?: string | null;
 }
 
 export async function getCountryNameMap(
@@ -53,7 +55,7 @@ export async function getCountryNameMap(
 
   const { data } = await supabase
     .from('countries')
-    .select('name_en, name_de')
+    .select('name_en, name_de, slug, flag_emoji')
     .eq('is_active', true);
 
   const map: Record<string, CountryNameEntry> = {};
@@ -63,6 +65,8 @@ export async function getCountryNameMap(
     const entry: CountryNameEntry = {
       name_en: country.name_en,
       name_de: country.name_de || null,
+      slug: country.slug || null,
+      flag_emoji: country.flag_emoji || null,
     };
 
     map[normalizeCountryName(country.name_en)] = entry;
