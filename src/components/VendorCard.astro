@@ -1,10 +1,9 @@
 ---
 import { isFeatured } from '../lib/isFeatured';
-import type { VendorWithRelations, VendorCategoryRelation, VendorCountryRelation } from '../types/vendor';
+import type { VendorWithRelations, VendorCategoryRelation, VendorCountryRelation, VendorTechnologyRelation } from '../types/vendor';
 import LogoBox from './LogoBox.astro';
-import { formatTechnologies } from '../lib/vendors/vendorFormatters';
 import type { CountryNameEntry } from '../lib/countryUtils';
-import { normalizeCountryName } from '../lib/countryUtils';
+import { normalizeCountryName, slugifyCountry } from '../lib/countryUtils';
 
 interface VendorCardProps {
   vendor: VendorWithRelations;
@@ -24,9 +23,6 @@ const {
   countryNameMap = {},
 } = Astro.props;
 
-// Helper function to get language-aware vendor description
-// For EN: use description_en only
-// For DE: use description_de, fallback to description_en if German is missing
 function getVendorDescription(vendor: VendorWithRelations, lang: "en" | "de"): string | null {
   if (lang === "de") {
     return vendor.description_de || vendor.description_en || null;
@@ -34,59 +30,8 @@ function getVendorDescription(vendor: VendorWithRelations, lang: "en" | "de"): s
   return vendor.description_en || null;
 }
 
-
-// Helper function to get country flag emoji from country name/slug
-function getCountryFlag(country: string | null | undefined): string {
-  if (!country) return '';
-  
-  const countryLower = country.toLowerCase().trim();
-  
-  // Map common country names/slugs to flag emojis
-  const countryFlags: Record<string, string> = {
-    'switzerland': '🇨🇭',
-    'swiss': '🇨🇭',
-    'ch': '🇨🇭',
-    'germany': '🇩🇪',
-    'deutschland': '🇩🇪',
-    'de': '🇩🇪',
-    'austria': '🇦🇹',
-    'österreich': '🇦🇹',
-    'at': '🇦🇹',
-    'france': '🇫🇷',
-    'fr': '🇫🇷',
-    'italy': '🇮🇹',
-    'italia': '🇮🇹',
-    'it': '🇮🇹',
-    'united states': '🇺🇸',
-    'usa': '🇺🇸',
-    'us': '🇺🇸',
-    'united kingdom': '🇬🇧',
-    'uk': '🇬🇧',
-    'gb': '🇬🇧',
-    'netherlands': '🇳🇱',
-    'nl': '🇳🇱',
-    'belgium': '🇧🇪',
-    'be': '🇧🇪',
-    'spain': '🇪🇸',
-    'es': '🇪🇸',
-    'portugal': '🇵🇹',
-    'pt': '🇵🇹',
-    'poland': '🇵🇱',
-    'pl': '🇵🇱',
-    'czech republic': '🇨🇿',
-    'czechia': '🇨🇿',
-    'cz': '🇨🇿',
-    'denmark': '🇩🇰',
-    'dk': '🇩🇰',
-    'sweden': '🇸🇪',
-    'se': '🇸🇪',
-    'norway': '🇳🇴',
-    'no': '🇳🇴',
-    'finland': '🇫🇮',
-    'fi': '🇫🇮',
-  };
-  
-  return countryFlags[countryLower] || '';
+function getCountryFlag(_country: string | null | undefined): string {
+  return '';
 }
 
 function getDisplayCountry(vendor: VendorWithRelations, lang: "en" | "de"): string | null {
@@ -113,15 +58,66 @@ function getDisplayCountry(vendor: VendorWithRelations, lang: "en" | "de"): stri
     : (matchedCountry.name_en || matchedCountry.name_de || vendor.country);
 }
 
-// Helper function to parse logo background variant from logo URL
-// Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
-// Also checks for common patterns in filename (e.g., logo_white.svg -> dark background)
+function getCategoryName(category: VendorCategoryRelation | null | undefined, lang: "en" | "de"): string | null {
+  if (!category?.categories) return null;
+
+  return lang === "de"
+    ? (category.categories.name_de || category.categories.name_en || null)
+    : (category.categories.name_en || category.categories.name_de || null);
+}
+
+function getTechnologyName(technology: VendorTechnologyRelation | null | undefined, lang: "en" | "de"): string | null {
+  if (!technology?.technologies) return null;
+
+  return lang === "de"
+    ? (technology.technologies.name_de || technology.technologies.name_en || null)
+    : (technology.technologies.name_en || technology.technologies.name_de || null);
+}
+
+function getBestBadges(vendor: VendorWithRelations, lang: "en" | "de"): string[] {
+  const badges: string[] = [];
+
+  const primaryCategory =
+    vendor.vendor_categories?.find((category: VendorCategoryRelation) => category.is_primary === true) ||
+    vendor.vendor_categories?.[0];
+  const primaryCategoryName = getCategoryName(primaryCategory, lang);
+  if (primaryCategoryName) {
+    badges.push(primaryCategoryName);
+  }
+
+  const secondaryCategory = vendor.vendor_categories?.find((category: VendorCategoryRelation) => {
+    const categoryName = getCategoryName(category, lang);
+    return category !== primaryCategory && !!categoryName && categoryName !== primaryCategoryName;
+  });
+  const secondaryCategoryName = getCategoryName(secondaryCategory, lang);
+  if (secondaryCategoryName) {
+    badges.push(secondaryCategoryName);
+  }
+
+  const firstTechnologyName = (vendor.vendor_technologies || [])
+    .map((technology: VendorTechnologyRelation) => getTechnologyName(technology, lang))
+    .find(Boolean);
+
+  if (!secondaryCategoryName && firstTechnologyName && !badges.includes(firstTechnologyName)) {
+    badges.push(firstTechnologyName);
+  }
+
+  const countryName = getDisplayCountry(vendor, lang);
+  const countryBadge = countryName ? `${getCountryFlag(vendor.country)} ${countryName}`.trim() : null;
+  if (countryBadge && !badges.includes(countryBadge)) {
+    badges.push(countryBadge);
+  } else if (firstTechnologyName && !badges.includes(firstTechnologyName)) {
+    badges.push(firstTechnologyName);
+  }
+
+  return badges.slice(0, 3);
+}
+
 function parseLogoVariant(logoUrl: string | null | undefined): "light" | "dark" | "neutral" | "brand" {
   if (!logoUrl) return "light";
-  
+
   const url = logoUrl.toLowerCase();
-  
-  // Check for explicit variant pattern: __{variant}.{ext}
+
   const explicitVariantMatch = url.match(/__([a-z]+)\.(svg|png|jpg|jpeg|webp)$/);
   if (explicitVariantMatch) {
     const variant = explicitVariantMatch[1];
@@ -136,26 +132,19 @@ function parseLogoVariant(logoUrl: string | null | undefined): "light" | "dark" 
       return variantMap[variant];
     }
   }
-  
-  // Check for common filename patterns
-  // If filename contains "white", use dark background (white logo on dark bg)
+
   if (url.includes('_white') || url.includes('-white') || url.match(/white[._-]/)) {
     return 'dark';
   }
-  
-  // If filename contains "dark" or "black", use light background
+
   if (url.includes('_dark') || url.includes('-dark') || url.includes('_black') || url.includes('-black')) {
     return 'light';
   }
-  
-  // Default to light background
+
   return 'light';
 }
 
-// Helper function to get logo variant: use stored logo_background_variant if available, otherwise parse from logo URL
 function getLogoVariant(vendor: VendorWithRelations): "light" | "dark" | "neutral" | "brand" {
-  // If vendor.logo_background_variant exists and is not null, use it directly
-  // Database stores: 'light', 'neutral', 'dark', 'brand' (already in LogoBox format)
   const storedVariant = (vendor as any).logo_background_variant;
   if (storedVariant && typeof storedVariant === 'string') {
     const validVariants: ("light" | "dark" | "neutral" | "brand")[] = ['light', 'dark', 'neutral', 'brand'];
@@ -163,51 +152,38 @@ function getLogoVariant(vendor: VendorWithRelations): "light" | "dark" | "neutra
       return storedVariant as "light" | "dark" | "neutral" | "brand";
     }
   }
-  
-  // Fallback to filename-based parsing
+
   return parseLogoVariant(vendor.logo_url);
 }
 
 const vendorHref = `${hrefPrefix}/${vendor.slug}`;
 const vendorIsFeatured = isFeatured(vendor);
 const vendorIsPro = vendor.plan === 'pro' || vendorIsFeatured;
-
-// Derive category_slugs from vendor_categories if not provided
-const categorySlugs = vendor.category_slugs || 
-  (vendor.vendor_categories?.map((vc: VendorCategoryRelation) => vc.categories?.slug).filter(Boolean) as string[]) || 
-  [];
+const vendorDescription = getVendorDescription(vendor, lang);
+const badgeLabels = getBestBadges(vendor, lang);
 ---
 
 <a
   href={vendorHref}
-  class="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded-lg"
+  data-country={slugifyCountry(vendor.country || '')}
+  data-category={vendor.category_slugs?.join(',') || ''}
+  data-industry={vendor.industry_slugs?.join(',') || ''}
+  data-technology={vendor.technology_slugs?.join(',') || ''}
+  class="block h-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded-lg"
   aria-label={`${vendor.name} - ${lang === "de" ? "Profil anzeigen" : "View Profile"}`}
 >
   <div
-    class={`relative bg-white rounded-lg border p-4 transition-all flex flex-col items-center text-center ${
+    class={`relative h-full bg-white rounded-lg border px-4 py-5 transition-all flex flex-col items-center text-center ${
       vendorIsFeatured
         ? 'bg-yellow-50/30 border-yellow-300 hover:border-yellow-400 hover:shadow-md active:bg-yellow-100/50 md:hover:bg-yellow-50/50'
         : vendorIsPro
           ? 'bg-orange-50/30 border-orange-200 hover:border-orange-300 hover:shadow-md active:bg-orange-100/40 md:hover:bg-orange-50/50'
-        : 'border-gray-200 hover:border-gray-300 hover:shadow-md active:bg-gray-50 md:hover:bg-gray-50'
+          : 'border-gray-200 hover:border-gray-300 hover:shadow-md active:bg-gray-50 md:hover:bg-gray-50'
     }`}
   >
-    <!-- Featured Badge -->
-    {vendorIsFeatured && showFeaturedBadge && (
-      <span class="absolute top-3 right-3 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">
-        Featured
-      </span>
-    )}
-    {!vendorIsFeatured && vendorIsPro && (
-      <span class="absolute top-3 right-3 bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full font-medium">
-        Pro
-      </span>
-    )}
-
-    <!-- Vendor Logo -->
-    <div class="mb-4 flex justify-center">
-      <LogoBox 
-        src={vendor.logo_url} 
+    <div class="mb-5 flex justify-center">
+      <LogoBox
+        src={vendor.logo_url}
         alt={vendor.logo_alt || `${vendor.name} logo`}
         size="md"
         variant={getLogoVariant(vendor)}
@@ -216,53 +192,30 @@ const categorySlugs = vendor.category_slugs ||
       />
     </div>
 
-    <!-- Vendor Name -->
     <h3 class="text-lg font-semibold text-gray-900 mb-3 group-hover:text-brand-700 transition-colors">
       {vendor.name}
     </h3>
 
-    <!-- Short Description -->
-    {(() => {
-      const vendorDescription = getVendorDescription(vendor, lang);
-      return vendorDescription ? (
-        <p class="text-sm text-gray-600 text-center mt-2 line-clamp-2">
+    <div class="min-h-[3rem]">
+      {vendorDescription && (
+        <p class="text-sm leading-6 text-gray-600 text-center line-clamp-2">
           {vendorDescription}
         </p>
-      ) : null;
-    })()}
-
-    <!-- Country + Category Pills -->
-    <div class="flex flex-wrap gap-2 justify-center mt-3">
-      {vendor.country && (
-        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-          {getCountryFlag(vendor.country)} {lang === "de" ? "Aktiv in:" : "Active in:"} {getDisplayCountry(vendor, lang)}
-        </span>
-      )}
-      {vendor.vendor_categories && vendor.vendor_categories.length > 0 && (
-        vendor.vendor_categories.map((vc: VendorCategoryRelation) => {
-          const categoryName = lang === "de" 
-            ? (vc.categories?.name_de || vc.categories?.name_en)
-            : (vc.categories?.name_en || vc.categories?.name_de);
-          return categoryName ? (
-            <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-              {categoryName}
-            </span>
-          ) : null;
-        })
       )}
     </div>
 
-    <!-- Technologies (first 2 only) -->
-    {vendor.vendor_technologies && vendor.vendor_technologies.length > 0 && (
-      <p class="text-xs text-gray-500 mt-2">
-        {formatTechnologies(vendor, lang)}
-      </p>
+    {badgeLabels.length > 0 && (
+      <div class="mt-4 flex flex-wrap gap-2 justify-center">
+        {badgeLabels.map((badgeLabel, index) => (
+          <span class={`text-xs px-2.5 py-1 rounded-full ${index === 0 ? 'bg-gray-200 text-gray-800 font-medium' : 'bg-gray-100 text-gray-600 font-normal'}`}>
+            {badgeLabel}
+          </span>
+        ))}
+      </div>
     )}
 
-    <!-- View Profile Text (styled but not a link) -->
-    <span class="mt-3 inline-block text-sm text-brand-700 group-hover:text-brand-800 font-medium transition-colors">
-      {lang === "de" ? "Profil anzeigen →" : "View Profile →"}
+    <span class="mt-auto pt-6 inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-brand-700 group-hover:text-brand-800 font-semibold transition-colors">
+      {lang === "de" ? "Profil anzeigen ->" : "View Profile ->"}
     </span>
   </div>
 </a>
-

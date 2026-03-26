@@ -5,6 +5,7 @@ import { supabaseAdmin } from '../../lib/supabaseAdminClient';
 import { createSupabaseServerClient } from '../../lib/supabaseServer';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import { mapFormVariantToDbVariant } from '../../lib/vendors/logoBackgroundVariant';
+import { calculateCompletenessScore } from '../../lib/vendors/completenessScore';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import VendorForm from '../../components/admin/VendorForm.astro';
 
@@ -175,6 +176,14 @@ if (Astro.request.method === 'POST') {
     }
   }
 
+  // Compute profile completeness score from all available fields + M2M relations
+  insertData.profile_score = calculateCompletenessScore({
+    ...insertData,
+    technology_slugs: technologySlugs,
+    industry_slugs: industrySlugs,
+    category_slugs: categorySlugs,
+    country_slugs: countrySlugs,
+  });
 
   // Add timestamps
   insertData.created_at = new Date().toISOString();

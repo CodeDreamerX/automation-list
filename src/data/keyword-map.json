@@ -270,6 +270,8 @@
     "mrk": "/de/category/cobots-hrc",
     "mensch-roboter-kollaboration": "/de/category/cobots-hrc",
     "kollaborativer roboter": "/de/category/cobots-hrc",
+    "kollaborative roboter": "/de/category/cobots-hrc",
+    "kollaborativen roboter": "/de/category/cobots-hrc",
 
     "industrielle it": "/de/category/industrial-it-iot",
     "iiot": "/de/category/industrial-it-iot",
@@ -279,6 +281,7 @@
     "mes": "/de/category/mes-specialists",
     "manufacturing execution system": "/de/category/mes-specialists",
     "mes-system": "/de/category/mes-specialists",
+    "mes-systeme": "/de/category/mes-specialists",
     "fertigungssteuerung": "/de/category/mes-specialists",
 
     "antriebstechnik": "/de/category/motion-drives",
