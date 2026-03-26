@@ -26,16 +26,39 @@ export const GET: APIRoute = async () => {
     console.error('Error fetching vendors for sitemap:', vendorsError);
   }
 
-  // Fetch categories with slug
+  // Fetch categories with id + slug
   // SEO: Only include active categories
   const { data: categories, error: categoriesError } = await supabase
     .from('categories')
-    .select('slug')
+    .select('id, slug')
     .eq('is_active', true)
     .order('slug', { ascending: true });
 
   if (categoriesError) {
     console.error('Error fetching categories for sitemap:', categoriesError);
+  }
+
+  // Fetch vendor-category links with vendor updated_at for category lastmod
+  // SEO: Category pages should reflect the latest change among their vendors
+  const categoryIds = (categories || []).map((category) => category.id).filter(Boolean);
+  let categoryVendorLinks: any[] = [];
+  if (categoryIds.length > 0) {
+    const { data: linksData, error: linksError } = await supabase
+      .from('vendor_categories')
+      .select(`
+        category_id,
+        vendors:vendors (
+          updated_at,
+          plan
+        )
+      `)
+      .in('category_id', categoryIds);
+
+    if (linksError) {
+      console.error('Error fetching vendor-category links for sitemap:', linksError);
+    } else {
+      categoryVendorLinks = linksData || [];
+    }
   }
 
   // Fetch technologies with slug and updated_at for technology pages
@@ -146,19 +169,44 @@ export const GET: APIRoute = async () => {
   });
 
   // Category detail pages (EN and DE)
-  // SEO: Category pages are important landing pages
+  // SEO: Use latest vendor updated_at per category as lastmod
+  const categoryLastmodMap = new Map<string, Date>();
+  (categoryVendorLinks || []).forEach((link: any) => {
+    const categoryId = link?.category_id;
+    const vendor = link?.vendors;
+    if (!categoryId || !vendor || vendor.plan === 'deactivated' || !vendor.updated_at) {
+      return;
+    }
+
+    const updatedAt = new Date(vendor.updated_at);
+    const existing = categoryLastmodMap.get(categoryId);
+    if (!existing || updatedAt > existing) {
+      categoryLastmodMap.set(categoryId, updatedAt);
+    }
+  });
+
   (categories || []).forEach((category) => {
     if (category.slug) {
-      addUrl({
+      const lastmodDate = categoryLastmodMap.get(category.id);
+      const urlEn: SitemapUrl = {
         loc: `${PRODUCTION_DOMAIN}/en/category/${category.slug}`,
         changefreq: 'weekly',
         priority: '0.8',
-      });
-      addUrl({
+      };
+      const urlDe: SitemapUrl = {
         loc: `${PRODUCTION_DOMAIN}/de/category/${category.slug}`,
         changefreq: 'weekly',
         priority: '0.8',
-      });
+      };
+
+      if (lastmodDate) {
+        const lastmod = lastmodDate.toISOString().split('T')[0];
+        urlEn.lastmod = lastmod;
+        urlDe.lastmod = lastmod;
+      }
+
+      addUrl(urlEn);
+      addUrl(urlDe);
     }
   });
 
