@@ -273,13 +273,13 @@ const linkedFaqItems = faqItems.map((item: any) => ({
 
 // SEO metadata
 const metaTitle = totalVendors
-  ? `${totalVendors} ${categoryName} in Europa | Automation List`
-  : `${categoryName} in Europa | Automation List`;
+  ? `${totalVendors} ${categoryName} | Automation List`
+  : `${categoryName} | Automation List`;
 const customMetaDescription = category.meta_description_de || category.meta_description_en;
 const metaDescription = (customMetaDescription && customMetaDescription.trim())
   || (totalVendors
-    ? `${totalVendors} geprüfte ${categoryName} aus Europa — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`
-    : `Geprüfte ${categoryName} aus Europa — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`);
+    ? `${totalVendors} geprüfte ${categoryName} weltweit — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`
+    : `Geprüfte ${categoryName} weltweit — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/de/category/${categorySlug}`;
@@ -329,7 +329,7 @@ const breadcrumbs = [
   )}
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      {categoryName} in Europa
+      {categoryName}
     </h1>
 
     {linkedParagraphs.length > 0 && (

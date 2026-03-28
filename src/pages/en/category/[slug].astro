@@ -273,13 +273,13 @@ const linkedFaqItems = faqItems.map((item: any) => ({
 
 // SEO metadata
 const metaTitle = totalVendors
-  ? `${totalVendors} ${categoryName} in Europe | Automation List`
-  : `${categoryName} in Europe | Automation List`;
+  ? `${totalVendors} ${categoryName} | Automation List`
+  : `${categoryName} | Automation List`;
 const customMetaDescription = category.meta_description_en || category.meta_description_de;
 const metaDescription = (customMetaDescription && customMetaDescription.trim())
   || (totalVendors
-    ? `Browse ${totalVendors} verified ${categoryName} vendors across Europe — system integrators, specialists and more. Filter by country and industry.`
-    : `Browse verified ${categoryName} vendors across Europe — system integrators, specialists and more. Filter by country and industry.`);
+    ? `Browse ${totalVendors} verified ${categoryName} vendors worldwide — system integrators, specialists and more. Filter by country and industry.`
+    : `Browse verified ${categoryName} vendors worldwide — system integrators, specialists and more. Filter by country and industry.`);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/en/category/${categorySlug}`;
@@ -329,7 +329,7 @@ const breadcrumbs = [
   )}
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      {categoryName} in Europe
+      {categoryName}
     </h1>
 
     {linkedParagraphs.length > 0 && (
