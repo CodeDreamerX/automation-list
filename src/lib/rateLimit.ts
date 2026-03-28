@@ -28,6 +28,15 @@ export const DEFAULT_LOGIN_RATE_LIMIT: RateLimitConfig = {
 };
 
 /**
+ * Default rate limit configuration for public listing submissions
+ * 5 attempts per hour per IP
+ */
+export const DEFAULT_SUBMIT_LISTING_RATE_LIMIT: RateLimitConfig = {
+  maxAttempts: 5,
+  windowMs: 60 * 60 * 1000, // 1 hour
+};
+
+/**
  * Check if a request should be rate limited
  * 
  * @param identifier - Unique identifier (e.g., IP address, email)

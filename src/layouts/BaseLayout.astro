@@ -584,7 +584,7 @@ if (isGerman) {
         <div class="border-t border-gray-200 pt-8">
           <!-- Copyright -->
           <div class="text-center text-sm text-[#6B7280] space-y-1">
-            <p>© 2025 Automation List. All rights reserved.</p>
+            <p>© 2026 Automation List. All rights reserved.</p>
             <p>Made in Switzerland.</p>
             <p class="pt-2 space-x-4">
               <a href={isGerman ? "/de/impressum" : "/en/impressum"} class="hover:underline">
@@ -628,21 +628,50 @@ if (isGerman) {
           const showFallback = () => {
             img.style.display = "none";
             fallback?.classList.remove("hidden");
+            fallback?.classList.add("flex");
           };
 
-          if (img.complete) {
-            if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+          const hideFallback = () => {
+            img.style.removeProperty("display");
+            fallback?.classList.add("hidden");
+            fallback?.classList.remove("flex");
+          };
+
+          // naturalWidth/height alone is unreliable (e.g. SVGs often report 0 while rendering).
+          const imageShowsContent = () =>
+            img.naturalWidth > 0 ||
+            img.naturalHeight > 0 ||
+            img.offsetWidth > 0 ||
+            img.offsetHeight > 0;
+
+          const evaluate = () => {
+            if (imageShowsContent()) {
+              hideFallback();
+            } else {
               showFallback();
             }
-            return;
-          }
+          };
+
+          const scheduleEvaluate = () => {
+            const finish = () => {
+              requestAnimationFrame(() => {
+                requestAnimationFrame(evaluate);
+              });
+            };
+            if (typeof img.decode === "function") {
+              img.decode().then(finish).catch(finish);
+            } else {
+              finish();
+            }
+          };
 
           img.addEventListener("error", showFallback, { once: true });
-          img.addEventListener("load", () => {
-            if (img.naturalWidth === 0 || img.naturalHeight === 0) {
-              showFallback();
-            }
-          }, { once: true });
+
+          if (img.complete) {
+            scheduleEvaluate();
+          } else {
+            img.addEventListener("load", scheduleEvaluate, { once: true });
+          }
         });
       }
 

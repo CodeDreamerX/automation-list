@@ -1,8 +1,25 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabaseClient';
 import { successResponse, errorResponse } from '../../lib/api/responses';
+import { checkRateLimit, getClientIP, DEFAULT_SUBMIT_LISTING_RATE_LIMIT } from '../../lib/rateLimit';
 
 export const POST: APIRoute = async ({ request }) => {
+  const clientIP = getClientIP(request);
+  const rateLimit = checkRateLimit(`submit-listing:ip:${clientIP}`, DEFAULT_SUBMIT_LISTING_RATE_LIMIT);
+  if (!rateLimit.allowed) {
+    const retryAfter = rateLimit.retryAfter || Math.ceil(DEFAULT_SUBMIT_LISTING_RATE_LIMIT.windowMs / 1000);
+    return new Response(
+      JSON.stringify({ error: 'Too many submissions. Please try again later.' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': retryAfter.toString(),
+        },
+      }
+    );
+  }
+
   let body: any;
   try {
     body = await request.json();
