@@ -5,15 +5,42 @@ import { slugifyCountry, normalizeCountryName } from '../lib/countryUtils';
 
 interface Props {
   vendors: VendorWithRelations[];
-  categoryName: string;
   lang: 'en' | 'de';
   countryNameMap: Record<string, CountryNameEntry>;
 }
 
-const { vendors, categoryName, lang, countryNameMap } = Astro.props;
+const { vendors, lang, countryNameMap } = Astro.props;
+
+/** DB stores ISO 3166-1 alpha-2 in `flag_emoji` (same as flagcdn); convert to Unicode flag emoji. */
+function isoToRegionalFlag(iso: string): string {
+  const c = iso.trim().toUpperCase();
+  if (c.length !== 2 || !/^[A-Z]{2}$/.test(c)) return '';
+  const base = 0x1f1e6;
+  const ordA = 'A'.charCodeAt(0);
+  return String.fromCodePoint(
+    base + c.charCodeAt(0) - ordA,
+    base + c.charCodeAt(1) - ordA
+  );
+}
+
+function prefixForCountry(
+  flagRaw: string | null | undefined,
+  slug: string
+): { kind: 'emoji'; value: string } | { kind: 'pill'; value: string } {
+  const raw = (flagRaw ?? '').trim();
+  if (/^[a-z]{2}$/i.test(raw)) {
+    const emoji = isoToRegionalFlag(raw);
+    if (emoji) return { kind: 'emoji', value: emoji };
+  }
+  if (raw.length > 0 && !/^[a-z]{2}$/i.test(raw)) {
+    return { kind: 'emoji', value: raw };
+  }
+  const pill = (slug.slice(0, 2) || '??').toUpperCase();
+  return { kind: 'pill', value: pill };
+}
 
 // Aggregate by primary vendor.country (HQ), count each vendor once per country.
-const countryCount = new Map<string, { slug: string; label: string; flag: string; count: number }>();
+const countryCount = new Map<string, { slug: string; label: string; flagRaw: string; count: number }>();
 
 for (const vendor of vendors) {
   if (!vendor.country) continue;
@@ -21,12 +48,12 @@ for (const vendor of vendors) {
   if (!slug) continue;
   const entry = countryNameMap[normalizeCountryName(vendor.country)];
   const label = (lang === 'de' ? entry?.name_de : null) || entry?.name_en || vendor.country;
-  const flag = entry?.flag_emoji || '';
+  const flagRaw = entry?.flag_emoji || '';
   const existing = countryCount.get(slug);
   if (existing) {
     existing.count++;
   } else {
-    countryCount.set(slug, { slug, label, flag, count: 1 });
+    countryCount.set(slug, { slug, label, flagRaw, count: 1 });
   }
 }
 
@@ -35,22 +62,38 @@ const topCountries = [...countryCount.values()]
   .slice(0, 5);
 
 if (topCountries.length === 0) return;
+
+const sectionTitle = lang === 'de' ? 'Anbieter nach Land' : 'Vendors by country';
 ---
 
-<div class="mt-8 pt-6 border-t border-gray-100">
-  <p class="text-sm text-gray-500 mb-2">
-    {lang === 'de'
-      ? `${categoryName} Anbieter nach Land:`
-      : `${categoryName} vendors by country:`}
-  </p>
-  <div class="flex flex-wrap gap-x-6 gap-y-1">
-    {topCountries.map(c => (
-      <a
-        href={`/${lang}/country/${c.slug}`}
-        class="text-sm text-gray-700 hover:text-brand-700 transition-colors"
-      >
-        {c.flag} {c.label} ({c.count})
-      </a>
-    ))}
+<div class="mt-8 rounded-lg border border-gray-100 bg-gray-50 px-4 py-5 sm:px-5">
+  <h2 class="text-sm font-semibold tracking-tight text-gray-900 mb-3">
+    {sectionTitle}
+  </h2>
+  <div class="flex flex-wrap gap-x-4 gap-y-2.5">
+    {topCountries.map((c) => {
+      const prefix = prefixForCountry(c.flagRaw, c.slug);
+      return (
+        <a
+          href={`/${lang}/country/${c.slug}`}
+          class="group inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm text-gray-800 transition-colors hover:bg-white/90 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        >
+          {prefix.kind === 'emoji' ? (
+            <span class="text-base leading-none select-none" aria-hidden="true">{prefix.value}</span>
+          ) : (
+            <span
+              class="inline-flex min-w-[1.75rem] shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+              aria-hidden="true"
+            >
+              {prefix.value}
+            </span>
+          )}
+          <span class="font-medium text-gray-900 group-hover:text-brand-900">{c.label}</span>
+          <span class="inline-flex min-w-[1.25rem] items-center justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-bold tabular-nums text-gray-900 ring-1 ring-inset ring-gray-200/90">
+            {c.count}
+          </span>
+        </a>
+      );
+    })}
   </div>
 </div>

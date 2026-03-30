@@ -45,7 +45,8 @@ if (!dbCategories) {
   const { data } = await supabase
     .from('categories')
     .select('id, slug, name_en, name_de')
-    .order('name_en', { ascending: true });
+    .eq('is_active', true)
+    .order('order_index', { ascending: true });
   dbCategories = data as Category[] | null;
   if (dbCategories) {
     setCached(categoriesCacheKey, dbCategories, 300);
@@ -68,6 +69,7 @@ if (!uniqueCountryList) {
     .from('countries')
     .select('slug, name_en, name_de, flag_emoji')
     .eq('is_active', true)
+    .order('order_index', { ascending: true, nullsFirst: false })
     .order('name_en', { ascending: true });
 
   uniqueCountryList = (countriesData || []) as CountryOption[];
@@ -452,6 +454,47 @@ const normalizedVendors = normalizeVendors(vendors || []);
 const filteredVendors = normalizedVendors;
 const totalPages = Math.ceil((totalVendors || 0) / pageSize);
 
+const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
+const vendorsForJsonLd = page === 1 ? filteredVendors.slice(0, 100) : [];
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: lang === "de" ? "Startseite" : "Home",
+      item: `${siteOrigin}/${lang}/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: lang === "de" ? "Anbieter" : "Vendors",
+      item: `${siteOrigin}/${lang}/vendors`,
+    },
+  ],
+};
+
+const itemListSchema =
+  page === 1 && vendorsForJsonLd.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name:
+          lang === "de"
+            ? "Industrieautomatisierungs-Anbieter"
+            : "Industrial Automation Vendors",
+        numberOfItems: vendorsForJsonLd.length,
+        itemListElement: vendorsForJsonLd.map((v, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: v.name,
+          url: `${siteOrigin}/${lang}/vendor/${v.slug}`,
+        })),
+      }
+    : null;
+
 // Build category list with slugs from database categories
 const categoryList = (dbCategories || []).map(cat => ({
   slug: cat.slug,
@@ -459,6 +502,11 @@ const categoryList = (dbCategories || []).map(cat => ({
 })).filter(cat => cat.slug && cat.name);
 
 ---
+
+<script slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+{itemListSchema && (
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />
+)}
 
 <div class="container-px mx-auto max-w-7xl px-4 py-10">
   <h1 class="text-3xl font-bold text-gray-900 mb-8">{pageTitle}</h1>
@@ -649,6 +697,36 @@ const categoryList = (dbCategories || []).map(cat => ({
     baseUrl={Astro.url}
     lang={lang}
   />
+
+  <!-- Crawlable browse links (plain anchors for SEO) -->
+  {categoryList.length > 0 && (
+    <nav class="mt-10 pt-8 border-t border-gray-200" aria-label={lang === 'de' ? 'Nach Kategorie' : 'Browse by category'}>
+      <h2 class="text-sm font-semibold text-gray-900 mb-3">
+        {lang === 'de' ? 'Nach Kategorie durchsuchen' : 'Browse by Category'}
+      </h2>
+      <div class="flex flex-wrap gap-x-3 gap-y-2 text-sm text-gray-700">
+        {categoryList.map((cat) => (
+          <a href={`/${lang}/category/${cat.slug}`} class="hover:text-brand-700 transition-colors">
+            {cat.name}
+          </a>
+        ))}
+      </div>
+    </nav>
+  )}
+  {uniqueCountryList.length > 0 && (
+    <nav class="mt-8 pt-6 border-t border-gray-100" aria-label={lang === 'de' ? 'Nach Land' : 'Browse by country'}>
+      <h2 class="text-sm font-semibold text-gray-900 mb-3">
+        {lang === 'de' ? 'Nach Land durchsuchen' : 'Browse by Country'}
+      </h2>
+      <div class="flex flex-wrap gap-x-3 gap-y-2 text-sm text-gray-700">
+        {uniqueCountryList.map((country) => (
+          <a href={`/${lang}/country/${country.slug}`} class="hover:text-brand-700 transition-colors">
+            {lang === 'de' && country.name_de ? country.name_de : country.name_en}
+          </a>
+        ))}
+      </div>
+    </nav>
+  )}
 </div>
 
 <script>

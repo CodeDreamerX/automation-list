@@ -25,7 +25,9 @@
       "Bash(grep -l \"linkify\" src/pages/de/category/[slug].astro)",
       "Bash(grep -r \"getCached\\\\|setCached\" /d/Projects/automationlist/src --include=*.astro --include=*.ts -l)",
       "Bash(npm test:*)",
-      "Bash(grep -r profile_score /d/Projects/automationlist/src --include=*.ts --include=*.astro)"
+      "Bash(grep -r profile_score /d/Projects/automationlist/src --include=*.ts --include=*.astro)",
+      "Bash(xargs grep:*)",
+      "Bash(npx astro:*)"
     ]
   }
 }

@@ -339,6 +339,12 @@ const breadcrumbs = [
             <p class="mb-4 text-gray-700 leading-relaxed" set:html={html}></p>
           ))}
         </CollapsibleIntro>
+        <a
+          href="/en/vendors"
+          class="mt-2 inline-flex items-center gap-1 rounded-md border border-brand-200/80 bg-brand-50 px-3.5 py-2 text-sm font-bold text-brand-800 shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-100 hover:text-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        >
+          Browse all vendors →
+        </a>
       </div>
     )}
 
@@ -366,7 +372,7 @@ const breadcrumbs = [
       )}
     </div>
 
-    <TopCountries vendors={normalizedVendors} categoryName={categoryName} lang="en" countryNameMap={countryNameMap} />
+    <TopCountries vendors={normalizedVendors} lang="en" countryNameMap={countryNameMap} />
 
     <!-- Pagination -->
     <Pagination
