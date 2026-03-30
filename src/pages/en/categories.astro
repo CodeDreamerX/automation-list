@@ -50,14 +50,8 @@ for (const cat of categories) {
   linkifiedDescriptions[cat.slug] = linkifyText(cat.card_description_en, cardMap, { minWordGap: 10, linkClass: "text-blue-600 hover:underline pointer-events-auto relative z-10" });
 }
 
-// Generate dynamic description from actual categories
-const categoryNames = categories
-  .slice(0, 6) // Limit to first 6 categories
-  .map(cat => cat.name_en)
-  .filter(Boolean);
-const description = categoryNames.length > 0
-  ? `Browse industrial automation categories including ${categoryNames.join(', ')}${categoryNames.length < categories.length ? ', and more.' : '.'}`
-  : "Browse industrial automation categories and discover vendors in your area of expertise.";
+const description =
+  "Finding the right automation partner starts with knowing where to look. This directory organises verified European industrial automation vendors by capability, from system integrators and robotics specialists to MES implementers, machine builders, and industrial IT providers. Each category contains vetted companies with detailed profiles, filterable by country and industry, so you can identify qualified vendors for your specific project without sifting through generic supplier databases.";
 
 // Build breadcrumbs
 const breadcrumbs = [

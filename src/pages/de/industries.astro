@@ -45,14 +45,8 @@ const industries = allIndustries.map((industry) => ({
   count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
 }));
 
-// Generate dynamic description from actual industries
-const industryNames = industries
-  .slice(0, 6) // Limit to first 6 industries
-  .map((ind) => ind.name)
-  .filter(Boolean);
-const description = industryNames.length > 0
-  ? `Durchsuchen Sie Industrieautomatisierungsbranchen, einschließlich ${industryNames.join(', ')}${industryNames.length < industries.length ? ' und mehr.' : '.'}`
-  : "Durchsuchen Sie Industrieautomatisierungsbranchen und entdecken Sie Anbieter in Ihrer Branche.";
+const description =
+  "Automatisierungsanforderungen unterscheiden sich je nach Branche erheblich. Ein Lebensmittelhersteller benötigt hygienegerechtes Design, CIP/SIP-Integration und lückenlose Rückverfolgbarkeit. Eine Pharmaanlage erfordert GMP-Validierung, elektronische Chargendokumentation und Konformität mit 21 CFR Part 11 bzw. Annex 11. Eine Automobilfertigungslinie braucht Hochgeschwindigkeitsrobotik, Bildverarbeitung und MES-Anbindung. Dieses Verzeichnis organisiert verifizierte Automatisierungsanbieter nach Branche, damit Sie Partner mit nachgewiesener Erfahrung in Ihrer spezifischen Fertigungsumgebung finden und keine Generalisten ohne Sektortiefe beauftragen.";
 
 // Build breadcrumbs
 const breadcrumbs = [

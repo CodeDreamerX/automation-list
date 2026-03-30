@@ -45,14 +45,8 @@ const industries = allIndustries.map((industry) => ({
   count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
 }));
 
-// Generate dynamic description from actual industries
-const industryNames = industries
-  .slice(0, 6) // Limit to first 6 industries
-  .map((ind) => ind.name)
-  .filter(Boolean);
-const description = industryNames.length > 0
-  ? `Browse industrial automation industries including ${industryNames.join(', ')}${industryNames.length < industries.length ? ', and more.' : '.'}`
-  : "Browse industrial automation industries and discover vendors in your industry.";
+const description =
+  "Automation requirements differ significantly across industries. A food manufacturer needs hygienic design, CIP/SIP integration, and traceability. A pharma plant needs GMP validation, electronic batch records, and 21 CFR Part 11 compliance. An automotive line needs high-speed robotics, vision inspection, and MES connectivity. This directory organises verified automation vendors by industry vertical, so you can find partners with proven experience in your specific manufacturing environment rather than generalist suppliers with no sector depth.";
 
 // Build breadcrumbs
 const breadcrumbs = [
