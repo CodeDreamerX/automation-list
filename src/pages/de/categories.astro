@@ -48,14 +48,8 @@ for (const cat of categories) {
   linkifiedDescriptions[cat.slug] = linkifyText(cat.card_description_de, cardMap, { minWordGap: 10, linkClass: "text-blue-600 hover:underline pointer-events-auto relative z-10" });
 }
 
-// Generate dynamic description from actual categories
-const categoryNames = categories
-  .slice(0, 6) // Limit to first 6 categories
-  .map(cat => cat.name_de)
-  .filter(Boolean);
-const description = categoryNames.length > 0
-  ? `Durchsuchen Sie Industrieautomatisierungskategorien, einschließlich ${categoryNames.join(', ')}${categoryNames.length < categories.length ? ' und mehr.' : '.'}`
-  : "Durchsuchen Sie Industrieautomatisierungskategorien und entdecken Sie Anbieter in Ihrem Fachgebiet.";
+const description =
+  "Den richtigen Automatisierungspartner zu finden beginnt damit, gezielt suchen zu können. Dieses Verzeichnis organisiert verifizierte europäische Anbieter der Industrieautomatisierung nach Kompetenz, von Systemintegratoren und Robotik-Spezialisten bis hin zu MES-Implementierern, Maschinenbauern und Industrial-IT-Anbietern. Jede Kategorie enthält geprüfte Unternehmen mit detaillierten Profilen, filterbar nach Land und Branche, damit Sie qualifizierte Anbieter für Ihr konkretes Projekt finden, ohne generische Lieferantendatenbanken durchsuchen zu müssen.";
 
 // Build breadcrumbs
 const breadcrumbs = [

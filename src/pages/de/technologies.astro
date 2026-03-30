@@ -37,14 +37,8 @@ const technologies = (dbTechnologies || []).map(tech => ({
   count: tech.id ? (countMap.get(tech.id) || 0) : 0,
 })).filter(tech => tech.slug && (tech.name_en || tech.name_de) && (tech.count || 0) > 0); // Filter out technologies without slug or names, and technologies with 0 vendors
 
-// Generate dynamic description from actual technologies
-const technologyNames = technologies
-  .slice(0, 6) // Limit to first 6 technologies
-  .map(tech => tech.name_de)
-  .filter(Boolean);
-const description = technologyNames.length > 0
-  ? `Durchsuchen Sie Industrieautomatisierungstechnologien, einschließlich ${technologyNames.join(', ')}${technologyNames.length < technologies.length ? ' und mehr.' : '.'}`
-  : "Durchsuchen Sie Industrieautomatisierungstechnologien und entdecken Sie Anbieter, die sich auf Ihr Fachgebiet spezialisiert haben.";
+const description =
+  "Viele Automatisierungsprojekte basieren auf einer bestimmten Technologieplattform, sei es aus bestehender Infrastruktur, konzernweiten Standards oder bewusster Plattformwahl. Dieses Verzeichnis ermöglicht die gezielte Suche nach verifizierten Anbietern und Systemintegratoren nach Plattform, mit Abdeckung der wichtigsten Hersteller wie Siemens, Rockwell Automation, Beckhoff, ABB, AVEVA, Ignition und weiteren. Nach Land und Branche filterbar, um Partner mit nachgewiesener Erfahrung in Ihrer Plattform und Ihrem Sektor zu finden.";
 
 // Build breadcrumbs
 const breadcrumbs = [

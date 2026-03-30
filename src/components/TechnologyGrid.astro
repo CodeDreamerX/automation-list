@@ -1,8 +1,9 @@
 ---
 import type { TechnologyBasic } from '../types/technology';
 import TechnologyCard from "./TechnologyCard.astro";
+import CollapsibleIntro from "./CollapsibleIntro.astro";
 
-interface TechnologyGridProps {
+interface Props {
   title?: string;
   description?: string;
   technologies: TechnologyBasic[];
@@ -17,16 +18,31 @@ const {
   lang = "en",
   headingLevel = "h2",
 } = Astro.props;
+
+const listingLayout = headingLevel === "h1";
+const sectionClass = listingLayout
+  ? "container-px mx-auto max-w-7xl px-4 py-10"
+  : "fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20";
+const titleClass = listingLayout
+  ? "text-3xl font-bold text-gray-900 mb-8"
+  : "text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center";
 ---
 
-<section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
+<section class={sectionClass}>
   {headingLevel === "h1" ? (
-    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h1>
+    <h1 class={titleClass}>{title}</h1>
   ) : (
-    <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h2>
+    <h2 class={titleClass}>{title}</h2>
   )}
-  {description && (
-    <p class="text-lg md:text-xl text-gray-600 mb-6 md:mb-10 text-center max-w-3xl mx-auto">{description}</p>
+  {description && listingLayout && (
+    <div class="mb-8">
+      <CollapsibleIntro locale={lang}>
+        <p class="text-lg md:text-xl text-gray-600">{description}</p>
+      </CollapsibleIntro>
+    </div>
+  )}
+  {description && !listingLayout && (
+    <p class="text-lg md:text-xl text-gray-600 mb-6 md:mb-10 text-left max-w-3xl">{description}</p>
   )}
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     {technologies.map((technology, i) => (
