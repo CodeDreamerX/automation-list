@@ -271,10 +271,15 @@ const linkedFaqItems = faqItems.map((item: any) => ({
   linkedAnswer: linkifyText(item.answer, keywordMap, { maxLinks: 1, firstMatchOnly: true, seenKeywords, minWordGap: 10 }),
 }));
 
+// SEO test (2026-03-31): custom meta title + H1/eyebrow for System Integrators category only
+const isSystemIntegratorSeoTest = (category.slug || "").trim() === "system-integrator";
+
 // SEO metadata
-const metaTitle = totalVendors
-  ? `${totalVendors} ${categoryName} | Automation List`
-  : `${categoryName} | Automation List`;
+const metaTitle = isSystemIntegratorSeoTest
+  ? "Top Industrial Automation System Integrators in Europe (2026)"
+  : totalVendors
+    ? `${totalVendors} ${categoryName} | Automation List`
+    : `${categoryName} | Automation List`;
 const customMetaDescription = category.meta_description_en || category.meta_description_de;
 const metaDescription = (customMetaDescription && customMetaDescription.trim())
   || (totalVendors
@@ -328,9 +333,16 @@ const breadcrumbs = [
     })} />
   )}
   <div class="container-px mx-auto max-w-7xl px-4 py-10">
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">
-      {categoryName}
-    </h1>
+    <div class="mb-8">
+      {isSystemIntegratorSeoTest ? (
+        <div>
+          <span class="text-sm text-gray-500 block mb-1">System Integrators</span>
+          <h1 class="text-3xl font-bold text-gray-900">Industrial Automation System Integrators</h1>
+        </div>
+      ) : (
+        <h1 class="text-3xl font-bold text-gray-900">{categoryName}</h1>
+      )}
+    </div>
 
     {linkedParagraphs.length > 0 && (
       <div class="mb-6">
