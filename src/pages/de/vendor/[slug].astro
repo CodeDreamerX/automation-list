@@ -868,8 +868,11 @@ const shouldCollapseDescription = descriptionWordCount > 200;
         </a>
       </div>
     )}
+    <p class="text-sm text-gray-400 mt-8 text-center">
+      Die Unternehmensangaben werden unabhängig zusammengestellt und sind möglicherweise nicht aktuell.
+    </p>
     {normalizedVendor.updated_at && (
-      <p class="text-xs text-gray-400 mt-8 text-center">
+      <p class="text-xs text-gray-400 mt-4 text-center">
         Profil zuletzt aktualisiert: {new Date(normalizedVendor.updated_at).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
       </p>
     )}
