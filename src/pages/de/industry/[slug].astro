@@ -226,8 +226,8 @@ const linkedFaqItems = faqItems.map((item: any) => ({
 // SEO metadata
 const vendorCount = totalVendors || 0;
 const metaTitle = vendorCount >= 8
-  ? `${vendorCount} ${industryName} Anbieter in Europa | Automation List`
-  : `${industryName} Anbieter in Europa | Automation List`;
+  ? `${vendorCount} ${industryName} Anbieter weltweit | Automation List`
+  : `${industryName} Anbieter weltweit | Automation List`;
 const metaDescription =
   industry.meta_description_de?.trim() ||
   industry.meta_description_en?.trim() ||
@@ -319,7 +319,7 @@ const breadcrumbSchema = {
         )}
         <div>
           <h1 class="text-3xl font-bold text-gray-900 mb-2">
-            {industryName} Anbieter in Europa
+            {industryName} Anbieter weltweit
           </h1>
           {industryDescriptionParagraphs.length > 0 && (
             <div>

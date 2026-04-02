@@ -39,8 +39,8 @@ const countries = (countriesRaw || []).map((c) => ({
     return (a.name || '').localeCompare(b.name || '');
   });
 
-const introDescription = "Europe's industrial automation landscape is shaped by regional strengths - from Switzerland's precision manufacturing heritage and Germany's deep MES and SCADA ecosystem to the Nordic countries' leadership in robotics and digitalization. Choosing the right automation partner often depends on geographic proximity, local language capability, and familiarity with regional regulations such as EU machinery directives, GMP requirements in pharma, or food safety standards like IFS and BRC. A vendor based in your market understands local supply chains, can provide on-site support, and navigates the regulatory environment with confidence. Browse automation vendors by country to find system integrators, MES specialists, SCADA providers, robotics integrators, and panel builders with proven expertise in your region. Each country page shows verified vendors filterable by category, technology, and industry.";
-const metaDescription = "Find industrial automation vendors across Europe. Browse by country to discover system integrators, MES specialists, SCADA providers and robotics integrators near you.";
+const introDescription = "The global industrial automation landscape is shaped by regional strengths — from Switzerland's precision manufacturing heritage and Germany's deep MES and SCADA ecosystem to the Nordic countries' leadership in robotics and digitalization, and beyond. Choosing the right automation partner often depends on geographic proximity, local language capability, and familiarity with regional regulations such as machinery directives, GMP requirements in pharma, or food safety standards like IFS and BRC. A vendor based in your market understands local supply chains, can provide on-site support, and navigates the regulatory environment with confidence. Browse automation vendors by country to find system integrators, MES specialists, SCADA providers, robotics integrators, and panel builders with proven expertise in your region. Each country page shows verified vendors filterable by category, technology, and industry.";
+const metaDescription = "Find industrial automation vendors worldwide. Browse by country to discover system integrators, MES specialists, SCADA providers and robotics integrators near you.";
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 
 const breadcrumbSchema = {
@@ -72,7 +72,7 @@ const breadcrumbs = [
 ---
 
 <BaseLayout
-  title="Automation Vendors by Country in Europe | Automation List"
+  title="Automation Vendors by Country | Automation List"
   description={metaDescription}
   lang="en"
   breadcrumbs={breadcrumbs}

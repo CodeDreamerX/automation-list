@@ -12,14 +12,14 @@ const { count: totalVendors } = await supabase
   .neq('plan', 'deactivated');
 
 const metaTitle = totalVendors
-  ? `${totalVendors} Automatisierungsanbieter in Europa | Automation List`
-  : `Automatisierungsanbieter in Europa | Automation List`;
+  ? `${totalVendors} Automatisierungsanbieter weltweit | Automation List`
+  : `Automatisierungsanbieter weltweit | Automation List`;
 const metaDescription = totalVendors
-  ? `${totalVendors} geprüfte Industrieautomatisierungs-Anbieter aus Europa — Systemintegratoren, Maschinenbauer, MES-Spezialisten und mehr. Nach Land, Kategorie, Technologie und Branche filtern.`
-  : `Geprüfte Industrieautomatisierungs-Anbieter aus Europa — Systemintegratoren, Maschinenbauer, MES-Spezialisten und mehr. Nach Land, Kategorie, Technologie und Branche filtern.`;
+  ? `${totalVendors} geprüfte Industrieautomatisierungs-Anbieter weltweit — Systemintegratoren, Maschinenbauer, MES-Spezialisten und mehr. Nach Land, Kategorie, Technologie und Branche filtern.`
+  : `Geprüfte Industrieautomatisierungs-Anbieter weltweit — Systemintegratoren, Maschinenbauer, MES-Spezialisten und mehr. Nach Land, Kategorie, Technologie und Branche filtern.`;
 
 const introText =
-  "Automation List ist ein herstellerunabhängiges Verzeichnis geprüfter Industrieautomatisierungsunternehmen aus Europa. Systemintegratoren, Maschinenbauer, MES-Spezialisten, Robotik-Integratoren und weitere Spezialisten sind filterbar nach Land, Kategorie, Technologie und Branche. Ob Automatisierungspartner für ein Greenfield-Projekt oder Spezialist für eine spezifische Anwendung: Dieses Verzeichnis deckt die gesamte europäische Industrieautomatisierung ab.";
+  "Automation List ist ein herstellerunabhängiges Verzeichnis geprüfter Industrieautomatisierungsunternehmen weltweit. Systemintegratoren, Maschinenbauer, MES-Spezialisten, Robotik-Integratoren und weitere Spezialisten sind filterbar nach Land, Kategorie, Technologie und Branche. Ob Automatisierungspartner für ein Greenfield-Projekt oder Spezialist für eine spezifische Anwendung: Dieses Verzeichnis deckt die gesamte globale Industrieautomatisierung ab.";
 
 // Build breadcrumbs
 const breadcrumbs = [
@@ -34,5 +34,5 @@ const breadcrumbs = [
   lang="de"
   breadcrumbs={breadcrumbs}
 >
-  <VendorList lang="de" pageTitle="Industrieautomatisierungs-Anbieter – Europäisches Verzeichnis" description={introText} />
+  <VendorList lang="de" pageTitle="Industrieautomatisierungs-Anbieter – Globales Verzeichnis" description={introText} />
 </BaseLayout>
