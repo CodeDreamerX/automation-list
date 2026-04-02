@@ -12,14 +12,14 @@ const { count: totalVendors } = await supabase
   .neq('plan', 'deactivated');
 
 const metaTitle = totalVendors
-  ? `${totalVendors} Automation Vendors in Europe | Automation List`
-  : `Automation Vendors in Europe | Automation List`;
+  ? `${totalVendors} Automation Vendors Worldwide | Automation List`
+  : `Automation Vendors Worldwide | Automation List`;
 const metaDescription = totalVendors
-  ? `Browse ${totalVendors} verified industrial automation vendors across Europe — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`
-  : `Browse verified industrial automation vendors across Europe — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`;
+  ? `Browse ${totalVendors} verified industrial automation vendors worldwide — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`
+  : `Browse verified industrial automation vendors worldwide — system integrators, machine builders, MES specialists and more. Filter by country, category, technology and industry.`;
 
 const introText =
-  "Automation List is a vendor-neutral directory of verified industrial automation companies serving European manufacturing. System integrators, machine builders, MES specialists, robotics integrators, and more, filterable by country, category, technology, and industry. Whether you need an automation partner for a greenfield project or a specialist for a specific application, this directory covers the full European industrial automation landscape.";
+  "Automation List is a vendor-neutral directory of verified industrial automation companies serving global manufacturing. System integrators, machine builders, MES specialists, robotics integrators, and more, filterable by country, category, technology, and industry. Whether you need an automation partner for a greenfield project or a specialist for a specific application, this directory covers the full global industrial automation landscape.";
 
 // Build breadcrumbs
 const breadcrumbs = [
@@ -34,5 +34,5 @@ const breadcrumbs = [
   lang="en"
   breadcrumbs={breadcrumbs}
 >
-  <VendorList lang="en" pageTitle="Industrial Automation Vendors – European Directory" description={introText} />
+  <VendorList lang="en" pageTitle="Industrial Automation Vendors – Global Directory" description={introText} />
 </BaseLayout>
