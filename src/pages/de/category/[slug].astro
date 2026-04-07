@@ -31,7 +31,7 @@ if (!categorySlug) {
 // Fetch category from database
 const { data: category, error: categoryError } = await supabase
   .from('categories')
-  .select('id, slug, name_en, name_de, description_en, description_de, faq_en, faq_de, meta_description_en, meta_description_de')
+  .select('id, slug, name_en, name_de, headline_en, headline_de, description_en, description_de, faq_en, faq_de, meta_description_en, meta_description_de')
   .eq('slug', categorySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -340,7 +340,7 @@ const breadcrumbs = [
           <h1 class="text-3xl font-bold text-gray-900">Systemintegratoren für industrielle Automatisierung</h1>
         </div>
       ) : (
-        <h1 class="text-3xl font-bold text-gray-900">{categoryName}</h1>
+        <h1 class="text-3xl font-bold text-gray-900">{category.headline_de || category.headline_en || categoryName}</h1>
       )}
     </div>
 

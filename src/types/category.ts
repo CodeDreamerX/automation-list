@@ -35,6 +35,8 @@ export interface Category {
   slug: string;                 // URL-friendly identifier
   name_en?: string | null;     // English name
   name_de?: string | null;     // German name
+  headline_en?: string | null; // H1 override for EN category page
+  headline_de?: string | null; // H1 override for DE category page
   description_en?: string | null; // English description
   description_de?: string | null; // German description
   card_description_en?: string | null; // English card description

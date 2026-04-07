@@ -23,6 +23,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const card_description_de = body.get("card_description_de");
     const meta_description_en = body.get("meta_description_en");
     const meta_description_de = body.get("meta_description_de");
+    const headline_en = body.get("headline_en");
+    const headline_de = body.get("headline_de");
     const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
     const is_active = body.get("is_active") ? true : false;
@@ -53,6 +55,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (card_description_de !== null) updateData.card_description_de = card_description_de?.toString().trim() || null;
     if (meta_description_en !== null) updateData.meta_description_en = meta_description_en?.toString().trim() || null;
     if (meta_description_de !== null) updateData.meta_description_de = meta_description_de?.toString().trim() || null;
+    if (headline_en !== null) updateData.headline_en = headline_en?.toString().trim() || null;
+    if (headline_de !== null) updateData.headline_de = headline_de?.toString().trim() || null;
     if (icon_name !== null) updateData.icon_name = icon_name?.toString() || null;
     if (order_index !== null && order_index !== '') {
       updateData.order_index = parseInt(order_index.toString());
