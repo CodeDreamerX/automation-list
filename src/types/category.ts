@@ -44,6 +44,8 @@ export interface Category {
   icon_name?: string | null;   // Icon identifier (e.g., "plcs", "scada-hmi")
   order_index?: number | null; // Display order
   is_active?: boolean | null;         // Whether category is active
+  meta_title_en?: string | null;
+  meta_title_de?: string | null;
   meta_description_en?: string | null;
   meta_description_de?: string | null;
   faq_en?: FaqItem[] | null;   // FAQ entries in English

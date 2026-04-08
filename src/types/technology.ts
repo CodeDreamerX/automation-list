@@ -44,6 +44,10 @@ export interface Technology {
   is_active?: boolean | null;         // Whether technology is active
   meta_description_en?: string | null;
   meta_description_de?: string | null;
+  headline_en?: string | null;
+  headline_de?: string | null;
+  meta_title_en?: string | null;
+  meta_title_de?: string | null;
   faq_en?: FaqItem[] | null;   // FAQ entries in English
   faq_de?: FaqItem[] | null;   // FAQ entries in German
 }

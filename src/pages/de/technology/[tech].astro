@@ -29,7 +29,7 @@ if (!techSlug) {
 // Fetch technology from database
 const { data: technology, error: techError } = await supabase
   .from('technologies')
-  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, icon_name, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, headline_en, headline_de, meta_title_en, meta_title_de, icon_name, faq_en, faq_de')
   .eq('slug', techSlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -219,9 +219,10 @@ const linkedFaqItems = faqItems.map((item: any) => ({
 
 // SEO metadata
 const vendorCount = totalVendors || 0;
-const metaTitle = vendorCount >= 8
-  ? `${vendorCount} ${techName} Anbieter weltweit | Automation List`
-  : `${techName} Anbieter weltweit | Automation List`;
+const metaTitle = technology.meta_title_de?.trim() || technology.meta_title_en?.trim()
+  || (vendorCount >= 8
+    ? `${vendorCount} ${techName} Anbieter weltweit | Automation List`
+    : `${techName} Anbieter weltweit | Automation List`);
 const metaDescription =
   technology.meta_description_de?.trim() ||
   technology.meta_description_en?.trim() ||
@@ -284,7 +285,7 @@ const breadcrumbs = [
         )}
         <div>
           <h1 class="text-3xl font-bold text-gray-900 mb-2">
-            {techName} Anbieter weltweit
+            {technology.headline_de || technology.headline_en || `${techName} Anbieter weltweit`}
           </h1>
           {linkedParagraphs.length > 0 && (
             <CollapsibleIntro locale="de">

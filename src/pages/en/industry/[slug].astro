@@ -29,7 +29,7 @@ if (!industrySlug) {
 // Fetch industry from database
 const { data: industry, error: industryError } = await supabase
   .from('industries')
-  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, icon_name, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, headline_en, headline_de, meta_title_en, meta_title_de, icon_name, faq_en, faq_de')
   .eq('slug', industrySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -225,9 +225,10 @@ const linkedFaqItems = faqItems.map((item: any) => ({
 
 // SEO metadata
 const vendorCount = totalVendors || 0;
-const metaTitle = vendorCount >= 8
-  ? `${vendorCount} ${industryName} Vendors Worldwide | Automation List`
-  : `${industryName} Vendors Worldwide | Automation List`;
+const metaTitle = industry.meta_title_en?.trim() || industry.meta_title_de?.trim()
+  || (vendorCount >= 8
+    ? `${vendorCount} ${industryName} Vendors Worldwide | Automation List`
+    : `${industryName} Vendors Worldwide | Automation List`);
 const metaDescription =
   industry.meta_description_en?.trim() ||
   industry.meta_description_de?.trim() ||
@@ -319,7 +320,7 @@ const breadcrumbSchema = {
         )}
         <div>
           <h1 class="text-3xl font-bold text-gray-900 mb-2">
-            {industryName} Vendors Worldwide
+            {industry.headline_en || `${industryName} Vendors Worldwide`}
           </h1>
           {linkedParagraphs.length > 0 && (
             <div>
