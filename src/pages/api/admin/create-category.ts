@@ -20,6 +20,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const description_de = body.get("description_de");
     const card_description_en = body.get("card_description_en");
     const card_description_de = body.get("card_description_de");
+    const meta_title_en = body.get("meta_title_en");
+    const meta_title_de = body.get("meta_title_de");
     const meta_description_en = body.get("meta_description_en");
     const meta_description_de = body.get("meta_description_de");
     const headline_en = body.get("headline_en");
@@ -55,6 +57,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       description_de: description_de?.toString().trim() || null,
       card_description_en: card_description_en?.toString().trim() || null,
       card_description_de: card_description_de?.toString().trim() || null,
+      meta_title_en: meta_title_en?.toString().trim() || null,
+      meta_title_de: meta_title_de?.toString().trim() || null,
       meta_description_en: meta_description_en?.toString().trim() || null,
       meta_description_de: meta_description_de?.toString().trim() || null,
       headline_en: headline_en?.toString().trim() || null,

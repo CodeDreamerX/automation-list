@@ -16,6 +16,8 @@ export type SubmitListingCountryConfig =
 export interface SubmitListingInitOptions {
   strings: SubmitListingStrings;
   country: SubmitListingCountryConfig;
+  /** UI for “countries served” (stored as English canonical names for approval). */
+  countriesServed: SubmitListingCountryConfig;
 }
 
 function el<T extends HTMLElement>(id: string): T {
@@ -25,7 +27,7 @@ function el<T extends HTMLElement>(id: string): T {
 }
 
 export function initSubmitListing(options: SubmitListingInitOptions): void {
-  const { strings, country: countryCfg } = options;
+  const { strings, country: countryCfg, countriesServed: csCfg } = options;
 
   const countryInput = el<HTMLInputElement>('country-input');
   const countryValue = el<HTMLInputElement>('country-value');
@@ -146,6 +148,120 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
     s2Label.textContent = opening ? strings.section2Hide : strings.section2Show;
   });
 
+  // --- Countries served (canonical English names; tag UI) ---
+  const countriesServedSelected = new Set<string>();
+  const csTags = el<HTMLElement>('cs-tags');
+  const csInput = el<HTMLInputElement>('cs-input');
+  const csDropdown = el<HTMLElement>('cs-dropdown');
+  const csFieldRoot = el<HTMLElement>('countries-served-field');
+
+  function labelForCountryEn(en: string): string {
+    if (csCfg.mode === 'en') return en;
+    const pair = csCfg.pairs.find(p => p.en === en);
+    return pair?.de ?? en;
+  }
+
+  function renderCountriesServedTags() {
+    csTags.innerHTML = [...countriesServedSelected]
+      .map(
+        en =>
+          `<span class="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-200 text-brand-700 text-xs rounded-full">
+             ${labelForCountryEn(en)}<button type="button" class="cs-rm text-brand-400 hover:text-brand-700 ml-0.5 text-base leading-none" data-en="${en.replace(/"/g, '&quot;')}">&times;</button>
+           </span>`
+      )
+      .join('');
+  }
+
+  function hideCsDropdown() {
+    csDropdown.classList.add('hidden');
+    csInput.setAttribute('aria-expanded', 'false');
+  }
+
+  function buildCsDropdown(query: string) {
+    const q = query.trim().toLowerCase();
+    const optClass =
+      'cs-opt px-3 py-2 cursor-pointer hover:bg-gray-50 text-gray-800';
+    if (csCfg.mode === 'en') {
+      const list = csCfg.countries;
+      const avail = list.filter(c => !countriesServedSelected.has(c));
+      const matches = q
+        ? avail.filter(c => c.toLowerCase().includes(q))
+        : [...avail];
+      csDropdown.innerHTML = matches.length
+        ? matches
+            .slice(0, 60)
+            .map(c => `<div class="${optClass}" data-en="${c}">${c}</div>`)
+            .join('')
+        : `<div class="px-3 py-2 text-gray-400 text-sm">${strings.countryNoResults}</div>`;
+    } else {
+      const pairs = csCfg.pairs;
+      const avail = pairs.filter(({ en }) => !countriesServedSelected.has(en));
+      const matches = q
+        ? avail.filter(
+            ({ en, de }) =>
+              en.toLowerCase().includes(q) || de.toLowerCase().includes(q)
+          )
+        : [...avail];
+      csDropdown.innerHTML = matches.length
+        ? matches
+            .slice(0, 60)
+            .map(
+              ({ en, de }) =>
+                `<div class="${optClass}" data-en="${en}">${de}</div>`
+            )
+            .join('')
+        : `<div class="px-3 py-2 text-gray-400 text-sm">${strings.countryNoResults}</div>`;
+    }
+  }
+
+  csInput.addEventListener('input', () => {
+    buildCsDropdown(csInput.value);
+    csDropdown.classList.remove('hidden');
+    csInput.setAttribute('aria-expanded', 'true');
+  });
+
+  csInput.addEventListener('focus', () => {
+    buildCsDropdown(csInput.value);
+    csDropdown.classList.remove('hidden');
+    csInput.setAttribute('aria-expanded', 'true');
+  });
+
+  csDropdown.addEventListener('mousedown', e => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    const opt = t.closest('.cs-opt');
+    if (!(opt instanceof HTMLElement)) return;
+    e.preventDefault();
+    const en = opt.dataset.en ?? '';
+    if (en) countriesServedSelected.add(en);
+    renderCountriesServedTags();
+    csInput.value = '';
+    buildCsDropdown('');
+    hideCsDropdown();
+  });
+
+  csTags.addEventListener('click', e => {
+    const btn = (e.target as Element).closest('.cs-rm');
+    if (!(btn instanceof HTMLElement)) return;
+    const en = btn.dataset.en;
+    if (en) countriesServedSelected.delete(en);
+    renderCountriesServedTags();
+    buildCsDropdown(csInput.value);
+  });
+
+  document.addEventListener('pointerdown', e => {
+    const t = e.target;
+    if (!(t instanceof Node)) return;
+    if (csFieldRoot.contains(t)) return;
+    hideCsDropdown();
+  });
+
+  csInput.addEventListener('blur', () => {
+    requestAnimationFrame(() => {
+      if (!csFieldRoot.contains(document.activeElement)) hideCsDropdown();
+    });
+  });
+
   const toggleOpts = document.querySelectorAll<HTMLElement>('.toggle-opt');
   const tnpInput = el<HTMLInputElement>('taking-new-projects');
 
@@ -264,6 +380,7 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
         el<HTMLTextAreaElement>('description_de').value.trim() || null,
       city: el<HTMLInputElement>('city').value.trim() || null,
       region: el<HTMLInputElement>('region').value.trim() || null,
+      address: el<HTMLInputElement>('address').value.trim() || null,
       phone: el<HTMLInputElement>('phone').value.trim() || null,
       linkedin_url: el<HTMLInputElement>('linkedin_url').value.trim() || null,
       technology_slugs: [
@@ -287,7 +404,9 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
         ),
       ].map(i => i.value),
       countries_served:
-        el<HTMLInputElement>('countries_served').value.trim() || null,
+        countriesServedSelected.size > 0
+          ? [...countriesServedSelected]
+          : null,
       year_founded: yearVal ? parseInt(yearVal, 10) : null,
       employee_count: el<HTMLSelectElement>('employee_count').value || null,
       taking_new_projects:

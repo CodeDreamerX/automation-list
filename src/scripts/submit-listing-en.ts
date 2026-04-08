@@ -3,6 +3,7 @@ import { ISO_COUNTRIES_EN } from './submit-listing-country-data';
 
 initSubmitListing({
   country: { mode: 'en', countries: ISO_COUNTRIES_EN },
+  countriesServed: { mode: 'en', countries: ISO_COUNTRIES_EN },
   strings: {
     countryNoResults: 'No results',
     section2Hide: '− Hide extra details',

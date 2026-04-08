@@ -219,7 +219,7 @@ const LANGUAGES = [
 
         <div id="section2-content" class="hidden mt-3 bg-white border border-gray-200 rounded-xl p-6 space-y-6">
 
-          <!-- City / Region -->
+          <!-- City / Region / Address -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label for="city" class="block text-sm font-medium text-gray-700 mb-1">Stadt</label>
@@ -228,6 +228,10 @@ const LANGUAGES = [
             <div>
               <label for="region" class="block text-sm font-medium text-gray-700 mb-1">Region / Bundesland</label>
               <input type="text" id="region" name="region" class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" placeholder="Bayern" />
+            </div>
+            <div class="sm:col-span-2">
+              <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Straße / Anschrift</label>
+              <input type="text" id="address" name="address" class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" placeholder="Straße, Nr., PLZ (optional)" autocomplete="street-address" />
             </div>
           </div>
 
@@ -295,15 +299,28 @@ const LANGUAGES = [
             </div>
           </div>
 
-          <!-- Countries Served (text) -->
-          <div>
-            <label for="countries_served" class="block text-sm font-medium text-gray-700 mb-1">Belieferte Länder</label>
-            <input
-              type="text"
-              id="countries_served"
-              class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
-              placeholder="z.B. DACH-Region, Deutschland, Österreich, Schweiz"
-            />
+          <!-- Belieferte Länder (Suche + Tags; gespeichert als englische Namen) -->
+          <div id="countries-served-field">
+            <label for="cs-input" class="block text-sm font-medium text-gray-700 mb-1">Belieferte Länder</label>
+            <p class="text-xs text-gray-500 mb-2">Alle Länder ergänzen, in denen Sie Projekte umsetzen (Suche und Auswahl aus der Liste).</p>
+            <div id="cs-tags" class="flex flex-wrap gap-1.5 mb-2 min-h-0"></div>
+            <div class="relative">
+              <input
+                type="text"
+                id="cs-input"
+                class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
+                placeholder="Land suchen…"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-expanded="false"
+                aria-controls="cs-dropdown"
+              />
+              <div
+                id="cs-dropdown"
+                role="listbox"
+                class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-52 overflow-y-auto text-sm"
+              ></div>
+            </div>
           </div>
 
           <!-- Year Founded / Employee Count -->
@@ -378,6 +395,7 @@ const LANGUAGES = [
   import { COUNTRY_PAIRS } from '../../scripts/submit-listing-country-data';
   initSubmitListing({
     country: { mode: 'de', pairs: COUNTRY_PAIRS },
+    countriesServed: { mode: 'de', pairs: COUNTRY_PAIRS },
     strings: {
       countryNoResults: 'Keine Ergebnisse',
       section2Hide: '− Details ausblenden',

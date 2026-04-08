@@ -45,13 +45,21 @@ function nameToSlug(name: string) {
     .replace(/-+/g, '-');
 }
 
+function normalizeInitialCountriesServed(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 const initialSlug = nameToSlug(listing.name || '');
 const categorySlugs     = (listing.category_slugs     || []) as string[];
 const technologySlugs   = (listing.technology_slugs   || []) as string[];
 const industrySlugs     = (listing.industry_slugs     || []) as string[];
 const certificationSlugs= (listing.certification_slugs|| []) as string[];
 const selectedLanguages = (listing.languages          || []) as string[];
-const initialCountriesServed = (listing.countries_served || []) as string[];
+const initialCountriesServed = normalizeInitialCountriesServed(listing.countries_served);
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -210,6 +218,10 @@ function fmtDate(iso: string) {
           <div>
             <label for="region" class="block text-xs font-medium text-gray-600 mb-1">Region</label>
             <input type="text" id="region" name="region" value={listing.region || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+          </div>
+          <div class="sm:col-span-2">
+            <label for="address" class="block text-xs font-medium text-gray-600 mb-1">Street address</label>
+            <input type="text" id="address" name="address" value={listing.address || ''} class="al-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" placeholder="Street, number, postal code" />
           </div>
           <div>
             <label for="phone" class="block text-xs font-medium text-gray-600 mb-1">Phone</label>
@@ -489,6 +501,7 @@ function collectPayload() {
     description_de: document.getElementById('description_de').value.trim() || null,
     city: document.getElementById('city').value.trim() || null,
     region: document.getElementById('region').value.trim() || null,
+    address: document.getElementById('address').value.trim() || null,
     phone: document.getElementById('phone').value.trim() || null,
     linkedin_url: document.getElementById('linkedin_url').value.trim() || null,
     category_slugs:      [...document.querySelectorAll('[name="category_slugs"]:checked')].map(e => e.value),
