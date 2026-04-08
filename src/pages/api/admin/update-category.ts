@@ -21,6 +21,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const description_de = body.get("description_de");
     const card_description_en = body.get("card_description_en");
     const card_description_de = body.get("card_description_de");
+    const meta_title_en = body.get("meta_title_en");
+    const meta_title_de = body.get("meta_title_de");
     const meta_description_en = body.get("meta_description_en");
     const meta_description_de = body.get("meta_description_de");
     const headline_en = body.get("headline_en");
@@ -53,6 +55,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (description_de !== null) updateData.description_de = description_de?.toString().trim() || null;
     if (card_description_en !== null) updateData.card_description_en = card_description_en?.toString().trim() || null;
     if (card_description_de !== null) updateData.card_description_de = card_description_de?.toString().trim() || null;
+    if (meta_title_en !== null) updateData.meta_title_en = meta_title_en?.toString().trim() || null;
+    if (meta_title_de !== null) updateData.meta_title_de = meta_title_de?.toString().trim() || null;
     if (meta_description_en !== null) updateData.meta_description_en = meta_description_en?.toString().trim() || null;
     if (meta_description_de !== null) updateData.meta_description_de = meta_description_de?.toString().trim() || null;
     if (headline_en !== null) updateData.headline_en = headline_en?.toString().trim() || null;

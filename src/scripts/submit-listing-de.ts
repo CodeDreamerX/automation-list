@@ -3,6 +3,7 @@ import { COUNTRY_PAIRS } from './submit-listing-country-data';
 
 initSubmitListing({
   country: { mode: 'de', pairs: COUNTRY_PAIRS },
+  countriesServed: { mode: 'de', pairs: COUNTRY_PAIRS },
   strings: {
     countryNoResults: 'Keine Ergebnisse',
     section2Hide: '− Details ausblenden',
