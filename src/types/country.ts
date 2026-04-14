@@ -17,6 +17,12 @@ export interface CountryDB {
   is_active: boolean;
   faq_en?: FaqItem[] | null;
   faq_de?: FaqItem[] | null;
+  headline_en?: string | null;
+  headline_de?: string | null;
+  meta_title_en?: string | null;
+  meta_title_de?: string | null;
+  meta_description_en?: string | null;
+  meta_description_de?: string | null;
 }
 
 /**

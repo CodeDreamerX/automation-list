@@ -24,6 +24,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const is_active = body.get('is_active') ? true : false;
     const faq_en_raw = body.get('faq_en');
     const faq_de_raw = body.get('faq_de');
+    const headline_en = body.get('headline_en');
+    const headline_de = body.get('headline_de');
+    const meta_title_en = body.get('meta_title_en');
+    const meta_title_de = body.get('meta_title_de');
+    const meta_description_en = body.get('meta_description_en');
+    const meta_description_de = body.get('meta_description_de');
 
     function parseFaq(raw: FormDataEntryValue | null) {
       if (!raw) return null;
@@ -45,6 +51,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       card_description_en: card_description_en?.toString().trim() || null,
       card_description_de: card_description_de?.toString().trim() || null,
       flag_emoji: flag_emoji?.toString().trim() || null,
+      headline_en: headline_en?.toString().trim() || null,
+      headline_de: headline_de?.toString().trim() || null,
+      meta_title_en: meta_title_en?.toString().trim() || null,
+      meta_title_de: meta_title_de?.toString().trim() || null,
+      meta_description_en: meta_description_en?.toString().trim() || null,
+      meta_description_de: meta_description_de?.toString().trim() || null,
       order_index: order_index ? parseInt(order_index.toString()) : null,
       is_active,
       faq_en: parseFaq(faq_en_raw),

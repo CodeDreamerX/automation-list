@@ -30,7 +30,7 @@ if (countryParam !== countrySlug) {
 // Try to find managed country record in DB for rich content
 const { data: countryRecord } = await supabase
   .from('countries')
-  .select('id, slug, name_en, name_de, description_en, description_de, flag_emoji, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, flag_emoji, faq_en, faq_de, headline_en, headline_de, meta_title_en, meta_title_de, meta_description_en, meta_description_de')
   .eq('slug', countrySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -162,7 +162,7 @@ let displayCountry = countryRecord?.name_de
   || capitalizeCountry(normalizedCountry);
 
 const flagEmoji = countryRecord?.flag_emoji || '';
-const pageHeading = `Industrieautomation ${displayCountry}`;
+const pageHeading = countryRecord?.headline_de || countryRecord?.headline_en || `Industrieautomation ${displayCountry}`;
 
 // Description paragraphs (prefer DE, fallback EN)
 const descriptionText = countryRecord?.description_de || countryRecord?.description_en || '';
@@ -204,12 +204,6 @@ const countryAdjectives: Record<string, string> = {
 };
 const countryAdj = countryAdjectives[displayCountry] ?? displayCountry;
 
-const metaTitle = totalVendors
-  ? `${totalVendors} Automatisierungsanbieter in ${displayCountry} | Automation List`
-  : `Automatisierungsanbieter in ${displayCountry} | Automation List`;
-const metaDescription = totalVendors
-  ? `${totalVendors} geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`
-  : `Geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`;
 const germanLocationMap: Record<string, string> = {
   'Schweiz': 'der Schweiz',
   'Switzerland': 'der Schweiz',
@@ -228,9 +222,14 @@ const germanLocationMap: Record<string, string> = {
   'United States': 'den Vereinigten Staaten',
 };
 const germanLocation = germanLocationMap[displayCountry] ?? displayCountry;
-const vendorCountForMeta = totalVendors || 0;
-const seoTitle = `${vendorCountForMeta} Automatisierungsanbieter in ${germanLocation} | Automation List`;
-const seoDescription = `${vendorCountForMeta} geprüfte Anbieter für Industrieautomation in ${germanLocation} - Systemintegratoren, MES, SCADA, Robotik und mehr.`;
+const seoTitle = countryRecord?.meta_title_de?.trim() || countryRecord?.meta_title_en?.trim()
+  || (totalVendors
+    ? `${totalVendors} Automatisierungsanbieter in ${germanLocation} | Automation List`
+    : `Automatisierungsanbieter in ${germanLocation} | Automation List`);
+const seoDescription = countryRecord?.meta_description_de?.trim() || countryRecord?.meta_description_en?.trim()
+  || (totalVendors
+    ? `${totalVendors} geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`
+    : `Geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/de/country/${countrySlug}`;

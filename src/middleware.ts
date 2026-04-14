@@ -22,7 +22,22 @@ function detectLanguageFromHeader(header: string): 'de' | 'en' {
   return prefersGerman ? 'de' : 'en';
 }
 
+function addSsrResponseHeaders(response: Response, startTimeMs: number): Response {
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+  if (!contentType.includes('text/html')) {
+    return response;
+  }
+
+  const renderTimeMs = performance.now() - startTimeMs;
+  response.headers.set('X-Render-Time', `${renderTimeMs.toFixed(2)}ms`);
+  response.headers.set('X-Served-By', 'koyeb');
+  response.headers.set('X-Cache-Status', 'MISS');
+
+  return response;
+}
+
 export const onRequest: MiddlewareHandler = async (context, next) => {
+  const startTimeMs = performance.now();
   const { url, cookies, locals } = context;
 
   // Root URL language redirect should be permanent for SEO.
@@ -66,7 +81,8 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   // Early return for prerendered routes - skip all Supabase client operations
   if (isPrerenderedRoute) {
     locals.isAdmin = false;
-    return next();
+    const response = await next();
+    return addSsrResponseHeaders(response, startTimeMs);
   }
   
   if (isAdminRoute) {
@@ -148,6 +164,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     }
   }
   
-  return next();
+  const response = await next();
+  return addSsrResponseHeaders(response, startTimeMs);
 };
 

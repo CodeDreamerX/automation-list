@@ -32,7 +32,7 @@ if (countryParam !== countrySlug) {
 // Try to find managed country record in DB for rich content
 const { data: countryRecord } = await supabase
   .from('countries')
-  .select('id, slug, name_en, name_de, description_en, description_de, flag_emoji, faq_en, faq_de')
+  .select('id, slug, name_en, name_de, description_en, description_de, flag_emoji, faq_en, faq_de, headline_en, headline_de, meta_title_en, meta_title_de, meta_description_en, meta_description_de')
   .eq('slug', countrySlug)
   .eq('is_active', true)
   .maybeSingle();
@@ -164,7 +164,7 @@ let displayCountry = countryRecord?.name_en
   || capitalizeCountry(normalizedCountry);
 
 const flagEmoji = countryRecord?.flag_emoji || '';
-const pageHeading = `Industrial Automation in ${displayCountry}`;
+const pageHeading = countryRecord?.headline_en || `Industrial Automation in ${displayCountry}`;
 
 // Description paragraphs
 const descriptionText = countryRecord?.description_en || '';
@@ -206,15 +206,14 @@ const countryAdjectives: Record<string, string> = {
 };
 const countryAdj = countryAdjectives[displayCountry] ?? displayCountry;
 
-const metaTitle = totalVendors
-  ? `${totalVendors} Automation Vendors in ${displayCountry} | Automation List`
-  : `Automation Vendors in ${displayCountry} | Automation List`;
-const metaDescription = totalVendors
-  ? `Browse ${totalVendors} verified ${countryAdj} automation vendors — system integrators, MES specialists, machine builders and more. Filter by category, technology and industry.`
-  : `Browse verified ${countryAdj} automation vendors — system integrators, MES specialists, machine builders and more. Filter by category, technology and industry.`;
-const vendorCountForMeta = totalVendors || 0;
-const seoTitle = `${vendorCountForMeta} Automation Vendors in ${displayCountry} | Automation List`;
-const seoDescription = `Browse ${vendorCountForMeta} verified industrial automation vendors in ${displayCountry} - system integrators, MES specialists, SCADA experts, robotics integrators, and more.`;
+const seoTitle = countryRecord?.meta_title_en?.trim() || countryRecord?.meta_title_de?.trim()
+  || (totalVendors
+    ? `${totalVendors} Automation Vendors in ${displayCountry} | Automation List`
+    : `Automation Vendors in ${displayCountry} | Automation List`);
+const seoDescription = countryRecord?.meta_description_en?.trim() || countryRecord?.meta_description_de?.trim()
+  || (totalVendors
+    ? `Browse ${totalVendors} verified ${countryAdj} automation vendors — system integrators, MES specialists, machine builders and more. Filter by category, technology and industry.`
+    : `Browse verified ${countryAdj} automation vendors — system integrators, MES specialists, machine builders and more. Filter by category, technology and industry.`);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/en/country/${countrySlug}`;
