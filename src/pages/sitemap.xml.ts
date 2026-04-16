@@ -117,6 +117,7 @@ export const GET: APIRoute = async () => {
   // Public index and landing pages (EN and DE)
   // SEO: Include all public indexable landing pages; exclude admin/API routes.
   const localizedStaticPages: Array<{ path: string; changefreq: string; priority: string }> = [
+    { path: '/stats', changefreq: 'daily', priority: '0.8' },
     { path: '/vendors', changefreq: 'daily', priority: '0.9' },
     { path: '/categories', changefreq: 'weekly', priority: '0.9' },
     { path: '/technologies', changefreq: 'weekly', priority: '0.9' },

@@ -15,6 +15,7 @@ import IndustryGrid from "../../components/IndustryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import { normalizeVendors } from "../../lib/vendors/vendorUtils";
 import ExploreCTA from "../../components/ExploreCTA.astro";
+import RecentlyAdded from "../../components/RecentlyAdded.astro";
 import { getIndustries } from "../../lib/getIndustries";
 import { getCountryNameMap } from "../../lib/countryUtils";
 import type { VendorWithRelations } from "../../types/vendor";
@@ -259,6 +260,8 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     truncateDescription={truncateDescription}
     isFeatured={isFeatured}
   />
+
+  <RecentlyAdded lang="en" />
 
   <WhyThisDirectory />
 

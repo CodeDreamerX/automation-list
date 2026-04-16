@@ -1,0 +1,268 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabaseClient";
+
+Astro.response.headers.set("Cache-Control", "public, max-age=300, s-maxage=3600");
+
+const lang = "en";
+
+const now = new Date();
+const sixMonthsAgo = new Date(now);
+sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+const thirtyDaysAgo = new Date(now);
+thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+const [
+  { count: totalVendors },
+  { data: newest },
+  { data: countryRows },
+  { data: categoryView },
+  { data: recentVendors },
+  { count: totalCountries },
+  { count: totalCategories },
+] = await Promise.all([
+  supabase
+    .from("vendors")
+    .select("*", { count: "exact", head: true })
+    .neq("plan", "deactivated"),
+  supabase
+    .from("vendors")
+    .select("slug, name, country, logo_url, created_at")
+    .neq("plan", "deactivated")
+    .order("created_at", { ascending: false })
+    .limit(5),
+  supabase
+    .from("country_vendor_counts")
+    .select("country, vendor_count")
+    .order("vendor_count", { ascending: false })
+    .limit(8),
+  supabase
+    .from("category_vendor_counts")
+    .select("category_id, vendor_count")
+    .order("vendor_count", { ascending: false })
+    .limit(6),
+  supabase
+    .from("vendors")
+    .select("created_at")
+    .neq("plan", "deactivated")
+    .gte("created_at", sixMonthsAgo.toISOString()),
+  supabase
+    .from("country_vendor_counts")
+    .select("country", { count: "exact", head: true }),
+  supabase
+    .from("category_vendor_counts")
+    .select("category_id", { count: "exact", head: true }),
+]);
+
+// Resolve category names from IDs
+const topCategoryIds = (categoryView || []).map((r: any) => r.category_id).filter(Boolean);
+const { data: categoryNames } = topCategoryIds.length
+  ? await supabase.from("categories").select("id, name_en").in("id", topCategoryIds)
+  : { data: [] };
+const categoryNameMap = new Map((categoryNames || []).map((c: any) => [c.id, c.name_en || ""]));
+
+// Derived stats
+const last30days = (recentVendors || []).filter(
+  (v: any) => new Date(v.created_at) >= thirtyDaysAgo
+).length;
+
+// Monthly growth buckets — last 6 months
+const monthBuckets: Array<{ label: string; count: number }> = [];
+for (let i = 5; i >= 0; i--) {
+  const d = new Date(now);
+  d.setMonth(d.getMonth() - i);
+  const label = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+  const count = (recentVendors || []).filter((v: any) => {
+    const c = new Date(v.created_at);
+    return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth();
+  }).length;
+  monthBuckets.push({ label, count });
+}
+
+// Bar chart helpers
+function capitalize(s: string): string {
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function relativeDate(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return `${diff} days ago`;
+}
+
+const topCountries = (countryRows || []) as Array<{ country: string; vendor_count: number }>;
+const topCategories = (categoryView || []) as Array<{ category_id: string; vendor_count: number }>;
+const maxCountryCount = topCountries[0]?.vendor_count || 1;
+const maxCategoryCount = topCategories[0]?.vendor_count || 1;
+const maxMonthCount = Math.max(...monthBuckets.map((b) => b.count), 1);
+
+const title = "Automation Directory Statistics — automation-list.com";
+const description =
+  "Live statistics from the automation-list.com vendor directory. Newest vendors, top countries, leading categories, and monthly growth.";
+
+const statsSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: title,
+  description: description,
+  url: "https://www.automation-list.com/en/stats",
+  inLanguage: "en",
+});
+
+const breadcrumbs = [
+  { label: "Home", href: "/en/" },
+  { label: "Statistics", href: "/en/stats" },
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonical="https://www.automation-list.com/en/stats"
+  lang="en"
+  breadcrumbs={breadcrumbs}
+>
+  <script is:inline slot="head" type="application/ld+json" set:html={statsSchema} />
+
+  <!-- Page header -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-10 sm:py-14">
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Directory Statistics</h1>
+      <p class="text-gray-500 text-base max-w-xl">
+        A live overview of the automation-list.com vendor directory — vendor counts, top countries, leading categories, and recent growth.
+      </p>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <section class="bg-gray-50 border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Total Vendors</p>
+          <p class="text-3xl font-bold text-gray-900">{totalVendors ?? 0}</p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Countries</p>
+          <p class="text-3xl font-bold text-gray-900">{totalCountries ?? 0}</p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Categories</p>
+          <p class="text-3xl font-bold text-gray-900">{totalCategories ?? 0}</p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Added Last 30 Days</p>
+          <p class="text-3xl font-bold text-gray-900">{last30days}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newest Vendors -->
+  <section class="bg-white border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <h2 class="text-xl font-semibold text-gray-900 mb-6">Newest Vendors</h2>
+      <ul class="divide-y divide-gray-100">
+        {(newest || []).map((v: any) => (
+          <li class="flex items-center gap-4 py-3">
+            {v.logo_url ? (
+              <img
+                src={v.logo_url}
+                alt={v.name}
+                class="w-8 h-8 object-contain flex-shrink-0"
+                loading="lazy"
+                width="32"
+                height="32"
+              />
+            ) : (
+              <div class="w-8 h-8 bg-gray-100 rounded flex-shrink-0" />
+            )}
+            <a href={`/en/vendor/${v.slug}`} class="font-medium text-gray-900 hover:text-blue-600 hover:underline flex-1 min-w-0 truncate">
+              {v.name}
+            </a>
+            <span class="text-gray-500 text-sm hidden sm:block flex-shrink-0">{capitalize(v.country || "")}</span>
+            <span class="text-gray-400 text-xs flex-shrink-0">{relativeDate(v.created_at)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Top Countries + Top Categories side by side on desktop -->
+  <section class="bg-gray-50 border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+        <!-- Top Countries -->
+        <div>
+          <h2 class="text-xl font-semibold text-gray-900 mb-6">Top Countries</h2>
+          <div class="space-y-3">
+            {topCountries.map((row) => {
+              const pct = Math.round((row.vendor_count / maxCountryCount) * 100);
+              return (
+                <div class="flex items-center gap-3">
+                  <span class="w-28 text-sm text-gray-700 truncate flex-shrink-0">{capitalize(row.country)}</span>
+                  <div class="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
+                    <div class="bg-blue-600 h-4 rounded-full" style={`width: ${pct}%`} />
+                  </div>
+                  <span class="w-8 text-sm text-gray-600 text-right flex-shrink-0">{row.vendor_count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <!-- Top Categories -->
+        <div>
+          <h2 class="text-xl font-semibold text-gray-900 mb-6">Top Categories</h2>
+          <div class="space-y-3">
+            {topCategories.map((row) => {
+              const pct = Math.round((row.vendor_count / maxCategoryCount) * 100);
+              const name = categoryNameMap.get(row.category_id) || "—";
+              return (
+                <div class="flex items-center gap-3">
+                  <span class="w-28 text-sm text-gray-700 truncate flex-shrink-0" title={name}>{name}</span>
+                  <div class="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
+                    <div class="bg-indigo-500 h-4 rounded-full" style={`width: ${pct}%`} />
+                  </div>
+                  <span class="w-8 text-sm text-gray-600 text-right flex-shrink-0">{row.vendor_count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Monthly Growth -->
+  <section class="bg-white border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <h2 class="text-xl font-semibold text-gray-900 mb-8">Monthly Growth</h2>
+      <div class="flex items-end gap-3 sm:gap-5 h-40">
+        {monthBuckets.map((bucket) => {
+          const pct = Math.round((bucket.count / maxMonthCount) * 100);
+          const barHeight = Math.max(pct, 4);
+          return (
+            <div class="flex flex-col items-center flex-1 gap-1">
+              <span class="text-xs font-semibold text-gray-700">{bucket.count > 0 ? bucket.count : ""}</span>
+              <div class="w-full bg-gray-200 rounded-t overflow-hidden" style={`height: 120px`}>
+                <div
+                  class="bg-emerald-500 w-full rounded-t"
+                  style={`height: ${barHeight}%; margin-top: ${100 - barHeight}%`}
+                />
+              </div>
+              <span class="text-xs text-gray-500 whitespace-nowrap">{bucket.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+</BaseLayout>
