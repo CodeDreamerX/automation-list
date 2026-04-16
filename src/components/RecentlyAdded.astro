@@ -1,0 +1,81 @@
+---
+import { supabase } from "../lib/supabaseClient";
+
+interface Props {
+  lang?: string;
+  vendors?: Array<{
+    slug: string;
+    name: string;
+    country: string;
+    logo_url: string | null;
+    created_at: string;
+  }>;
+}
+
+const { lang = "en", vendors: propVendors } = Astro.props;
+
+let vendors = propVendors ?? [];
+if (!propVendors) {
+  const { data } = await supabase
+    .from("vendors")
+    .select("slug, name, country, logo_url, created_at")
+    .neq("plan", "deactivated")
+    .order("created_at", { ascending: false })
+    .limit(5);
+  vendors = (data as typeof vendors) || [];
+}
+
+function relativeDate(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  if (diff === 0) return lang === "de" ? "Heute" : "Today";
+  if (diff === 1) return lang === "de" ? "Gestern" : "Yesterday";
+  return lang === "de" ? `vor ${diff} Tagen` : `${diff} days ago`;
+}
+
+function capitalize(s: string): string {
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+const heading = lang === "de" ? "Kürzlich hinzugefügt" : "Recently Added";
+const ctaText = lang === "de" ? "Alle Statistiken ansehen" : "View all statistics";
+const statsHref = `/${lang}/stats`;
+const vendorHrefPrefix = `/${lang}/vendor`;
+---
+
+<section class="border-t border-gray-200 bg-white">
+  <div class="max-w-6xl mx-auto px-4 py-10">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-semibold text-gray-900">{heading}</h2>
+      <a href={statsHref} class="text-sm text-blue-600 hover:underline">
+        {ctaText} &rarr;
+      </a>
+    </div>
+    <ul class="divide-y divide-gray-100">
+      {vendors.map((v) => (
+        <li class="flex items-center gap-3 py-3">
+          {v.logo_url ? (
+            <img
+              src={v.logo_url}
+              alt={v.name}
+              class="w-7 h-7 object-contain flex-shrink-0"
+              loading="lazy"
+              width="28"
+              height="28"
+            />
+          ) : (
+            <div class="w-7 h-7 bg-gray-100 rounded flex-shrink-0" />
+          )}
+          <a
+            href={`${vendorHrefPrefix}/${v.slug}`}
+            class="font-medium text-gray-900 hover:text-blue-600 hover:underline flex-1 min-w-0 truncate text-sm"
+          >
+            {v.name}
+          </a>
+          <span class="text-gray-500 text-xs hidden sm:block flex-shrink-0">{capitalize(v.country || "")}</span>
+          <span class="text-gray-400 text-xs flex-shrink-0">{relativeDate(v.created_at)}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
