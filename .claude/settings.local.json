@@ -27,7 +27,8 @@
       "Bash(npm test:*)",
       "Bash(grep -r profile_score /d/Projects/automationlist/src --include=*.ts --include=*.astro)",
       "Bash(xargs grep:*)",
-      "Bash(npx astro:*)"
+      "Bash(npx astro:*)",
+      "Bash(grep -E \"\\\\.astro$\")"
     ]
   }
 }
