@@ -12,6 +12,7 @@ import { linkifyText } from "../../../lib/linkify";
 import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import { getCountryNameMap, parseCountryParam, slugifyCountry } from "../../../lib/countryUtils";
+import { summarizeSupabaseError } from "../../../lib/supabaseError";
 import type { FaqItem } from "../../../types/industry";
 
 const countryParam = Astro.params.country || '';
@@ -115,7 +116,7 @@ if (cachedResult) {
   const { data, error } = await buildCountryQuery().range(start, end);
 
   if (error) {
-    console.error('Error fetching vendors:', error);
+    console.error('Error fetching vendors:', summarizeSupabaseError(error));
     vendors = [];
   } else {
     vendors = data || [];
