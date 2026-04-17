@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../lib/supabaseClient';
+import { summarizeSupabaseError } from '../lib/supabaseError';
 import { normalizeCountryName, slugifyCountry } from '../lib/countryUtils';
 
 // Production domain - sitemap URLs must be canonical and absolute
@@ -23,7 +24,7 @@ export const GET: APIRoute = async () => {
     .order('slug', { ascending: true });
 
   if (vendorsError) {
-    console.error('Error fetching vendors for sitemap:', vendorsError);
+    console.error('Error fetching vendors for sitemap:', summarizeSupabaseError(vendorsError));
   }
 
   // Fetch categories with id + slug

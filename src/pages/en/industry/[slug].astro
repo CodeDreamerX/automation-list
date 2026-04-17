@@ -12,6 +12,7 @@ import { getCached, setCached } from "../../../lib/cache";
 import { linkifyText } from "../../../lib/linkify";
 import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
+import { summarizeSupabaseError } from "../../../lib/supabaseError";
 import LucideIcon from "../../../components/LucideIcon.astro";
 import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
 import VendorFilter from "../../../components/VendorFilter.astro";
@@ -161,7 +162,7 @@ if (cachedResult) {
   const { data, error } = await paginatedQuery;
 
   if (error) {
-    console.error('Error fetching vendors:', error);
+    console.error('Error fetching vendors:', summarizeSupabaseError(error));
     vendors = [];
   } else {
     vendors = data || [];

@@ -1,6 +1,7 @@
 ---
 import { supabase } from '../../lib/supabaseClient';
 import { getCached, setCached } from '../../lib/cache';
+import { summarizeSupabaseError } from '../../lib/supabaseError';
 import VendorCard from '../VendorCard.astro';
 import Pagination from '../Pagination.astro';
 import CollapsibleIntro from '../CollapsibleIntro.astro';
@@ -436,7 +437,7 @@ if (cachedResult) {
   const { data, error } = await paginatedQuery;
 
   if (error) {
-    console.error('Error fetching vendors:', error);
+    console.error('Error fetching vendors:', summarizeSupabaseError(error));
     vendors = [];
   } else {
     vendors = data || [];

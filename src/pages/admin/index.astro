@@ -4,6 +4,7 @@ export const prerender = false;
 import { supabaseAdmin } from '../../lib/supabaseAdminClient';
 import { createSupabaseServerClient } from '../../lib/supabaseServer';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
+import { summarizeSupabaseError } from '../../lib/supabaseError';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import VendorTable from '../../components/admin/VendorTable.astro';
 import { normalizeVendors } from '../../lib/vendors/vendorUtils';
@@ -268,7 +269,7 @@ const { data: vendors, error } = await supabaseAdmin
   .order('created_at', { ascending: false });
 
 if (error) {
-  console.error('Error fetching vendors:', error);
+  console.error('Error fetching vendors:', summarizeSupabaseError(error));
 }
 
 // Normalize category, technology, and industry data shape
