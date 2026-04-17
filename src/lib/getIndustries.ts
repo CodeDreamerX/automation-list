@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { summarizeSupabaseError } from "./supabaseError";
 import type { Industry, IndustryDB } from "../types/industry";
 
 interface GetIndustriesOptions {
@@ -37,7 +38,7 @@ export async function getIndustries({
   const { data, error } = await query;
 
   if (error) {
-    console.error("Error fetching industries:", error);
+    console.error("Error fetching industries:", summarizeSupabaseError(error));
     return [];
   }
 

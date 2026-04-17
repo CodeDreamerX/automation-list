@@ -17,6 +17,7 @@ import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import { getCountryNameMap, slugifyCountry, normalizeCountryName } from "../../../lib/countryUtils";
 import { linkifyText } from "../../../lib/linkify";
 import { buildPageKeywordMap } from "../../../lib/keyword-map";
+import { summarizeSupabaseError } from "../../../lib/supabaseError";
 import type { CategoryBasic } from "../../../types/category";
 
 
@@ -37,7 +38,7 @@ const { data: category, error: categoryError } = await supabase
   .maybeSingle();
 
 if (categoryError) {
-  console.error('Error fetching category:', categoryError);
+  console.error('Error fetching category:', summarizeSupabaseError(categoryError));
 }
 
 // If category not found, redirect to vendors page
@@ -88,7 +89,7 @@ if (cachedResult) {
       .eq('category_id', categoryId);
 
     if (linkError) {
-      console.error('Error fetching vendor-category links:', linkError);
+      console.error('Error fetching vendor-category links:', summarizeSupabaseError(linkError));
       vendorIds = [];
     } else {
       vendorIds = (vendorCategoryLinks || []).map(link => link.vendor_id);
@@ -153,8 +154,13 @@ if (cachedResult) {
       .in('id', vendorIds)
       .neq('plan', 'deactivated');
     
-    const { count } = await countQuery;
-    totalVendors = count || 0;
+    const { count, error: countError } = await countQuery;
+    if (countError) {
+      console.error('Error fetching vendor count:', summarizeSupabaseError(countError));
+      totalVendors = 0;
+    } else {
+      totalVendors = count || 0;
+    }
 
     // Build paginated query
     const start = (page - 1) * pageSize;
@@ -165,7 +171,7 @@ if (cachedResult) {
     const { data: vendorsData, error } = await paginatedQuery;
     
     if (error) {
-      console.error('Error fetching vendors:', error);
+      console.error('Error fetching vendors:', summarizeSupabaseError(error));
       vendors = [];
     } else {
       vendors = vendorsData || [];
