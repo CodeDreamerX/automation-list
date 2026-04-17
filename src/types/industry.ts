@@ -10,6 +10,7 @@ export interface Industry {
   card_description_en?: string | null;
   card_description_de?: string | null;
   icon_name?: string | null;
+  count?: number;
 }
 
 export interface FaqItem {
@@ -66,6 +67,7 @@ export interface IndustryBasic {
   card_description_en?: string | null;
   card_description_de?: string | null;
   icon_name?: string | null;
+  count?: number;
 }
 
 

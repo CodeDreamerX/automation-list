@@ -7,8 +7,6 @@ import { isFeatured } from "../../lib/isFeatured";
 import HowItWorks from "../../components/HowItWorks.astro";
 import PageHero from "../../components/PageHero.astro";
 import WhyThisDirectory from "../../components/WhyThisDirectory.astro";
-import UserBenefits from "../../components/UserBenefits.astro";
-import VendorBenefits from "../../components/VendorBenefits.astro";
 import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import IndustryGrid from "../../components/IndustryGrid.astro";
@@ -193,7 +191,23 @@ const { count: countryCount } = await supabase
 
 // Fetch active industries (limit 8-12, ordered by order_index then name)
 const allIndustries = await getIndustries({ lang: "en", activeOnly: true });
-const industries = allIndustries.slice(0, 12);
+
+// Fetch vendor counts from materialized view
+const { data: industryVendorCounts } = await supabase
+  .from("industry_vendor_counts")
+  .select("industry_id, vendor_count");
+
+const industryCountMap = new Map<string, number>();
+(industryVendorCounts || []).forEach((item: any) => {
+  if (item.industry_id) {
+    industryCountMap.set(item.industry_id, item.vendor_count || 0);
+  }
+});
+
+const industries = allIndustries.slice(0, 12).map(industry => ({
+  ...industry,
+  count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
+}));
 
 // Build WebSite structured data with SearchAction
 // Use production domain for schema.org URLs
@@ -246,9 +260,13 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     placeholder="Search by name, capability, or keyword"
   />
 
+  <WhyThisDirectory />
+
   <CategoryGrid categories={categories} lang="en" />
 
   <IndustryGrid industries={industries} lang="en" />
+
+  <HowItWorks />
 
   <FeaturedVendors
     vendors={featuredVendors}
@@ -262,18 +280,6 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
   />
 
   <RecentlyAdded lang="en" />
-
-  <WhyThisDirectory />
-
-  <HowItWorks />
-
-  <UserBenefits />
-
-  <VendorBenefits
-    ctaText="Add Your Company for Free →"
-    ctaHref="/en/submit-listing"
-    microCopy="No credit card required"
-  />
 
   <ExploreCTA />
 </BaseLayout>
