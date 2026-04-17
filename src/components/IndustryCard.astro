@@ -21,21 +21,25 @@ const cardText = lang === "de" ? industry.card_description_de : industry.card_de
 const link = `/${lang}/industry/${industry.slug}`;
 ---
 
-<a
-  href={link}
+<div
   class="fade-in-up relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-gray-300 transition flex flex-col items-center text-center"
   style={`animation-delay: ${index * 0.05}s`}
 >
+  <a href={link} class="absolute inset-0 rounded-xl z-0" aria-label={industry.name}></a>
+
+  {industry.count !== undefined && industry.count > 0 && (
+    <span class="absolute top-3 right-3 z-10 bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">{industry.count}</span>
+  )}
   {industry.icon_name && (
-    <div class="flex justify-center mb-4 text-gray-700">
+    <div class="relative z-10 flex justify-center mb-4 text-gray-700 pointer-events-none">
       <LucideIcon name={industry.icon_name} size={28} />
     </div>
   )}
-  <h3 class="text-lg font-semibold text-gray-900">{industry.name}</h3>
+  <h3 class="relative z-10 text-lg font-semibold text-gray-900 pointer-events-none">{industry.name}</h3>
   {cardText?.trim() && (
-    <p class="text-sm text-gray-600 mt-2">{cardText}</p>
+    <p class="relative z-10 text-sm text-gray-600 mt-2 pointer-events-none">{cardText}</p>
   )}
-</a>
+</div>
 
 
 

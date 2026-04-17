@@ -9,26 +9,23 @@ const {
   title = "Why This Directory?",
   description = "Automation-List is a vendor-neutral directory built by automation engineers. No sponsored rankings, no agencies manipulating results — just clean, structured data.",
   benefits = [
-    "Vendor-neutral and unbiased",
-    "Built by automation professionals",
-    "Clear categories and technology mapping",
-    "Global coverage",
-    "Always evolving",
+    "Every category maps to a real discipline — MES, SCADA, DCS, Safety, Vision",
+    "Built by an automation engineer with 15+ years in pharma, food, and energy",
+    "No agency curation. No sponsored results. No noise.",
+    "The directory you'd want to exist when you actually need a vendor.",
   ],
-} = Astro.props;
+}: WhyThisDirectoryProps = Astro.props;
 ---
 
-<section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20 border-t border-gray-200 mt-8 pt-8">
+<section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-20 md:py-24 border-t border-gray-200 mt-8">
   <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h2>
 
-  <p class="text-gray-700 text-center max-w-2xl mx-auto mb-8">
-    {description}
-  </p>
-
-  <ul class="space-y-3 text-gray-700 max-w-xl mx-auto">
-    {benefits.map((benefit) => (
-      <li>✓ {benefit}</li>
-    ))}
-  </ul>
+  <div class="max-w-2xl mx-auto text-left">
+    <ul class="space-y-5 text-gray-700">
+      {benefits.map((benefit) => (
+        <li>✓ {benefit}</li>
+      ))}
+    </ul>
+  </div>
 </section>
 

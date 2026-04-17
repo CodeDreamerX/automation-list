@@ -5,8 +5,6 @@ import { isFeatured } from "../../lib/isFeatured";
 import HowItWorks from "../../components/HowItWorks.astro";
 import PageHero from "../../components/PageHero.astro";
 import WhyThisDirectory from "../../components/WhyThisDirectory.astro";
-import UserBenefits from "../../components/UserBenefits.astro";
-import VendorBenefits from "../../components/VendorBenefits.astro";
 import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import IndustryGrid from "../../components/IndustryGrid.astro";
@@ -196,7 +194,23 @@ const { count: countryCount } = await supabase
 
 // Fetch active industries (limit 8-12, ordered by order_index then name)
 const allIndustries = await getIndustries({ lang: "de", activeOnly: true });
-const industries = allIndustries.slice(0, 12);
+
+// Fetch vendor counts from materialized view
+const { data: industryVendorCounts } = await supabase
+  .from("industry_vendor_counts")
+  .select("industry_id, vendor_count");
+
+const industryCountMap = new Map<string, number>();
+(industryVendorCounts || []).forEach((item: any) => {
+  if (item.industry_id) {
+    industryCountMap.set(item.industry_id, item.vendor_count || 0);
+  }
+});
+
+const industries = allIndustries.slice(0, 12).map(industry => ({
+  ...industry,
+  count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
+}));
 
 // Build WebSite structured data with SearchAction
 // Use production domain for schema.org URLs
@@ -253,34 +267,6 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     buttonText="Suchen"
   />
 
-  <CategoryGrid 
-    title="Nach Kategorie durchsuchen"
-    categories={categories}
-    lang="de"
-  />
-
-  <IndustryGrid 
-    title="Nach Branche"
-    industries={industries}
-    lang="de"
-  />
-
-  <FeaturedVendors
-    title="Ausgewählte Anbieter"
-    vendors={featuredVendors}
-    viewAllHref="/de/vendors"
-    viewAllText="Alle Anbieter anzeigen →"
-    vendorHrefPrefix="/de/vendor"
-    vendorLinkText="Profil anzeigen →"
-    lang="de"
-    countryNameMap={countryNameMap}
-    formatTechnologies={formatTechnologies}
-    truncateDescription={truncateDescription}
-    isFeatured={isFeatured}
-  />
-
-  <RecentlyAdded lang="de" />
-
   <WhyThisDirectory
     title="Warum dieses Verzeichnis?"
     description="Automation-List ist ein anbieterneutrales Verzeichnis, das von Automatisierungsingenieuren erstellt wurde. Keine gesponserten Rankings, keine Agenturen, die Ergebnisse manipulieren — nur saubere, strukturierte Daten."
@@ -291,6 +277,18 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
       "Globale Abdeckung",
       "Ständige Weiterentwicklung",
     ]}
+  />
+
+  <CategoryGrid 
+    title="Nach Kategorie durchsuchen"
+    categories={categories}
+    lang="de"
+  />
+
+  <IndustryGrid 
+    title="Nach Branche"
+    industries={industries}
+    lang="de"
   />
 
   <HowItWorks 
@@ -311,29 +309,21 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
     ]}
   />
 
-  <UserBenefits 
-    title="Vorteile für Nutzer"
-    benefits={[
-      "Vertrauenswürdige Integratoren schneller finden",
-      "Transparente Anbieterprofile",
-      "Nach Technologien und Standort filtern",
-      "Verifizierte Geschäftsdaten",
-    ]}
+  <FeaturedVendors
+    title="Ausgewählte Anbieter"
+    vendors={featuredVendors}
+    viewAllHref="/de/vendors"
+    viewAllText="Alle Anbieter anzeigen →"
+    vendorHrefPrefix="/de/vendor"
+    vendorLinkText="Profil anzeigen →"
+    lang="de"
+    countryNameMap={countryNameMap}
+    formatTechnologies={formatTechnologies}
+    truncateDescription={truncateDescription}
+    isFeatured={isFeatured}
   />
 
-  <VendorBenefits 
-    title="Vorteile für Anbieter"
-    benefits={[
-      "Sichtbarkeit erhöhen",
-      "SEO-optimiertes Profil",
-      "Neutrale Plattform (keine bezahlten Rankings)",
-      "Hersteller und Integratoren erreichen",
-      "Optionale Premium-Platzierungen (demnächst)",
-    ]}
-    ctaText="Ihr Unternehmen kostenlos eintragen →"
-    ctaHref="/de/submit-listing"
-    microCopy="Keine Kreditkarte erforderlich"
-  />
+  <RecentlyAdded lang="de" />
 
   <ExploreCTA 
     title="Bereit, Automatisierungsanbieter zu erkunden?"
