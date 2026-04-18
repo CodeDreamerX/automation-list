@@ -4,8 +4,6 @@ export const prerender = false;
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminRoute } from '../../../lib/admin/authUtils';
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
-import slugRef from '../../../data/slug-reference.json';
-
 const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) return redirectResponse;
 
@@ -21,13 +19,22 @@ if (error || !listing) {
   return Astro.redirect('/admin/listings');
 }
 
-type SlugItem = { slug: string; name: string };
-const { categories, technologies, industries, certifications } = slugRef as {
-  categories: SlugItem[];
-  technologies: SlugItem[];
-  industries: SlugItem[];
-  certifications: SlugItem[];
-};
+const [
+  { data: catData },
+  { data: techData },
+  { data: indData },
+  { data: certData },
+] = await Promise.all([
+  supabaseAdmin.from('categories').select('slug, name_en').eq('is_active', true).order('name_en'),
+  supabaseAdmin.from('technologies').select('slug, name_en').eq('is_active', true).order('name_en'),
+  supabaseAdmin.from('industries').select('slug, name_en').eq('is_active', true).order('name_en'),
+  supabaseAdmin.from('certifications').select('slug, name').order('name'),
+]);
+
+const categories     = (catData  ?? []).map(r => ({ slug: r.slug, name: r.name_en }));
+const technologies   = (techData ?? []).map(r => ({ slug: r.slug, name: r.name_en }));
+const industries     = (indData  ?? []).map(r => ({ slug: r.slug, name: r.name_en }));
+const certifications = (certData ?? []).map(r => ({ slug: r.slug, name: r.name }));
 
 const LANGUAGES = [
   'English', 'German', 'French', 'Italian', 'Spanish',

@@ -299,6 +299,22 @@ const breadcrumbs = [
   { label: categoryName, href: `/de/category/${categorySlug}` },
 ];
 
+const categoryItemListJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: `${categoryName} für Industrieautomatisierung`,
+  description: `Verzeichnis mit ${totalVendors} ${category.name_de} – nach Land und Branche filterbar.`, // intentionally distinct from meta description
+  itemListElement: normalizedVendors.map((v, index) => ({
+    "@type": "Organization",
+    position: index + 1,
+    name: v.name,
+    url: `${siteOrigin}/de/vendor/${v.slug}`,
+    logo: v.logo_url,
+    image: v.logo_url,
+    address: v.country,
+  })),
+};
+
 ---
 
 <BaseLayout 
@@ -309,21 +325,7 @@ const breadcrumbs = [
   lang="de"
   breadcrumbs={breadcrumbs}
 >
-  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": `${categoryName} für Industrieautomatisierung`,
-    "description": metaDescription,
-    "itemListElement": normalizedVendors.map((v, index) => ({
-      "@type": "Organization",
-      "position": index + 1,
-      "name": v.name,
-      "url": `${siteOrigin}/de/vendor/${v.slug}`,
-      "logo": v.logo_url,
-      "image": v.logo_url,
-      "address": v.country
-    }))
-  })} />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(categoryItemListJsonLd)} />
   {hasFaq && (
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
