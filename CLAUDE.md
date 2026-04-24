@@ -352,6 +352,16 @@ Google Analytics `G-ERFBQMBSJP` is hardcoded in `BaseLayout.astro`. GA loads **c
 
 ---
 
+## AI Content Publishing Workflow
+
+AI-generated content is always staged and never auto-published.
+
+- Generated content (including descriptions, meta titles, and translations) must write to draft columns only.
+- A human approval step is required before any AI-generated content can go live.
+- Do not implement direct AI-to-live publish paths in admin UI, API routes, scripts, or background jobs.
+
+---
+
 ## Rules — Never Change These
 
 1. **`employee_count` is TEXT.** Never cast to `Number`. Supports ranges like "50–100".

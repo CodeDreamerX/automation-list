@@ -209,7 +209,11 @@ const filterData = {
 };
 
 // FAQ
-const faqItems = ((industry.faq_en ?? []) as any[]).filter(
+const rawFaqData = industry.faq_en;
+if (!Array.isArray(rawFaqData) || rawFaqData.length === 0) {
+  console.error(`[FAQ JSON-LD] Missing or empty faq_en for industry slug: ${industrySlug}`);
+}
+const faqItems = ((rawFaqData ?? []) as any[]).filter(
   (item: any) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
@@ -289,13 +293,17 @@ const breadcrumbSchema = {
     "@type": "ItemList",
     "name": `Industrial Automation Companies for ${industryName}`,
     "itemListElement": normalizedVendors.map((v, index) => ({
-      "@type": "Organization",
+      "@type": "ListItem",
       "position": index + 1,
-      "name": v.name,
-      "url": `${siteOrigin}/en/vendor/${v.slug}`,
-      "logo": v.logo_url,
-      "image": v.logo_url,
-      "address": v.country
+      "item": {
+        "@type": "Organization",
+        "position": index + 1,
+        "name": v.name,
+        "url": `${siteOrigin}/en/vendor/${v.slug}`,
+        "logo": v.logo_url,
+        "image": v.logo_url,
+        "address": v.country
+      }
     }))
   }, null, 2)} />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema, null, 2)} />

@@ -203,7 +203,11 @@ const filterData = {
 };
 
 // FAQ
-const faqItems = ((technology.faq_en ?? []) as any[]).filter(
+const rawFaqData = technology.faq_en;
+if (!Array.isArray(rawFaqData) || rawFaqData.length === 0) {
+  console.error(`[FAQ JSON-LD] Missing or empty faq_en for technology slug: ${techSlug}`);
+}
+const faqItems = ((rawFaqData ?? []) as any[]).filter(
   (item: any) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
@@ -255,13 +259,17 @@ const breadcrumbs = [
     "@type": "ItemList",
     "name": `${techName} Industrial Automation Companies`,
     "itemListElement": normalizedVendors.map((v, index) => ({
-      "@type": "Organization",
+      "@type": "ListItem",
       "position": index + 1,
-      "name": v.name,
-      "url": `${siteOrigin}/en/vendor/${v.slug}`,
-      "logo": v.logo_url,
-      "image": v.logo_url,
-      "address": v.country
+      "item": {
+        "@type": "Organization",
+        "position": index + 1,
+        "name": v.name,
+        "url": `${siteOrigin}/en/vendor/${v.slug}`,
+        "logo": v.logo_url,
+        "image": v.logo_url,
+        "address": v.country
+      }
     }))
   }, null, 2)} />
   {hasFaq && (
