@@ -1,6 +1,6 @@
 /**
  * Canonical language labels for vendor listings (admin checkboxes + JSON import).
- * Keep in sync with slug-reference.json `languages` export.
+ * Keep in sync with VENDOR_LANGUAGE_OPTIONS — this is what /api/admin/export-slugs returns for `languages`.
  */
 export const VENDOR_LANGUAGE_OPTIONS = [
   'English',

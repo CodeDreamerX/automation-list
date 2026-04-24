@@ -142,7 +142,7 @@ function getUnknownSet(validation: ValidationResult, field: SlugField): string[]
                   );
                 }
 
-                // languages: comma-separated labels (match slug-reference "languages")
+                // languages: comma-separated labels (must match VENDOR_LANGUAGE_OPTIONS from languageOptions.ts)
                 if (field === 'languages') {
                   const unknownLang = new Set(validation.unknownLanguages);
                   const raw = row[field];
