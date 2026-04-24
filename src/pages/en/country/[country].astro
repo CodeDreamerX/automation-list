@@ -172,7 +172,11 @@ const descriptionText = countryRecord?.description_en || '';
 const descriptionParagraphs = descriptionText ? descriptionText.split(/\n\s*\n/).filter((p: string) => p.trim()) : [];
 
 // FAQ
-const faqItems = ((countryRecord?.faq_en ?? []) as FaqItem[]).filter(
+const rawFaqData = countryRecord?.faq_en;
+if (!Array.isArray(rawFaqData) || rawFaqData.length === 0) {
+  console.error(`[FAQ JSON-LD] Missing or empty faq_en for country slug: ${countrySlug}`);
+}
+const faqItems = ((rawFaqData ?? []) as FaqItem[]).filter(
   (item) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
@@ -240,13 +244,17 @@ const itemListSchema = {
   "@type": "ItemList",
   "name": `Industrial Automation Companies in ${displayCountry}`,
   "itemListElement": normalizedVendors.map((v, index) => ({
-    "@type": "Organization",
+    "@type": "ListItem",
     "position": index + 1,
-    "name": v.name,
-    "url": `${siteOrigin}/en/vendor/${v.slug}`,
-    "logo": v.logo_url,
-    "image": v.logo_url,
-    "address": v.country,
+    "item": {
+      "@type": "Organization",
+      "position": index + 1,
+      "name": v.name,
+      "url": `${siteOrigin}/en/vendor/${v.slug}`,
+      "logo": v.logo_url,
+      "image": v.logo_url,
+      "address": v.country,
+    },
   })),
 };
 

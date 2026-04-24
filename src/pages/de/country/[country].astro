@@ -170,7 +170,15 @@ const descriptionText = countryRecord?.description_de || countryRecord?.descript
 const descriptionParagraphs = descriptionText ? descriptionText.split(/\n\s*\n/).filter((p: string) => p.trim()) : [];
 
 // FAQ (prefer DE, fallback EN)
-const faqItems = ((countryRecord?.faq_de ?? countryRecord?.faq_en ?? []) as FaqItem[]).filter(
+const primaryFaqData = countryRecord?.faq_de;
+const fallbackFaqData = countryRecord?.faq_en;
+if (
+  (!Array.isArray(primaryFaqData) || primaryFaqData.length === 0) &&
+  (!Array.isArray(fallbackFaqData) || fallbackFaqData.length === 0)
+) {
+  console.error(`[FAQ JSON-LD] Missing or empty faq_de and faq_en for country slug: ${countrySlug}`);
+}
+const faqItems = ((primaryFaqData ?? fallbackFaqData ?? []) as FaqItem[]).filter(
   (item) => item?.question?.trim() && item?.answer?.trim()
 );
 const hasFaq = faqItems.length > 0;
@@ -256,13 +264,17 @@ const itemListSchema = {
   "@type": "ItemList",
   "name": `Industrieautomatisierungsunternehmen in ${displayCountry}`,
   "itemListElement": normalizedVendors.map((v, index) => ({
-    "@type": "Organization",
+    "@type": "ListItem",
     "position": index + 1,
-    "name": v.name,
-    "url": `${siteOrigin}/de/vendor/${v.slug}`,
-    "logo": v.logo_url,
-    "image": v.logo_url,
-    "address": v.country,
+    "item": {
+      "@type": "Organization",
+      "position": index + 1,
+      "name": v.name,
+      "url": `${siteOrigin}/de/vendor/${v.slug}`,
+      "logo": v.logo_url,
+      "image": v.logo_url,
+      "address": v.country,
+    },
   })),
 };
 

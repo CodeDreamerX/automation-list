@@ -30,13 +30,13 @@ export const GET: APIRoute = async ({ cookies }) => {
       description_en: null,
       description_de: null,
 
-      // --- M2M relations (use slug-reference.json for slug lists; languages[] uses exact labels from that file) ---
+      // --- M2M relations (use /api/admin/export-slugs for current valid slugs; languages[] uses exact labels from VENDOR_LANGUAGE_OPTIONS) ---
       technology_slugs: [],
       industry_slugs: [],
       certification_slugs: [],
       country_slugs: [],
 
-      // --- Arrays: languages = exact strings from slug-reference.json "languages" ---
+      // --- Arrays: languages = exact strings from VENDOR_LANGUAGE_OPTIONS (see src/lib/admin/languageOptions.ts) ---
       languages: [],
 
       // --- Metrics ---
