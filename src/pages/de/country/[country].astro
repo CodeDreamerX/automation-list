@@ -13,6 +13,7 @@ import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import { getCountryNameMap, parseCountryParam, slugifyCountry } from "../../../lib/countryUtils";
 import { summarizeSupabaseError } from "../../../lib/supabaseError";
+import { applyMetaDescriptionCountPlaceholder } from "../../../utils/seo";
 import type { FaqItem } from "../../../types/industry";
 
 const countryParam = Astro.params.country || '';
@@ -235,10 +236,11 @@ const seoTitle = countryRecord?.meta_title_de?.trim() || countryRecord?.meta_tit
   || (totalVendors
     ? `${totalVendors} Automatisierungsanbieter in ${germanLocation} | Automation List`
     : `Automatisierungsanbieter in ${germanLocation} | Automation List`);
-const seoDescription = countryRecord?.meta_description_de?.trim() || countryRecord?.meta_description_en?.trim()
+const seoDescriptionRaw = countryRecord?.meta_description_de?.trim() || countryRecord?.meta_description_en?.trim()
   || (totalVendors
     ? `${totalVendors} geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`
     : `Geprüfte ${countryAdj} Automatisierungsanbieter – Systemintegratoren, MES-Spezialisten, Maschinenbauer und mehr. Nach Kategorie, Technologie und Branche filtern.`);
+const seoDescription = applyMetaDescriptionCountPlaceholder(seoDescriptionRaw, totalVendors ?? 0);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/de/country/${countrySlug}`;

@@ -32,3 +32,13 @@ export function buildVendorTitle(
 
   return `${name}${suffix}`;
 }
+
+/** Replaces `{count}` in taxonomy listing meta descriptions with the live vendor count. */
+export function applyMetaDescriptionCountPlaceholder(
+  description: string,
+  count: number | null | undefined
+): string {
+  if (!description.includes('{count}')) return description;
+  const n = count ?? 0;
+  return description.replaceAll('{count}', String(n));
+}
