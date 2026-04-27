@@ -244,6 +244,16 @@ const breadcrumbs = [
   { label: techName, href: `/en/technology/${techSlug}` },
 ];
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: `${siteOrigin}/en/` },
+    { "@type": "ListItem", position: 2, name: "Technologies", item: `${siteOrigin}/en/technologies` },
+    { "@type": "ListItem", position: 3, name: techName, item: fullUrl },
+  ],
+};
+
 ---
 
 <BaseLayout 
@@ -254,6 +264,7 @@ const breadcrumbs = [
   breadcrumbs={breadcrumbs}
   lang="en"
 >
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",

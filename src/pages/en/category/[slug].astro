@@ -303,6 +303,16 @@ const breadcrumbs = [
   { label: categoryName, href: `/en/category/${categorySlug}` },
 ];
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: `${siteOrigin}/en/` },
+    { "@type": "ListItem", position: 2, name: "Categories", item: `${siteOrigin}/en/categories` },
+    { "@type": "ListItem", position: 3, name: categoryName, item: currentUrl },
+  ],
+};
+
 const categoryItemListJsonLd = {
   "@context": "https://schema.org",
   "@type": "ItemList",
@@ -333,6 +343,7 @@ const categoryItemListJsonLd = {
   lang="en"
   breadcrumbs={breadcrumbs}
 >
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(categoryItemListJsonLd)} />
   {hasFaq && (
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
