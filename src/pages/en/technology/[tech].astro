@@ -17,7 +17,7 @@ import CollapsibleIntro from "../../../components/CollapsibleIntro.astro";
 import VendorFilter from "../../../components/VendorFilter.astro";
 import { normalizeVendors } from "../../../lib/vendors/vendorUtils";
 import { getCountryNameMap, slugifyCountry, normalizeCountryName } from "../../../lib/countryUtils";
-
+import { applyMetaDescriptionCountPlaceholder } from "../../../utils/seo";
 
 // Get technology slug from URL param
 const techSlug = Astro.params.tech || '';
@@ -228,11 +228,12 @@ const metaTitle = technology.meta_title_en?.trim() || technology.meta_title_de?.
   || (vendorCount >= 8
     ? `${vendorCount} ${techName} Vendors Worldwide | Automation List`
     : `${techName} Vendors Worldwide | Automation List`);
-const metaDescription =
+const metaDescriptionRaw =
   technology.meta_description_en?.trim() ||
   technology.meta_description_de?.trim() ||
   (techDescription && techDescription.trim()) ||
   `Find the best industrial automation companies, system integrators, and SCADA/PLC experts specializing in ${techName}. Browse verified automation vendors worldwide.`;
+const metaDescription = applyMetaDescriptionCountPlaceholder(metaDescriptionRaw, vendorCount);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOgImage = `${siteOrigin}/og/default.png`;
 const fullUrl = `${siteOrigin}/en/technology/${techSlug}`;

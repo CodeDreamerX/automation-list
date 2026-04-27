@@ -18,6 +18,7 @@ import { getCountryNameMap, slugifyCountry, normalizeCountryName } from "../../.
 import { linkifyText } from "../../../lib/linkify";
 import { buildPageKeywordMap } from "../../../lib/keyword-map";
 import { summarizeSupabaseError } from "../../../lib/supabaseError";
+import { applyMetaDescriptionCountPlaceholder } from "../../../utils/seo";
 import type { CategoryBasic } from "../../../types/category";
 
 
@@ -288,10 +289,11 @@ const metaTitle = (customMetaTitle && customMetaTitle.trim())
   ? `${totalVendors} ${categoryName} | Automation List`
   : `${categoryName} | Automation List`);
 const customMetaDescription = category.meta_description_de || category.meta_description_en;
-const metaDescription = (customMetaDescription && customMetaDescription.trim())
+const metaDescriptionRaw = (customMetaDescription && customMetaDescription.trim())
   || (totalVendors
     ? `${totalVendors} geprüfte ${categoryName} weltweit — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`
     : `Geprüfte ${categoryName} weltweit — Systemintegratoren, Spezialisten und mehr. Nach Land und Branche filtern.`);
+const metaDescription = applyMetaDescriptionCountPlaceholder(metaDescriptionRaw, totalVendors ?? 0);
 const siteOrigin = Astro.site?.origin ?? Astro.url.origin;
 const defaultOg = `${siteOrigin}/og/default.png`;
 const currentUrl = `${siteOrigin}/de/category/${categorySlug}`;
