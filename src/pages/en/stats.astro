@@ -3,6 +3,7 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabaseClient";
+import { slugifyCountry } from "../../lib/countryUtils";
 
 Astro.response.headers.set("Cache-Control", "public, max-age=300, s-maxage=3600");
 
@@ -59,9 +60,14 @@ const [
 // Resolve category names from IDs
 const topCategoryIds = (categoryView || []).map((r: any) => r.category_id).filter(Boolean);
 const { data: categoryNames } = topCategoryIds.length
-  ? await supabase.from("categories").select("id, name_en").in("id", topCategoryIds)
+  ? await supabase.from("categories").select("id, slug, name_en").in("id", topCategoryIds)
   : { data: [] };
-const categoryNameMap = new Map((categoryNames || []).map((c: any) => [c.id, c.name_en || ""]));
+const categoryMap = new Map(
+  (categoryNames || []).map((c: any) => [
+    c.id,
+    { name: c.name_en || "", slug: c.slug || "" },
+  ])
+);
 
 // Derived stats
 const last30days = (recentVendors || []).filter(
@@ -142,18 +148,18 @@ const breadcrumbs = [
   <section class="bg-gray-50 border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 py-10">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
+        <a href="/en/vendors" class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6 block hover:border-blue-300 transition-colors">
           <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Total Vendors</p>
           <p class="text-3xl font-bold text-gray-900">{totalVendors ?? 0}</p>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
+        </a>
+        <a href="/en/countries" class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6 block hover:border-blue-300 transition-colors">
           <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Countries</p>
           <p class="text-3xl font-bold text-gray-900">{totalCountries ?? 0}</p>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
+        </a>
+        <a href="/en/categories" class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6 block hover:border-blue-300 transition-colors">
           <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Categories</p>
           <p class="text-3xl font-bold text-gray-900">{totalCategories ?? 0}</p>
-        </div>
+        </a>
         <div class="bg-white rounded-lg border border-gray-200 p-5 sm:p-6">
           <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Added Last 30 Days</p>
           <p class="text-3xl font-bold text-gray-900">{last30days}</p>
@@ -203,9 +209,15 @@ const breadcrumbs = [
           <div class="space-y-3">
             {topCountries.map((row) => {
               const pct = Math.round((row.vendor_count / maxCountryCount) * 100);
+              const countrySlug = slugifyCountry(row.country || "");
               return (
                 <div class="flex items-center gap-3">
-                  <span class="w-28 text-sm text-gray-700 truncate flex-shrink-0">{capitalize(row.country)}</span>
+                  <a
+                    href={`/en/country/${countrySlug}`}
+                    class="w-28 text-sm text-gray-700 hover:text-blue-600 hover:underline truncate flex-shrink-0"
+                  >
+                    {capitalize(row.country)}
+                  </a>
                   <div class="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
                     <div class="bg-blue-600 h-4 rounded-full" style={`width: ${pct}%`} />
                   </div>
@@ -222,10 +234,23 @@ const breadcrumbs = [
           <div class="space-y-3">
             {topCategories.map((row) => {
               const pct = Math.round((row.vendor_count / maxCategoryCount) * 100);
-              const name = categoryNameMap.get(row.category_id) || "—";
+              const category = categoryMap.get(row.category_id) || { name: "—", slug: "" };
+              const href = category.slug ? `/en/category/${category.slug}` : undefined;
               return (
                 <div class="flex items-center gap-3">
-                  <span class="w-28 text-sm text-gray-700 truncate flex-shrink-0" title={name}>{name}</span>
+                  {href ? (
+                    <a
+                      href={href}
+                      class="w-28 text-sm text-gray-700 hover:text-blue-600 hover:underline truncate flex-shrink-0"
+                      title={category.name}
+                    >
+                      {category.name}
+                    </a>
+                  ) : (
+                    <span class="w-28 text-sm text-gray-700 truncate flex-shrink-0" title={category.name}>
+                      {category.name}
+                    </span>
+                  )}
                   <div class="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
                     <div class="bg-indigo-500 h-4 rounded-full" style={`width: ${pct}%`} />
                   </div>

@@ -229,12 +229,15 @@ const websiteSchema = {
 };
 
 const websiteSchemaJson = JSON.stringify(websiteSchema);
+const activeCategoryCount = categories.length;
+const activeCountryCount = countryCount ?? 0;
+const dynamicMetaDescription = `Find and compare verified industrial automation vendors worldwide — system integrators, MES specialists, robotics integrators, machine builders, and more. Browse ${activeCategoryCount} categories across ${activeCountryCount} countries.`;
 
 ---
 
 <BaseLayout 
-  title="Industrial Automation Vendors Directory | Automation List"
-  description="Vendor-neutral directory of industrial automation companies. Compare system integrators, OEMs, and automation experts worldwide."
+  title="Industrial Automation Vendors Directory | Automation-List"
+  description={dynamicMetaDescription}
   canonical="https://www.automation-list.com/en/"
   ogUrl="https://www.automation-list.com/en/"
   ogImage="https://www.automation-list.com/og/default.png"
@@ -261,6 +264,12 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
   />
 
   <WhyThisDirectory />
+
+  <section class="container-px mx-auto max-w-7xl py-4 md:py-6">
+    <p class="text-sm md:text-base text-gray-700 leading-relaxed">
+      Automation-List is a vendor-neutral directory of verified industrial automation companies, built for engineers and procurement teams who need to find the right partner fast. Browse system integrators, MES specialists, robotics integrators, machine builders, SCADA providers, and more — filtered by country, industry, and technology platform. Every profile is manually reviewed and includes technology stack, industry focus, and service scope. No sponsored rankings. No agency curation. Just the vendors that actually do the work.
+    </p>
+  </section>
 
   <CategoryGrid categories={categories} lang="en" />
 
