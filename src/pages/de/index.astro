@@ -232,12 +232,15 @@ const websiteSchema = {
 };
 
 const websiteSchemaJson = JSON.stringify(websiteSchema);
+const activeCategoryCount = categories.length;
+const activeCountryCount = countryCount ?? 0;
+const dynamicMetaDescription = `Verifizierte Industrieautomation-Anbieter weltweit finden und vergleichen — Systemintegratoren, MES-Spezialisten, Robotik-Integratoren, Maschinenbauer und mehr. ${activeCategoryCount} Kategorien, ${activeCountryCount} Länder.`;
 
 ---
 
 <BaseLayout 
-  title="Industrieautomatisierung Anbieter Verzeichnis | Automation List"
-  description="Herstellerneutrales Verzeichnis für Industrieautomatisierung. Systemintegratoren, OEMs und Automatisierungsanbieter vergleichen."
+  title="Verzeichnis für Industrieautomation Anbieter | Automation-List"
+  description={dynamicMetaDescription}
   canonical="https://www.automation-list.com/de/"
   ogUrl="https://www.automation-list.com/de/"
   ogImage="https://www.automation-list.com/og/default.png"
@@ -278,6 +281,12 @@ const websiteSchemaJson = JSON.stringify(websiteSchema);
       "Ständige Weiterentwicklung",
     ]}
   />
+
+  <section class="container-px mx-auto max-w-7xl py-4 md:py-6">
+    <p class="text-sm md:text-base text-gray-700 leading-relaxed">
+      Automation-List ist ein herstellerneutrales Verzeichnis verifizierter Industrieautomations-Unternehmen — entwickelt für Ingenieure und Einkaufsteams, die schnell den richtigen Partner finden müssen. Systemintegratoren, MES-Spezialisten, Robotik-Integratoren, Maschinenbauer, SCADA-Anbieter und mehr — filterbar nach Land, Branche und Technologieplattform. Jedes Profil wird manuell geprüft und enthält Technologie-Stack, Branchenfokus und Leistungsumfang. Keine bezahlten Rankings. Keine Agentur-Kuration. Nur die Anbieter, die wirklich liefern.
+    </p>
+  </section>
 
   <CategoryGrid 
     title="Nach Kategorie durchsuchen"
