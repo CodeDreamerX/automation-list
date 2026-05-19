@@ -30,22 +30,29 @@ if (!categorySlug) {
   return Astro.redirect('/en/vendors');
 }
 
-// Fetch category from database
-const { data: category, error: categoryError } = await supabase
-  .from('categories')
-  .select('id, slug, name_en, name_de, headline_en, headline_de, description_en, description_de, faq_en, faq_de, meta_title_en, meta_title_de, meta_description_en, meta_description_de')
-  .eq('slug', categorySlug)
-  .eq('is_active', true)
-  .maybeSingle();
-
-if (categoryError) {
-  console.error('Error fetching category:', summarizeSupabaseError(categoryError));
+// Fetch category from database (3600s cache)
+const metaCacheKey = `category:meta:${categorySlug}`;
+let category: any = getCached(metaCacheKey);
+if (!category) {
+  const { data, error: categoryError } = await supabase
+    .from('categories')
+    .select('id, slug, name_en, name_de, headline_en, headline_de, description_en, description_de, faq_en, faq_de, meta_title_en, meta_title_de, meta_description_en, meta_description_de')
+    .eq('slug', categorySlug)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (categoryError) {
+    console.error('Error fetching category:', summarizeSupabaseError(categoryError));
+  }
+  category = data;
+  if (category) setCached(metaCacheKey, category, 3600);
 }
 
 // If category not found, redirect to vendors page
 if (!category) {
   return Astro.redirect('/en/vendors');
 }
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
 
 const categoryId = category.id;
 const categoryName = category.name_en || category.name_de || categorySlug;

@@ -12,6 +12,7 @@ import { truncateDescription } from '../../../lib/vendors/vendorFormatters';
 import { getBooleanEnvVar } from '../../../lib/env';
 import { getCountryNameMap, normalizeCountryName, slugifyCountry } from '../../../lib/countryUtils';
 import { buildVendorTitle } from '../../../utils/seo';
+import { getCached, setCached } from '../../../lib/cache';
 
 // Helper function to parse logo background variant from logo URL
 // Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
@@ -71,65 +72,72 @@ function getLogoVariant(vendor: any): "light" | "dark" | "neutral" | "brand" {
 // Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
 
-const { data: vendor, error } = await supabase
-  .from('vendors')
-  .select(`
-    *,
-    vendor_categories (
-      is_primary,
-      categories:categories (
-        id,
-        slug,
-        name_en,
-        name_de
+const vendorCacheKey = `vendor:detail:${slug}`;
+let vendorData: any = getCached(vendorCacheKey);
+if (!vendorData) {
+  const { data, error } = await supabase
+    .from('vendors')
+    .select(`
+      *,
+      vendor_categories (
+        is_primary,
+        categories:categories (
+          id,
+          slug,
+          name_en,
+          name_de
+        )
+      ),
+      vendor_technologies (
+        technologies:technologies (
+          id,
+          slug,
+          name_en,
+          name_de
+        )
+      ),
+      vendor_industries (
+        industries:industries (
+          id,
+          slug,
+          name_en,
+          name_de
+        )
+      ),
+      vendor_certifications (
+        certifications:certifications (
+          id,
+          slug,
+          name,
+          reference_url,
+          category
+        )
+      ),
+      vendor_countries (
+        countries:countries (
+          id,
+          slug,
+          name_en,
+          name_de
+        )
       )
-    ),
-    vendor_technologies (
-      technologies:technologies (
-        id,
-        slug,
-        name_en,
-        name_de
-      )
-    ),
-    vendor_industries (
-      industries:industries (
-        id,
-        slug,
-        name_en,
-        name_de
-      )
-    ),
-    vendor_certifications (
-      certifications:certifications (
-        id,
-        slug,
-        name,
-        reference_url,
-        category
-      )
-    ),
-    vendor_countries (
-      countries:countries (
-        id,
-        slug,
-        name_en,
-        name_de
-      )
-    )
-  `)
-  .eq('slug', slug)
-  .maybeSingle();
-
-if (error) {
-  console.error('Error fetching vendor:', error);
+    `)
+    .eq('slug', slug)
+    .maybeSingle();
+  if (error) {
+    console.error('Error fetching vendor:', error);
+  }
+  vendorData = data;
+  if (vendorData) setCached(vendorCacheKey, vendorData, 300);
 }
 
-if (!vendor) {
+if (!vendorData) {
   return Astro.redirect('/en/vendors');
 }
 
-const countryNameMap = await getCountryNameMap(supabase);
+const vendor = vendorData;
+
+const countryNameMap = await getCountryNameMap(supabase, getCached, setCached);
 
 // Normalize category, technology, and industry data shape
 const normalizedVendor = normalizeVendor(vendor, {

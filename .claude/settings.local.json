@@ -30,7 +30,10 @@
       "Bash(npx astro:*)",
       "Bash(grep -E \"\\\\.astro$\")",
       "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\src\\\\pages\\\\admin\\\\listings\\\\\" -Force)",
-      "PowerShell(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\supabase\\\\migrations\" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })"
+      "PowerShell(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\supabase\\\\migrations\" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\src\\\\pages\" -Recurse -Filter \"*.astro\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)"
     ]
   }
 }

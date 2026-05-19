@@ -27,22 +27,29 @@ if (!techSlug) {
   return Astro.redirect('/en/vendors');
 }
 
-// Fetch technology from database
-const { data: technology, error: techError } = await supabase
-  .from('technologies')
-  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, headline_en, headline_de, meta_title_en, meta_title_de, icon_name, faq_en, faq_de')
-  .eq('slug', techSlug)
-  .eq('is_active', true)
-  .maybeSingle();
-
-if (techError) {
-  console.error('Error fetching technology:', techError);
+// Fetch technology from database (3600s cache)
+const metaCacheKey = `technology:meta:${techSlug}`;
+let technology: any = getCached(metaCacheKey);
+if (!technology) {
+  const { data, error: techError } = await supabase
+    .from('technologies')
+    .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, headline_en, headline_de, meta_title_en, meta_title_de, icon_name, faq_en, faq_de')
+    .eq('slug', techSlug)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (techError) {
+    console.error('Error fetching technology:', techError);
+  }
+  technology = data;
+  if (technology) setCached(metaCacheKey, technology, 3600);
 }
 
 // If technology not found, return 404
 if (!technology) {
   return new Response(null, { status: 404, statusText: 'Not Found' });
 }
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
 
 const techName = technology.name_en || technology.name_de || techSlug;
 const techDescription = technology.description_en || technology.description_de || '';
@@ -73,15 +80,19 @@ if (cachedResult) {
   vendors = cachedResult.vendors || [];
   totalVendors = cachedResult.totalVendors;
 } else {
-  // Get vendor IDs that have this technology via vendor_technologies
-  let techVendorIds: string[] = [];
-  const { data: techLinks } = await supabase
-    .from('vendor_technologies')
-    .select('vendor_id')
-    .eq('technology_id', technology.id);
+  // Get vendor IDs that have this technology via vendor_technologies (300s cache)
+  const techLinksCacheKey = `vendor_technologies:technology:${technology.id}`;
+  let techVendorIds: string[] = getCached<string[]>(techLinksCacheKey) || [];
 
-  if (techLinks) {
-    techVendorIds = techLinks.map(link => link.vendor_id);
+  if (techVendorIds.length === 0) {
+    const { data: techLinks } = await supabase
+      .from('vendor_technologies')
+      .select('vendor_id')
+      .eq('technology_id', technology.id);
+    if (techLinks && techLinks.length > 0) {
+      techVendorIds = techLinks.map(link => link.vendor_id);
+      setCached(techLinksCacheKey, techVendorIds, 300);
+    }
   }
   
   // Build query function

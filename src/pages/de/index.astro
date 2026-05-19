@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabaseClient";
+import { getCached, setCached } from "../../lib/cache";
 import { isFeatured } from "../../lib/isFeatured";
 import HowItWorks from "../../components/HowItWorks.astro";
 import PageHero from "../../components/PageHero.astro";
@@ -15,107 +16,21 @@ import { getCountryNameMap } from "../../lib/countryUtils";
 import { getIndustries } from "../../lib/getIndustries";
 import { normalizeVendors } from "../../lib/vendors/vendorUtils";
 import type { VendorWithRelations } from "../../types/vendor";
+import type { Industry } from "../../types/industry";
 import { formatTechnologies as formatTechnologiesShared, truncateDescription } from "../../lib/vendors/vendorFormatters";
 
+// --- Featured vendors (300s) ---
+let featuredVendors = getCached<VendorWithRelations[]>('home:featured-vendors');
+if (!featuredVendors) {
+  const now = new Date().toISOString();
 
-// Fetch ONLY featured vendors: plan='pro' OR (featured=true AND featured_until>now)
-// Use two queries to handle the complex condition, then combine and limit to 6
-const now = new Date().toISOString();
-const countryNameMap = await getCountryNameMap(supabase);
-
-// Query 1: Get pro plan vendors (limit 6, ordered by priority)
-const { data: proVendors } = await supabase
-  .from("vendors")
-  .select(`
-    *,
-    vendor_categories (
-      is_primary,
-      categories:categories (
-        name_en,
-        name_de
-      )
-    ),
-    vendor_countries (
-      countries:countries (
-        name_en,
-        name_de
-      )
-    ),
-    vendor_technologies (
-      technologies:technologies (
-        name_en,
-        name_de
-      )
-    )
-  `)
-  .eq('plan', 'pro')
-  .order('priority', { ascending: true, nullsFirst: false })
-  .limit(6);
-
-// Query 2: Get featured vendors with valid featured_until date (limit 6, ordered by priority)
-const { data: featuredVendorsData } = await supabase
-  .from("vendors")
-  .select(`
-    *,
-    vendor_categories (
-      is_primary,
-      categories:categories (
-        name_en,
-        name_de
-      )
-    ),
-    vendor_countries (
-      countries:countries (
-        name_en,
-        name_de
-      )
-    ),
-    vendor_technologies (
-      technologies:technologies (
-        name_en,
-        name_de
-      )
-    )
-  `)
-  .eq('featured', true)
-  .gt('featured_until', now)
-  .neq('plan', 'deactivated')
-  .order('priority', { ascending: true, nullsFirst: false })
-  .limit(6);
-
-// Combine and deduplicate by id
-const vendorMap = new Map();
-[...(proVendors || []), ...(featuredVendorsData || [])].forEach(v => {
-  if (!vendorMap.has(v.id)) {
-    vendorMap.set(v.id, v);
-  }
-});
-const vendors = Array.from(vendorMap.values());
-
-// Normalize category data shape
-const normalizedVendors = normalizeVendors(vendors);
-
-// No need to filter with isFeatured - queries already fetch only valid featured vendors:
-// - plan='pro' vendors (all pro vendors are featured)
-// - featured=true AND featured_until > now (only valid featured vendors)
-// Sort by priority ASC
-normalizedVendors.sort((a, b) => (a.priority || 999) - (b.priority || 999));
-
-// Limit to 6 vendors
-let featuredVendors = normalizedVendors.slice(0, 6);
-
-// Fallback logic: if no featured vendors, use 6 random vendors (but don't mark as featured)
-// Note: This fallback may not be needed if query works correctly, but kept for safety
-if (featuredVendors.length === 0) {
-  const { data: fallbackVendors } = await supabase
+  const { data: proVendors } = await supabase
     .from("vendors")
     .select(`
       *,
       vendor_categories (
         is_primary,
         categories:categories (
-          id,
-          slug,
           name_en,
           name_de
         )
@@ -128,47 +43,127 @@ if (featuredVendors.length === 0) {
       ),
       vendor_technologies (
         technologies:technologies (
-          id,
-          slug,
           name_en,
           name_de
         )
       )
     `)
-    .neq('plan', 'deactivated')
+    .eq('plan', 'pro')
+    .order('priority', { ascending: true, nullsFirst: false })
     .limit(6);
-  
-  const normalizedFallback = normalizeVendors(fallbackVendors || []);
-  featuredVendors = [...normalizedFallback].sort(() => Math.random() - 0.5).slice(0, 6);
+
+  const { data: featuredVendorsData } = await supabase
+    .from("vendors")
+    .select(`
+      *,
+      vendor_categories (
+        is_primary,
+        categories:categories (
+          name_en,
+          name_de
+        )
+      ),
+      vendor_countries (
+        countries:countries (
+          name_en,
+          name_de
+        )
+      ),
+      vendor_technologies (
+        technologies:technologies (
+          name_en,
+          name_de
+        )
+      )
+    `)
+    .eq('featured', true)
+    .gt('featured_until', now)
+    .neq('plan', 'deactivated')
+    .order('priority', { ascending: true, nullsFirst: false })
+    .limit(6);
+
+  const vendorMap = new Map();
+  [...(proVendors || []), ...(featuredVendorsData || [])].forEach(v => {
+    if (!vendorMap.has(v.id)) vendorMap.set(v.id, v);
+  });
+  const combined = normalizeVendors(Array.from(vendorMap.values()));
+  combined.sort((a, b) => (a.priority || 999) - (b.priority || 999));
+  featuredVendors = combined.slice(0, 6);
+  setCached('home:featured-vendors', featuredVendors, 300);
 }
+
+// --- Fallback vendors (300s) ---
+if (featuredVendors.length === 0) {
+  let fallback = getCached<VendorWithRelations[]>('home:fallback-vendors');
+  if (!fallback) {
+    const { data: fallbackData } = await supabase
+      .from("vendors")
+      .select(`
+        *,
+        vendor_categories (
+          is_primary,
+          categories:categories (
+            name_en,
+            name_de
+          )
+        ),
+        vendor_countries (
+          countries:countries (
+            name_en,
+            name_de
+          )
+        ),
+        vendor_technologies (
+          technologies:technologies (
+            name_en,
+            name_de
+          )
+        )
+      `)
+      .neq('plan', 'deactivated')
+      .limit(6);
+    const normalizedFallback = normalizeVendors(fallbackData || []);
+    fallback = [...normalizedFallback].sort(() => Math.random() - 0.5).slice(0, 6);
+    setCached('home:fallback-vendors', fallback, 300);
+  }
+  featuredVendors = fallback;
+}
+
+const countryNameMap = await getCountryNameMap(supabase, getCached, setCached);
 
 // Wrapper function to match existing call signature (German page uses lang="de")
 function formatTechnologies(vendor: VendorWithRelations): string {
   return formatTechnologiesShared(vendor, "de");
 }
 
-// Fetch active categories from database
-const { data: dbCategories } = await supabase
-  .from("categories")
-  .select("id, slug, name_en, name_de, description_en, description_de, card_description_en, card_description_de, icon_name")
-  .eq("is_active", true)
-  .order("order_index", { ascending: true });
+// --- Categories (3600s) ---
+let dbCategories = getCached<any[]>('home:categories');
+if (!dbCategories) {
+  const { data } = await supabase
+    .from("categories")
+    .select("id, slug, name_en, name_de, description_en, description_de, card_description_en, card_description_de, icon_name")
+    .eq("is_active", true)
+    .order("order_index", { ascending: true });
+  dbCategories = data || [];
+  setCached('home:categories', dbCategories, 3600);
+}
 
-// Fetch vendor counts from materialized view
-const { data: categoryVendorCounts } = await supabase
-  .from("category_vendor_counts")
-  .select("category_id, vendor_count");
+// --- Category counts (300s) ---
+let categoryVendorCounts = getCached<any[]>('home:category-counts');
+if (!categoryVendorCounts) {
+  const { data } = await supabase
+    .from("category_vendor_counts")
+    .select("category_id, vendor_count");
+  categoryVendorCounts = data || [];
+  setCached('home:category-counts', categoryVendorCounts, 300);
+}
 
-// Create a map of category ID to vendor count
 const categoryCountMap = new Map<string, number>();
-(categoryVendorCounts || []).forEach((item: any) => {
-  if (item.category_id) {
-    categoryCountMap.set(item.category_id, item.vendor_count || 0);
-  }
+categoryVendorCounts.forEach((item: any) => {
+  if (item.category_id) categoryCountMap.set(item.category_id, item.vendor_count || 0);
 });
 
-// Map database categories with counts from materialized view
-const categories = (dbCategories || []).map(cat => ({
+const categories = dbCategories.map(cat => ({
   slug: cat.slug || '',
   icon_name: cat.icon_name || '',
   name_en: cat.name_en || '',
@@ -178,33 +173,50 @@ const categories = (dbCategories || []).map(cat => ({
   card_description_en: cat.card_description_en || '',
   card_description_de: cat.card_description_de || '',
   count: cat.id ? (categoryCountMap.get(cat.id) || 0) : 0,
-})).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
+})).filter(cat => cat.slug && (cat.name_en || cat.name_de));
 
-// Get total vendor count (COUNT-only query, no rows fetched)
-// Excludes deactivated vendors via .neq("plan", "deactivated") filter
-const { count: totalVendorCount } = await supabase
-  .from("vendors")
-  .select("*", { count: "exact", head: true })
-  .neq("plan", "deactivated");
+// --- Total vendor count (300s) ---
+let totalVendorCount = getCached<number>('home:total-vendor-count');
+if (totalVendorCount === null) {
+  const { count } = await supabase
+    .from("vendors")
+    .select("*", { count: "exact", head: true })
+    .neq("plan", "deactivated");
+  totalVendorCount = count ?? 0;
+  setCached('home:total-vendor-count', totalVendorCount, 300);
+}
 
-const { count: countryCount } = await supabase
-  .from("countries")
-  .select("*", { count: "exact", head: true })
-  .eq("is_active", true);
+// --- Country count (3600s) ---
+let countryCount = getCached<number>('home:countries-count');
+if (countryCount === null) {
+  const { count } = await supabase
+    .from("countries")
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true);
+  countryCount = count ?? 0;
+  setCached('home:countries-count', countryCount, 3600);
+}
 
-// Fetch active industries (limit 8-12, ordered by order_index then name)
-const allIndustries = await getIndustries({ lang: "de", activeOnly: true });
+// --- Industries (3600s, locale-specific) ---
+let allIndustries = getCached<Industry[]>('home:industries:de');
+if (!allIndustries) {
+  allIndustries = await getIndustries({ lang: "de", activeOnly: true });
+  setCached('home:industries:de', allIndustries, 3600);
+}
 
-// Fetch vendor counts from materialized view
-const { data: industryVendorCounts } = await supabase
-  .from("industry_vendor_counts")
-  .select("industry_id, vendor_count");
+// --- Industry counts (300s) ---
+let industryVendorCounts = getCached<any[]>('home:industry-counts');
+if (!industryVendorCounts) {
+  const { data } = await supabase
+    .from("industry_vendor_counts")
+    .select("industry_id, vendor_count");
+  industryVendorCounts = data || [];
+  setCached('home:industry-counts', industryVendorCounts, 300);
+}
 
 const industryCountMap = new Map<string, number>();
-(industryVendorCounts || []).forEach((item: any) => {
-  if (item.industry_id) {
-    industryCountMap.set(item.industry_id, item.vendor_count || 0);
-  }
+industryVendorCounts.forEach((item: any) => {
+  if (item.industry_id) industryCountMap.set(item.industry_id, item.vendor_count || 0);
 });
 
 const industries = allIndustries.slice(0, 12).map(industry => ({

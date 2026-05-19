@@ -5,27 +5,37 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import IndustryGrid from "../../components/IndustryGrid.astro";
 import { getIndustries } from "../../lib/getIndustries";
 import { supabase } from "../../lib/supabaseClient";
+import { getCached, setCached } from "../../lib/cache";
+import type { Industry } from "../../types/industry";
 
-// Fetch active industries from database
-const allIndustries = await getIndustries({ lang: "de", activeOnly: true });
+// --- Industries (3600s, locale-specific) ---
+let allIndustries = getCached<Industry[]>('taxonomy:industries:de');
+if (!allIndustries) {
+  allIndustries = await getIndustries({ lang: "de", activeOnly: true });
+  setCached('taxonomy:industries:de', allIndustries, 3600);
+}
 
-// Fetch vendor counts from materialized view
-const { data: industryVendorCounts } = await supabase
-  .from("industry_vendor_counts")
-  .select("industry_id, vendor_count");
+// --- Industry counts (300s) ---
+let industryVendorCounts = getCached<any[]>('counts:industry');
+if (!industryVendorCounts) {
+  const { data } = await supabase
+    .from("industry_vendor_counts")
+    .select("industry_id, vendor_count");
+  industryVendorCounts = data || [];
+  setCached('counts:industry', industryVendorCounts, 300);
+}
 
 const industryCountMap = new Map<string, number>();
-(industryVendorCounts || []).forEach((item: any) => {
-  if (item.industry_id) {
-    industryCountMap.set(item.industry_id, item.vendor_count || 0);
-  }
+industryVendorCounts.forEach((item: any) => {
+  if (item.industry_id) industryCountMap.set(item.industry_id, item.vendor_count || 0);
 });
 
-// Map industries with vendor counts
 const industries = allIndustries.map((industry) => ({
   ...industry,
   count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
 }));
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=60');
 
 const description =
   "Automatisierungsanforderungen unterscheiden sich je nach Branche erheblich. Ein Lebensmittelhersteller benötigt hygienegerechtes Design, CIP/SIP-Integration und lückenlose Rückverfolgbarkeit. Eine Pharmaanlage erfordert GMP-Validierung, elektronische Chargendokumentation und Konformität mit 21 CFR Part 11 bzw. Annex 11. Eine Automobilfertigungslinie braucht Hochgeschwindigkeitsrobotik, Bildverarbeitung und MES-Anbindung. Dieses Verzeichnis organisiert verifizierte Automatisierungsanbieter nach Branche, damit Sie Partner mit nachgewiesener Erfahrung in Ihrer spezifischen Fertigungsumgebung finden und keine Generalisten ohne Sektortiefe beauftragen.";
