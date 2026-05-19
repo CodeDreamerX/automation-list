@@ -29,13 +29,24 @@ if (countryParam !== countrySlug) {
   return Astro.redirect(`/de/country/${countrySlug}${Astro.url.search}`);
 }
 
-// Try to find managed country record in DB for rich content
-const { data: countryRecord } = await supabase
-  .from('countries')
-  .select('id, slug, name_en, name_de, description_en, description_de, flag_emoji, faq_en, faq_de, headline_en, headline_de, meta_title_en, meta_title_de, meta_description_en, meta_description_de')
-  .eq('slug', countrySlug)
-  .eq('is_active', true)
-  .maybeSingle();
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+
+// Try to find managed country record in DB for rich content (3600s cache)
+// Boxed to distinguish null result from cache miss
+interface CountryMetaBox { record: any | null }
+const metaCacheKey = `country:meta:${countrySlug}`;
+let countryMetaBox = getCached<CountryMetaBox>(metaCacheKey);
+if (!countryMetaBox) {
+  const { data } = await supabase
+    .from('countries')
+    .select('id, slug, name_en, name_de, description_en, description_de, flag_emoji, faq_en, faq_de, headline_en, headline_de, meta_title_en, meta_title_de, meta_description_en, meta_description_de')
+    .eq('slug', countrySlug)
+    .eq('is_active', true)
+    .maybeSingle();
+  countryMetaBox = { record: data };
+  setCached(metaCacheKey, countryMetaBox, 3600);
+}
+const countryRecord = countryMetaBox.record;
 
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
 const pageSize = 102;
@@ -105,12 +116,20 @@ if (cachedResult) {
       .order('name', { ascending: true });
   }
 
-  const { data: countryCount } = await supabase
-    .from('country_vendor_counts')
-    .select('vendor_count')
-    .ilike('country', normalizedCountry)
-    .single();
-  totalVendors = countryCount?.vendor_count || null;
+  // Country vendor count (300s cache)
+  const countCacheKey = `country:vendor-count:${countryParam}`;
+  const cachedVendorCount = getCached<number>(countCacheKey);
+  if (cachedVendorCount !== null) {
+    totalVendors = cachedVendorCount;
+  } else {
+    const { data: countryCount } = await supabase
+      .from('country_vendor_counts')
+      .select('vendor_count')
+      .ilike('country', normalizedCountry)
+      .single();
+    totalVendors = countryCount?.vendor_count || null;
+    if (totalVendors !== null) setCached(countCacheKey, totalVendors, 300);
+  }
 
   const start = (page - 1) * pageSize;
   const end = page * pageSize - 1;

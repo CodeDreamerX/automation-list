@@ -4,26 +4,39 @@ export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CountryGrid from '../../components/CountryGrid.astro';
 import { supabase } from '../../lib/supabaseClient';
+import { getCached, setCached } from '../../lib/cache';
 
-// Fetch active countries
-const { data: countriesRaw } = await supabase
-  .from('countries')
-  .select('id, slug, name_en, name_de, card_description_en, card_description_de, flag_emoji')
-  .eq('is_active', true)
-  .order('order_index', { ascending: true, nullsFirst: false })
-  .order('name_en', { ascending: true });
+// --- Countries (3600s) ---
+let countriesRaw = getCached<any[]>('taxonomy:countries');
+if (!countriesRaw) {
+  const { data } = await supabase
+    .from('countries')
+    .select('id, slug, name_en, name_de, card_description_en, card_description_de, flag_emoji')
+    .eq('is_active', true)
+    .order('order_index', { ascending: true, nullsFirst: false })
+    .order('name_en', { ascending: true });
+  countriesRaw = data || [];
+  setCached('taxonomy:countries', countriesRaw, 3600);
+}
 
-// Fetch vendor counts from the same view the country detail pages use
-const { data: countRows } = await supabase
-  .from('country_vendor_counts')
-  .select('country, vendor_count');
+// --- Country counts (300s) ---
+let countRows = getCached<any[]>('counts:country');
+if (!countRows) {
+  const { data } = await supabase
+    .from('country_vendor_counts')
+    .select('country, vendor_count');
+  countRows = data || [];
+  setCached('counts:country', countRows, 300);
+}
 
 const countMap = new Map<string, number>();
-(countRows || []).forEach((row: any) => {
+countRows.forEach((row: any) => {
   if (row.country) countMap.set(row.country.toLowerCase(), row.vendor_count || 0);
 });
 
-const countries = (countriesRaw || []).map((c) => ({
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=60');
+
+const countries = countriesRaw.map((c) => ({
   slug: c.slug,
   name: c.name_de || c.name_en,
   card_description_en: c.card_description_en,

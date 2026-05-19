@@ -2,32 +2,38 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import { supabase } from "../../lib/supabaseClient";
+import { getCached, setCached } from "../../lib/cache";
 import { linkifyText } from "../../lib/linkify";
 import { getKeywordMap } from "../../lib/keyword-map";
 
+// --- Categories (3600s) ---
+let dbCategories = getCached<any[]>('taxonomy:categories');
+if (!dbCategories) {
+  const { data } = await supabase
+    .from("categories")
+    .select("id, slug, name_en, name_de, description_en, description_de, card_description_en, card_description_de, icon_name")
+    .eq("is_active", true)
+    .order("order_index", { ascending: true });
+  dbCategories = data || [];
+  setCached('taxonomy:categories', dbCategories, 3600);
+}
 
-// Fetch active categories from database
-const { data: dbCategories } = await supabase
-  .from("categories")
-  .select("id, slug, name_en, name_de, description_en, description_de, card_description_en, card_description_de, icon_name")
-  .eq("is_active", true)
-  .order("order_index", { ascending: true });
+// --- Category counts (300s) ---
+let categoryVendorCounts = getCached<any[]>('counts:category');
+if (!categoryVendorCounts) {
+  const { data } = await supabase
+    .from("category_vendor_counts")
+    .select("category_id, vendor_count");
+  categoryVendorCounts = data || [];
+  setCached('counts:category', categoryVendorCounts, 300);
+}
 
-// Fetch vendor counts from materialized view
-const { data: categoryVendorCounts } = await supabase
-  .from("category_vendor_counts")
-  .select("category_id, vendor_count");
-
-// Create a map of category ID to vendor count
 const countMap = new Map<string, number>();
-(categoryVendorCounts || []).forEach((item: any) => {
-  if (item.category_id) {
-    countMap.set(item.category_id, item.vendor_count || 0);
-  }
+categoryVendorCounts.forEach((item: any) => {
+  if (item.category_id) countMap.set(item.category_id, item.vendor_count || 0);
 });
 
-// Map database categories with counts from materialized view
-const categories = (dbCategories || []).map(cat => ({
+const categories = dbCategories.map(cat => ({
   slug: cat.slug || '',
   icon_name: cat.icon_name || '',
   name_en: cat.name_en || '',
@@ -37,7 +43,9 @@ const categories = (dbCategories || []).map(cat => ({
   card_description_en: cat.card_description_en || '',
   card_description_de: cat.card_description_de || '',
   count: cat.id ? (countMap.get(cat.id) || 0) : 0,
-})).filter(cat => cat.slug && (cat.name_en || cat.name_de)); // Filter out categories without slug or names
+})).filter(cat => cat.slug && (cat.name_en || cat.name_de));
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=60');
 
 // Build linkified descriptions, excluding each card's own self-link (URL-based filter).
 const baseKeywordMap = getKeywordMap('de');

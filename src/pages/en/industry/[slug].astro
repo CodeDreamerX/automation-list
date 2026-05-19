@@ -27,25 +27,29 @@ if (!industrySlug) {
   return Astro.redirect('/en/vendors');
 }
 
-// Fetch industry from database
-const { data: industry, error: industryError } = await supabase
-  .from('industries')
-  .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, headline_en, headline_de, meta_title_en, meta_title_de, icon_name, faq_en, faq_de')
-  .eq('slug', industrySlug)
-  .eq('is_active', true)
-  .maybeSingle();
-
-if (industryError) {
-  console.error('Error fetching industry:', industryError);
+// Fetch industry from database (3600s cache)
+const metaCacheKey = `industry:meta:${industrySlug}`;
+let industry: any = getCached(metaCacheKey);
+if (!industry) {
+  const { data, error: industryError } = await supabase
+    .from('industries')
+    .select('id, slug, name_en, name_de, description_en, description_de, meta_description_en, meta_description_de, headline_en, headline_de, meta_title_en, meta_title_de, icon_name, faq_en, faq_de')
+    .eq('slug', industrySlug)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (industryError) {
+    console.error('Error fetching industry:', industryError);
+  }
+  industry = data;
+  if (industry) setCached(metaCacheKey, industry, 3600);
 }
 
 // If industry not found or inactive, return 404
 if (!industry) {
-  return new Response(null, {
-    status: 404,
-    statusText: 'Not Found'
-  });
+  return new Response(null, { status: 404, statusText: 'Not Found' });
 }
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
 
 // Use industry data with bilingual support
 const industryName = industry.name_en || industry.name_de || industrySlug;
@@ -77,17 +81,19 @@ if (cachedResult) {
   vendors = cachedResult.vendors || [];
   totalVendors = cachedResult.totalVendors;
 } else {
-  // Get vendor IDs that have this industry via vendor_industries
-  let industryVendorIds: string[] = [];
-  
-  // Industry found in database - get vendors linked to this industry
-  const { data: industryLinks } = await supabase
-    .from('vendor_industries')
-    .select('vendor_id')
-    .eq('industry_id', industry.id);
-  
-  if (industryLinks) {
-    industryVendorIds = industryLinks.map(link => link.vendor_id);
+  // Get vendor IDs that have this industry via vendor_industries (300s cache)
+  const industryLinksCacheKey = `vendor_industries:industry:${industry.id}`;
+  let industryVendorIds: string[] = getCached<string[]>(industryLinksCacheKey) || [];
+
+  if (industryVendorIds.length === 0) {
+    const { data: industryLinks } = await supabase
+      .from('vendor_industries')
+      .select('vendor_id')
+      .eq('industry_id', industry.id);
+    if (industryLinks && industryLinks.length > 0) {
+      industryVendorIds = industryLinks.map(link => link.vendor_id);
+      setCached(industryLinksCacheKey, industryVendorIds, 300);
+    }
   }
   
   // Build query function
