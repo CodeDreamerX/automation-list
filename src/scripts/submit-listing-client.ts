@@ -3,6 +3,7 @@ export interface SubmitListingStrings {
   section2Hide: string;
   section2Show: string;
   validateBanner: string;
+  emailRequired: string;
   submitSubmitting: string;
   submitButton: string;
   errorGeneric: string;
@@ -286,7 +287,12 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
     const node =
       typeof inputId === 'string' ? document.getElementById(inputId) : inputId;
     if (node) node.classList.remove('!border-red-400', 'focus:!ring-red-300');
-    document.getElementById(errorId)?.classList.add('hidden');
+    const errEl = document.getElementById(errorId);
+    if (errEl) {
+      errEl.classList.add('hidden');
+      const defaultMsg = errEl.getAttribute('data-default-message');
+      if (defaultMsg) errEl.textContent = defaultMsg;
+    }
   }
 
   function clearAllErrors() {
@@ -330,10 +336,15 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
     }
 
     const emailEl = el<HTMLInputElement>('email');
-    if (
-      !emailEl.value.trim() ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value)
-    ) {
+    const emailErr = el<HTMLElement>('email-error');
+    const emailVal = emailEl.value.trim();
+    if (!emailVal) {
+      emailErr.textContent = strings.emailRequired;
+      markError(emailEl, 'email-error');
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      const defaultMsg = emailErr.getAttribute('data-default-message');
+      if (defaultMsg) emailErr.textContent = defaultMsg;
       markError(emailEl, 'email-error');
       valid = false;
     } else clearFieldError(emailEl, 'email-error');

@@ -119,10 +119,11 @@ const LANGUAGES = [
             type="email"
             id="email"
             name="email"
+            required
             class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
             placeholder="hello@example.com"
           />
-          <p id="email-error" class="hidden mt-1 text-xs text-red-600">A valid email address is required</p>
+          <p id="email-error" class="hidden mt-1 text-xs text-red-600" data-default-message="A valid email address is required">A valid email address is required</p>
         </div>
 
         <!-- Country (searchable single-select) -->
@@ -409,6 +410,7 @@ const LANGUAGES = [
       section2Hide: '− Hide extra details',
       section2Show: '+ Add more details — the more you provide, the faster your listing goes live',
       validateBanner: 'Please fix the highlighted fields before submitting.',
+      emailRequired: 'Email is required',
       submitSubmitting: 'Submitting…',
       submitButton: 'Submit Listing',
       errorGeneric: 'Something went wrong. Please try again.',

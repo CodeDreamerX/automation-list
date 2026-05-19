@@ -153,16 +153,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
   }
 
-  // Delete the approved pending listing
-  const { error: deleteError } = await supabaseAdmin
+  // Soft-archive the pending listing (pg_cron cleans it up after 1 day)
+  const { error: archiveError } = await supabaseAdmin
     .from('pending_listings')
-    .delete()
+    .update({ status: 'approved', approved_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (deleteError) {
-    console.error('approve-listing delete error:', deleteError);
+  if (archiveError) {
+    console.error('approve-listing archive error:', archiveError);
     // Vendor was created successfully; log but don't fail the response
   }
+
+  // Fire-and-forget — never block the approval response
+  supabaseAdmin.functions.invoke('send-vendor-email', {
+    body: { pendingListingId: id, emailType: 'approved', vendorId },
+  }).catch((err: unknown) => console.error('Email trigger error (approve):', err));
 
   return successResponse({ vendor_id: vendorId });
 };
