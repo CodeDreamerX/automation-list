@@ -76,6 +76,9 @@ coverage/
 .firebase/
 .serverless/
 
+# Supabase
+supabase/migrations/
+
 # Misc
 *.pem
 *.key

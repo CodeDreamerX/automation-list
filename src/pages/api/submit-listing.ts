@@ -58,7 +58,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!name?.trim()) return errorResponse('Company name is required', 400);
   if (!website?.trim()) return errorResponse('Website is required', 400);
   if (!country?.trim()) return errorResponse('Country is required', 400);
-  if (!email?.trim()) return errorResponse('Email is required', 400);
+  if (email == null || typeof email !== 'string' || !email.trim()) {
+    return errorResponse('Email is required', 400);
+  }
   if (!description_en?.trim()) return errorResponse('English description is required', 400);
   if (!Array.isArray(category_slugs) || category_slugs.length === 0) {
     return errorResponse('At least one category is required', 400);

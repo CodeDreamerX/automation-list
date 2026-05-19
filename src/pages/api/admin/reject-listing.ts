@@ -32,5 +32,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return errorResponse(error.message || 'Failed to reject listing', 500);
   }
 
+  // Fire-and-forget — never block the rejection response
+  supabaseAdmin.functions.invoke('send-vendor-email', {
+    body: { pendingListingId: id, emailType: 'rejected' },
+  }).catch((err: unknown) => console.error('Email trigger error (reject):', err));
+
   return successResponse();
 };

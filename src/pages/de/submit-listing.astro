@@ -119,10 +119,11 @@ const LANGUAGES = [
             type="email"
             id="email"
             name="email"
+            required
             class="sl-input w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
             placeholder="hallo@beispiel.de"
           />
-          <p id="email-error" class="hidden mt-1 text-xs text-red-600">Eine gültige E-Mail-Adresse ist erforderlich</p>
+          <p id="email-error" class="hidden mt-1 text-xs text-red-600" data-default-message="Eine gültige E-Mail-Adresse ist erforderlich">Eine gültige E-Mail-Adresse ist erforderlich</p>
         </div>
 
         <!-- Country (searchable single-select) -->
@@ -409,6 +410,7 @@ const LANGUAGES = [
       section2Hide: '− Details ausblenden',
       section2Show: '+ Weitere Details hinzufügen — je mehr Sie angeben, desto schneller wird Ihr Eintrag freigeschaltet',
       validateBanner: 'Bitte korrigieren Sie die markierten Felder vor dem Absenden.',
+      emailRequired: 'E-Mail ist erforderlich',
       submitSubmitting: 'Wird eingereicht…',
       submitButton: 'Eintrag einreichen',
       errorGeneric: 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',

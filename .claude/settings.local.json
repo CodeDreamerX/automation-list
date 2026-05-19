@@ -28,7 +28,9 @@
       "Bash(grep -r profile_score /d/Projects/automationlist/src --include=*.ts --include=*.astro)",
       "Bash(xargs grep:*)",
       "Bash(npx astro:*)",
-      "Bash(grep -E \"\\\\.astro$\")"
+      "Bash(grep -E \"\\\\.astro$\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\src\\\\pages\\\\admin\\\\listings\\\\\" -Force)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\supabase\\\\migrations\" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })"
     ]
   }
 }
