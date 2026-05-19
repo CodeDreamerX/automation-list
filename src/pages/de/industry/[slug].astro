@@ -289,7 +289,7 @@ const breadcrumbSchema = {
   breadcrumbs={breadcrumbs}
   lang="de"
 >
-  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
     "name": `Industrieautomatisierung Unternehmen für ${industryName}`,
@@ -307,7 +307,7 @@ const breadcrumbSchema = {
       }
     }))
   }, null, 2)} />
-  <script slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema, null, 2)} />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema, null, 2)} />
   {hasFaq && (
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
@@ -315,7 +315,7 @@ const breadcrumbSchema = {
       "mainEntity": faqItems.map((item: any) => ({
         "@type": "Question",
         "name": item.question,
-        "acceptedAnswer": { "@type": "Answer", "text": item.answer }
+        "acceptedAnswer": { "@type": "Answer", "text": item.answer.replace(/<[^>]*>/g, '') }
       }))
     })} />
   )}

@@ -1,10 +1,9 @@
 ---
 export interface Props {
   items: Array<{ label: string; href: string }>;
-  lang?: string;
 }
 
-const { items, lang = "en" } = Astro.props;
+const { items } = Astro.props;
 
 const siteOrigin = Astro.site?.origin ?? "https://www.automation-list.com";
 function absoluteItemUrl(href: string): string {
@@ -20,21 +19,16 @@ if (items.length <= 1) {
 ---
 
 <nav aria-label="Breadcrumb" class="container-px mx-auto max-w-7xl py-3 border-b border-gray-200">
-  <ol class="flex items-center space-x-2 text-sm text-gray-600" itemscope itemtype="https://schema.org/BreadcrumbList">
+  <ol class="flex items-center space-x-2 text-sm text-gray-600">
     {items.map((item, index) => {
       const isLast = index === items.length - 1;
       return (
-        <li 
-          class="flex items-center" 
-          itemprop="itemListElement" 
-          itemscope 
-          itemtype="https://schema.org/ListItem"
-        >
+        <li class="flex items-center">
           {index > 0 && (
-            <svg 
-              class="w-4 h-4 mx-2 text-gray-400" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              class="w-4 h-4 mx-2 text-gray-400"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
@@ -42,22 +36,12 @@ if (items.length <= 1) {
             </svg>
           )}
           {isLast ? (
-            <span 
-              class="font-medium text-gray-900" 
-              itemprop="name"
-            >
-              {item.label}
-            </span>
+            <span class="font-medium text-gray-900">{item.label}</span>
           ) : (
-            <a 
-              href={absoluteItemUrl(item.href)} 
-              class="hover:text-brand-600 transition-colors" 
-              itemprop="item"
-            >
-              <span itemprop="name">{item.label}</span>
+            <a href={absoluteItemUrl(item.href)} class="hover:text-brand-600 transition-colors">
+              <span>{item.label}</span>
             </a>
           )}
-          <meta itemprop="position" content={String(index + 1)} />
         </li>
       );
     })}

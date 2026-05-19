@@ -319,7 +319,6 @@ const categoryItemListJsonLd = {
   "@context": "https://schema.org",
   "@type": "ItemList",
   name: `Industrial Automation ${categoryName}`,
-  description: `Directory of ${totalVendors} ${category.name_en} — filter by country and industry.`, // intentionally distinct from meta description
   itemListElement: normalizedVendors.map((v, index) => ({
     "@type": "ListItem",
     position: index + 1,
@@ -346,7 +345,7 @@ const categoryItemListJsonLd = {
   breadcrumbs={breadcrumbs}
 >
   <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
-  <script slot="head" type="application/ld+json" set:html={JSON.stringify(categoryItemListJsonLd)} />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(categoryItemListJsonLd)} />
   {hasFaq && (
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
@@ -354,7 +353,7 @@ const categoryItemListJsonLd = {
       "mainEntity": faqItems.map((item: any) => ({
         "@type": "Question",
         "name": item.question,
-        "acceptedAnswer": { "@type": "Answer", "text": item.answer }
+        "acceptedAnswer": { "@type": "Answer", "text": item.answer.replace(/<[^>]*>/g, '') }
       }))
     })} />
   )}
