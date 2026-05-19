@@ -286,7 +286,7 @@ const faqSchema = hasFaq ? {
   "mainEntity": faqItems.map((item) => ({
     "@type": "Question",
     "name": item.question,
-    "acceptedAnswer": { "@type": "Answer", "text": item.answer },
+    "acceptedAnswer": { "@type": "Answer", "text": item.answer.replace(/<[^>]*>/g, '') },
   })),
 } : null;
 ---
