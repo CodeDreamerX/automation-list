@@ -87,6 +87,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           if (!formVariant) return null;
           return mapFormVariantToDbVariant(formVariant);
         })(),
+        source: 'admin',
       };
     } else {
       // Handle JSON (backward compatibility)
@@ -120,6 +121,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (!insertData.plan) {
         insertData.plan = 'free';
       }
+      insertData.source = 'admin';
       // Normalize logo fields for JSON requests
       insertData.logo_url = insertData.logo_url || null;
       insertData.logo_width = insertData.logo_width ? Number(insertData.logo_width) : null;

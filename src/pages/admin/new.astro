@@ -166,6 +166,7 @@ if (Astro.request.method === 'POST') {
       if (!formVariant) return null;
       return mapFormVariantToDbVariant(formVariant);
     })(),
+    source: 'admin',
   };
 
   // Normalize website URL: add https:// if missing

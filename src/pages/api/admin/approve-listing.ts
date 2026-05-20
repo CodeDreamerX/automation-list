@@ -61,6 +61,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     priority: 5,
     featured: false,
     og_member: false,
+    source: 'submitted',
     created_at: now,
     updated_at: now,
   };

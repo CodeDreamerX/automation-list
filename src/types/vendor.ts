@@ -94,7 +94,8 @@ export interface Vendor {
   featured?: boolean | null;     // boolean, default: false
   featured_until?: string | null; // timestamp with time zone (ISO date string)
   og_member?: boolean | null;    // boolean, default: false - Original/Founding member flag
-  
+  source?: 'admin' | 'submitted' | null; // how the vendor was created
+
   // Logo information
   logo_url?: string | null;       // URL to logo image
   logo_width?: number | null;    // integer - Logo width in pixels
