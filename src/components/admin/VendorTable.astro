@@ -82,6 +82,12 @@ function completenessColor(score: number): string {
             </button>
           </th>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
+            <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="source" data-sort-type="text">
+              <span>Source</span>
+              <span class="text-[10px] text-gray-400" data-sort-indicator="source">-</span>
+            </button>
+          </th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" aria-sort="none">
             <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" data-sort-key="featured" data-sort-type="number">
               <span>Featured</span>
               <span class="text-[10px] text-gray-400" data-sort-indicator="featured">-</span>
@@ -113,7 +119,7 @@ function completenessColor(score: number): string {
       <tbody class="bg-white divide-y divide-gray-200">
         {filteredVendors.length === 0 ? (
           <tr>
-            <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-500">
+            <td colspan="10" class="px-4 py-8 text-center text-sm text-gray-500">
               No vendors found.
             </td>
           </tr>
@@ -139,6 +145,7 @@ function completenessColor(score: number): string {
                 data-country={(vendor.country || '').toLowerCase()}
                 data-category={categoryLabel.toLowerCase()}
                 data-plan={(vendor.plan || '').toLowerCase()}
+                data-source={(vendor.source || '').toLowerCase()}
                 data-featured={vendor.featured ? '1' : '0'}
                 data-priority={vendor.priority ?? 0}
                 data-complete={score}
@@ -173,6 +180,15 @@ function completenessColor(score: number): string {
                       <option value="deactivated" selected={vendor.plan === 'deactivated'}>Deactivated</option>
                     </select>
                   </form>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  {vendor.source === 'submitted' ? (
+                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Submitted</span>
+                  ) : vendor.source === 'admin' ? (
+                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Admin</span>
+                  ) : (
+                    <span class="text-xs text-gray-400">—</span>
+                  )}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   <form method="POST" action="/admin" class="inline">

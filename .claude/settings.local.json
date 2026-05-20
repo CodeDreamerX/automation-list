@@ -33,7 +33,9 @@
       "PowerShell(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\supabase\\\\migrations\" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
       "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\src\\\\pages\" -Recurse -Filter \"*.astro\")",
       "Bash(Select-Object FullName)",
-      "Bash(Sort-Object FullName)"
+      "Bash(Sort-Object FullName)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\" -Recurse -Filter \"*.ts\" -o Name)",
+      "Bash(Select-String \"\\(vendor|api\\)\")"
     ]
   }
 }
