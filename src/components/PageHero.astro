@@ -1,11 +1,12 @@
 ---
-interface PageHeroProps {
+interface Props {
   title: string;
   description: string;
   primaryButtonText: string;
   primaryButtonHref: string;
   secondaryButtonText?: string;
   secondaryButtonHref?: string;
+  secondaryLabelText?: string;
   secondaryMicroCopy?: string;
   vendorCount?: number | null;
   vendorCountLabel?: string;
@@ -22,6 +23,7 @@ const {
   primaryButtonHref,
   secondaryButtonText,
   secondaryButtonHref,
+  secondaryLabelText,
   secondaryMicroCopy,
   vendorCount,
   vendorCountLabel,
@@ -55,7 +57,7 @@ const {
       </div>
     )}
 
-    <div class="flex justify-center gap-4 mb-6 flex-wrap items-start">
+    <div class="flex justify-center gap-4 mb-6 flex-wrap items-center">
       <a 
         href={primaryButtonHref} 
         class="px-6 py-3 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-900 transition"
@@ -63,15 +65,20 @@ const {
         {primaryButtonText}
       </a>
       {secondaryButtonText && secondaryButtonHref && (
-        <div class="flex flex-col items-center">
-          <a 
-            href={secondaryButtonHref} 
-            class="px-6 py-3 border border-gray-300 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-50 transition"
+        <div class="flex flex-col items-center gap-1">
+          {secondaryLabelText && (
+            <p class="text-sm text-gray-500">{secondaryLabelText}</p>
+          )}
+          <a
+            href={secondaryButtonHref}
+            class={secondaryLabelText
+              ? "w-fit px-6 py-3 bg-orange-50 border border-orange-200 text-orange-900 rounded-md text-sm font-medium hover:bg-orange-100 hover:border-orange-300 transition-colors"
+              : "px-6 py-3 border border-gray-300 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-50 transition"}
           >
             {secondaryButtonText}
           </a>
           {secondaryMicroCopy && (
-            <p class="text-xs text-gray-500 mt-2">{secondaryMicroCopy}</p>
+            <p class="text-xs text-gray-500 mt-1">{secondaryMicroCopy}</p>
           )}
         </div>
       )}

@@ -8,6 +8,7 @@ interface CountryGridProps {
   countries: (CountryBasic & { vendor_count?: number })[];
   lang?: string;
   headingLevel?: 'h1' | 'h2';
+  id?: string;
 }
 
 const {
@@ -16,11 +17,12 @@ const {
   countries = [],
   lang = 'en',
   headingLevel = 'h2',
+  id,
 } = Astro.props as CountryGridProps;
 ---
 
 {countries.length > 0 && (
-  <section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
+  <section id={id} class="fade-in-up container-px mx-auto max-w-7xl px-4 py-16 md:py-20">
     {headingLevel === 'h1' ? (
       <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h1>
     ) : (

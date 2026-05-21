@@ -3,15 +3,16 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabaseClient";
 import { getCached, setCached } from "../../lib/cache";
 import { isFeatured } from "../../lib/isFeatured";
-import HowItWorks from "../../components/HowItWorks.astro";
 import PageHero from "../../components/PageHero.astro";
 import WhyThisDirectory from "../../components/WhyThisDirectory.astro";
 import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import IndustryGrid from "../../components/IndustryGrid.astro";
+import CountryGrid from "../../components/CountryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import ExploreCTA from "../../components/ExploreCTA.astro";
 import RecentlyAdded from "../../components/RecentlyAdded.astro";
+import VendorConversionBand from "../../components/VendorConversionBand.astro";
 import { getCountryNameMap } from "../../lib/countryUtils";
 import { getIndustries } from "../../lib/getIndustries";
 import { normalizeVendors } from "../../lib/vendors/vendorUtils";
@@ -224,6 +225,49 @@ const industries = allIndustries.slice(0, 12).map(industry => ({
   count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
 }));
 
+// --- Countries for homepage grid (shared cache with /countries page) ---
+let homeCountriesRaw = getCached<any[]>('taxonomy:countries');
+if (!homeCountriesRaw) {
+  const { data } = await supabase
+    .from('countries')
+    .select('id, slug, name_en, name_de, card_description_en, card_description_de, flag_emoji')
+    .eq('is_active', true)
+    .order('order_index', { ascending: true, nullsFirst: false })
+    .order('name_en', { ascending: true });
+  homeCountriesRaw = data || [];
+  setCached('taxonomy:countries', homeCountriesRaw, 3600);
+}
+
+let homeCountRows = getCached<any[]>('counts:country');
+if (!homeCountRows) {
+  const { data } = await supabase
+    .from('country_vendor_counts')
+    .select('country, vendor_count');
+  homeCountRows = data || [];
+  setCached('counts:country', homeCountRows, 300);
+}
+
+const homeCountMap = new Map<string, number>();
+homeCountRows.forEach((row: any) => {
+  if (row.country) homeCountMap.set(row.country.toLowerCase(), row.vendor_count || 0);
+});
+
+const homeCountries = homeCountriesRaw
+  .map((c) => ({
+    slug: c.slug,
+    name: c.name_de || c.name_en,
+    card_description_en: c.card_description_en,
+    card_description_de: c.card_description_de,
+    flag_emoji: c.flag_emoji,
+    vendor_count: homeCountMap.get((c.name_en || '').toLowerCase()) || 0,
+  }))
+  .filter((c) => (c.vendor_count || 0) > 0)
+  .sort((a, b) =>
+    (b.vendor_count || 0) !== (a.vendor_count || 0)
+      ? (b.vendor_count || 0) - (a.vendor_count || 0)
+      : (a.name || '').localeCompare(b.name || '')
+  );
+
 // Build WebSite structured data with SearchAction
 // Use production domain for schema.org URLs
 const productionOrigin = Astro.site?.origin ?? Astro.url.origin;
@@ -259,6 +303,7 @@ const dynamicMetaDescription = `Verifizierte Industrieautomation-Anbieter weltwe
   lang="de"
 >
   <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
+
   <PageHero
     title="Anbieterverzeichnis für Industrieautomatisierung"
     description="Das anbieterneutrale Automatisierungsverzeichnis – von Ingenieuren erstellt, nicht von Agenturen. Finden und vergleichen Sie Systemintegratoren, OEMs und Spezialisten weltweit."
@@ -270,7 +315,8 @@ const dynamicMetaDescription = `Verifizierte Industrieautomation-Anbieter weltwe
     countryLabelText="Ländern"
     primaryButtonText="Verzeichnis durchsuchen →"
     primaryButtonHref="/de/vendors"
-    secondaryButtonText="Unternehmen kostenlos eintragen →"
+    secondaryLabelText={`${totalVendorCount} Anbieter gelistet — fehlt Ihrer?`}
+    secondaryButtonText="Kostenloses Profil eintragen →"
     secondaryButtonHref="/de/submit-listing"
     secondaryMicroCopy="Keine Kreditkarte erforderlich"
   />
@@ -282,6 +328,12 @@ const dynamicMetaDescription = `Verifizierte Industrieautomation-Anbieter weltwe
     buttonText="Suchen"
   />
 
+  <div class="container-px mx-auto max-w-7xl px-4 py-4 flex flex-wrap justify-center gap-3">
+    <a href="#browse-categories" class="btn-secondary">Nach Kategorie</a>
+    <a href="#browse-industries" class="btn-secondary">Nach Branche</a>
+    <a href="#browse-countries" class="btn-secondary">Nach Land</a>
+  </div>
+
   <WhyThisDirectory
     title="Warum dieses Verzeichnis?"
     description="Automation-List ist ein anbieterneutrales Verzeichnis, das von Automatisierungsingenieuren erstellt wurde. Keine gesponserten Rankings, keine Agenturen, die Ergebnisse manipulieren — nur saubere, strukturierte Daten."
@@ -292,41 +344,12 @@ const dynamicMetaDescription = `Verifizierte Industrieautomation-Anbieter weltwe
       "Globale Abdeckung",
       "Ständige Weiterentwicklung",
     ]}
-  />
-
-  <section class="container-px mx-auto max-w-7xl py-4 md:py-6">
-    <p class="text-sm md:text-base text-gray-700 leading-relaxed">
-      Automation-List ist ein herstellerneutrales Verzeichnis verifizierter Industrieautomations-Unternehmen — entwickelt für Ingenieure und Einkaufsteams, die schnell den richtigen Partner finden müssen. Systemintegratoren, MES-Spezialisten, Robotik-Integratoren, Maschinenbauer, SCADA-Anbieter und mehr — filterbar nach Land, Branche und Technologieplattform. Jedes Profil wird manuell geprüft und enthält Technologie-Stack, Branchenfokus und Leistungsumfang. Keine bezahlten Rankings. Keine Agentur-Kuration. Nur die Anbieter, die wirklich liefern.
-    </p>
-  </section>
-
-  <CategoryGrid 
-    title="Nach Kategorie durchsuchen"
-    categories={categories}
-    lang="de"
-  />
-
-  <IndustryGrid 
-    title="Nach Branche"
-    industries={industries}
-    lang="de"
-  />
-
-  <HowItWorks 
-    title="So funktioniert's"
-    steps={[
-      {
-        title: "1. Suchen",
-        description: "Finden Sie Anbieter nach Kategorie, Technologie oder Land.",
-      },
-      {
-        title: "2. Vergleichen",
-        description: "Prüfen Sie Profile, Fähigkeiten und Technologien.",
-      },
-      {
-        title: "3. Kontaktieren",
-        description: "Kontaktieren Sie direkt — ohne Zwischenhändler.",
-      },
+    forEngineersTitle="Für Ingenieure"
+    forVendorsTitle="Für Anbieter"
+    forVendorsBenefits={[
+      "Kostenlose Dauerlisting — keine Provision, kein Haken",
+      "Das Verzeichnis wird bei Google gefunden und von KI-Suchtools wie Bing Copilot referenziert",
+      "Eintrag in 5 Minuten — wir prüfen und veröffentlichen manuell",
     ]}
   />
 
@@ -344,9 +367,37 @@ const dynamicMetaDescription = `Verifizierte Industrieautomation-Anbieter weltwe
     isFeatured={isFeatured}
   />
 
+  <SearchForm
+    title="Verzeichnis durchsuchen"
+    action="/de/vendors"
+    placeholder="Name, Fähigkeit oder Stichwort suchen"
+    buttonText="Suchen"
+  />
+
+  <CategoryGrid
+    title="Nach Kategorie durchsuchen"
+    categories={categories}
+    lang="de"
+    id="browse-categories"
+  />
+
+  <IndustryGrid
+    title="Nach Branche"
+    industries={industries}
+    lang="de"
+    id="browse-industries"
+  />
+
+  <CountryGrid
+    title="Nach Land durchsuchen"
+    countries={homeCountries}
+    lang="de"
+    id="browse-countries"
+  />
+
   <RecentlyAdded lang="de" />
 
-  <ExploreCTA 
+  <ExploreCTA
     title="Bereit, Automatisierungsanbieter zu erkunden?"
     description="Finden Sie vertrauenswürdige Integratoren und Automatisierungspartner weltweit."
     primaryButtonText="Verzeichnis durchsuchen →"

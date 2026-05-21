@@ -3,29 +3,56 @@ interface WhyThisDirectoryProps {
   title?: string;
   description?: string;
   benefits?: string[];
+  forEngineersTitle?: string;
+  forVendorsTitle?: string;
+  forVendorsBenefits?: string[];
 }
 
 const {
   title = "Why This Directory?",
-  description = "Automation-List is a vendor-neutral directory built by automation engineers. No sponsored rankings, no agencies manipulating results — just clean, structured data.",
+  description,
   benefits = [
     "Every category maps to a real discipline — MES, SCADA, DCS, Safety, Vision",
     "Built by an automation engineer with 15+ years in pharma, food, and energy",
     "No agency curation. No sponsored results. No noise.",
     "The directory you'd want to exist when you actually need a vendor.",
   ],
+  forEngineersTitle = "For Engineers",
+  forVendorsTitle = "For Vendors",
+  forVendorsBenefits,
 }: WhyThisDirectoryProps = Astro.props;
 ---
 
 <section class="fade-in-up container-px mx-auto max-w-7xl px-4 py-20 md:py-24 border-t border-gray-200 mt-8">
   <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center">{title}</h2>
 
-  <div class="max-w-2xl mx-auto text-left">
-    <ul class="space-y-5 text-gray-700">
-      {benefits.map((benefit) => (
-        <li>✓ {benefit}</li>
-      ))}
-    </ul>
-  </div>
+  {forVendorsBenefits ? (
+    <div class="grid md:grid-cols-2 gap-10 md:gap-16 max-w-3xl mx-auto">
+      <div>
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">{forEngineersTitle}</h3>
+        <ul class="space-y-5 text-gray-700">
+          {benefits.map((benefit) => (
+            <li>✓ {benefit}</li>
+          ))}
+        </ul>
+      </div>
+      <div class="md:border-l md:border-gray-200 md:pl-10">
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">{forVendorsTitle}</h3>
+        <ul class="space-y-5 text-gray-700">
+          {forVendorsBenefits.map((benefit) => (
+            <li>✓ {benefit}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  ) : (
+    <div class="max-w-2xl mx-auto text-left">
+      <ul class="space-y-5 text-gray-700">
+        {benefits.map((benefit) => (
+          <li>✓ {benefit}</li>
+        ))}
+      </ul>
+    </div>
+  )}
 </section>
 
