@@ -9,6 +9,7 @@ interface Props {
   industries: IndustryBasic[];
   lang?: string;
   headingLevel?: "h1" | "h2";
+  id?: string;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
   industries,
   lang = "en",
   headingLevel = "h2",
+  id,
 } = Astro.props;
 
 const listingLayout = headingLevel === "h1";
@@ -29,7 +31,7 @@ const titleClass = listingLayout
 ---
 
 {industries.length > 0 && (
-  <section class={sectionClass}>
+  <section id={id} class={sectionClass}>
     {headingLevel === "h1" ? (
       <h1 class={titleClass}>{title}</h1>
     ) : (

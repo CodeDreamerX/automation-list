@@ -5,16 +5,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabaseClient";
 import { getCached, setCached } from "../../lib/cache";
 import { isFeatured } from "../../lib/isFeatured";
-import HowItWorks from "../../components/HowItWorks.astro";
 import PageHero from "../../components/PageHero.astro";
 import WhyThisDirectory from "../../components/WhyThisDirectory.astro";
 import SearchForm from "../../components/SearchForm.astro";
 import CategoryGrid from "../../components/CategoryGrid.astro";
 import IndustryGrid from "../../components/IndustryGrid.astro";
+import CountryGrid from "../../components/CountryGrid.astro";
 import FeaturedVendors from "../../components/FeaturedVendors.astro";
 import { normalizeVendors } from "../../lib/vendors/vendorUtils";
 import ExploreCTA from "../../components/ExploreCTA.astro";
 import RecentlyAdded from "../../components/RecentlyAdded.astro";
+import VendorConversionBand from "../../components/VendorConversionBand.astro";
 import { getIndustries } from "../../lib/getIndustries";
 import { getCountryNameMap } from "../../lib/countryUtils";
 import type { VendorWithRelations } from "../../types/vendor";
@@ -226,6 +227,49 @@ const industries = allIndustries.slice(0, 12).map(industry => ({
   count: industry.id ? (industryCountMap.get(industry.id) || 0) : 0,
 }));
 
+// --- Countries for homepage grid (shared cache with /countries page) ---
+let homeCountriesRaw = getCached<any[]>('taxonomy:countries');
+if (!homeCountriesRaw) {
+  const { data } = await supabase
+    .from('countries')
+    .select('id, slug, name_en, name_de, card_description_en, card_description_de, flag_emoji')
+    .eq('is_active', true)
+    .order('order_index', { ascending: true, nullsFirst: false })
+    .order('name_en', { ascending: true });
+  homeCountriesRaw = data || [];
+  setCached('taxonomy:countries', homeCountriesRaw, 3600);
+}
+
+let homeCountRows = getCached<any[]>('counts:country');
+if (!homeCountRows) {
+  const { data } = await supabase
+    .from('country_vendor_counts')
+    .select('country, vendor_count');
+  homeCountRows = data || [];
+  setCached('counts:country', homeCountRows, 300);
+}
+
+const homeCountMap = new Map<string, number>();
+homeCountRows.forEach((row: any) => {
+  if (row.country) homeCountMap.set(row.country.toLowerCase(), row.vendor_count || 0);
+});
+
+const homeCountries = homeCountriesRaw
+  .map((c) => ({
+    slug: c.slug,
+    name: c.name_en,
+    card_description_en: c.card_description_en,
+    card_description_de: c.card_description_de,
+    flag_emoji: c.flag_emoji,
+    vendor_count: homeCountMap.get((c.name_en || '').toLowerCase()) || 0,
+  }))
+  .filter((c) => (c.vendor_count || 0) > 0)
+  .sort((a, b) =>
+    (b.vendor_count || 0) !== (a.vendor_count || 0)
+      ? (b.vendor_count || 0) - (a.vendor_count || 0)
+      : (a.name || '').localeCompare(b.name || '')
+  );
+
 // Build WebSite structured data with SearchAction
 // Use production domain for schema.org URLs
 const productionOrigin = Astro.site?.origin ?? Astro.url.origin;
@@ -261,6 +305,7 @@ const dynamicMetaDescription = `Find and compare verified industrial automation 
   lang="en"
 >
   <script slot="head" type="application/ld+json" set:html={websiteSchemaJson} />
+
   <PageHero
     title="Industrial Automation Vendors Directory"
     description="The vendor-neutral automation directory built by engineers — not agencies. Find and compare system integrators, OEMs, and specialists worldwide."
@@ -270,7 +315,8 @@ const dynamicMetaDescription = `Find and compare verified industrial automation 
     countriesHref="/en/countries"
     primaryButtonText="Browse Directory →"
     primaryButtonHref="/en/vendors"
-    secondaryButtonText="Add Your Company for Free →"
+    secondaryLabelText={`${totalVendorCount} vendors listed — is yours missing?`}
+    secondaryButtonText="Add your free profile →"
     secondaryButtonHref="/en/submit-listing"
     secondaryMicroCopy="No credit card required"
   />
@@ -280,19 +326,19 @@ const dynamicMetaDescription = `Find and compare verified industrial automation 
     placeholder="Search by name, capability, or keyword"
   />
 
-  <WhyThisDirectory />
+  <div class="container-px mx-auto max-w-7xl px-4 py-4 flex flex-wrap justify-center gap-3">
+    <a href="#browse-categories" class="btn-secondary">Browse by Category</a>
+    <a href="#browse-industries" class="btn-secondary">Browse by Industry</a>
+    <a href="#browse-countries" class="btn-secondary">Browse by Country</a>
+  </div>
 
-  <section class="container-px mx-auto max-w-7xl py-4 md:py-6">
-    <p class="text-sm md:text-base text-gray-700 leading-relaxed">
-      Automation-List is a vendor-neutral directory of verified industrial automation companies, built for engineers and procurement teams who need to find the right partner fast. Browse system integrators, MES specialists, robotics integrators, machine builders, SCADA providers, and more — filtered by country, industry, and technology platform. Every profile is manually reviewed and includes technology stack, industry focus, and service scope. No sponsored rankings. No agency curation. Just the vendors that actually do the work.
-    </p>
-  </section>
-
-  <CategoryGrid categories={categories} lang="en" />
-
-  <IndustryGrid industries={industries} lang="en" />
-
-  <HowItWorks />
+  <WhyThisDirectory
+    forVendorsBenefits={[
+      "Free permanent listing — no commission, no catch",
+      "The directory ranks on Google and is cited by AI search tools like Bing Copilot",
+      "Submit in 5 minutes — we review and publish manually",
+    ]}
+  />
 
   <FeaturedVendors
     vendors={featuredVendors}
@@ -304,6 +350,17 @@ const dynamicMetaDescription = `Find and compare verified industrial automation 
     truncateDescription={truncateDescription}
     isFeatured={isFeatured}
   />
+
+  <SearchForm
+    action="/en/vendors"
+    placeholder="Search by name, capability, or keyword"
+  />
+
+  <CategoryGrid categories={categories} lang="en" id="browse-categories" />
+
+  <IndustryGrid industries={industries} lang="en" id="browse-industries" />
+
+  <CountryGrid countries={homeCountries} lang="en" id="browse-countries" />
 
   <RecentlyAdded lang="en" />
 

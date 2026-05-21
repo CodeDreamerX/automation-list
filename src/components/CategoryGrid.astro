@@ -10,6 +10,7 @@ interface Props {
   lang?: string;
   headingLevel?: "h1" | "h2";
   linkifiedDescriptions?: Record<string, string>;
+  id?: string;
 }
 
 const {
@@ -19,6 +20,7 @@ const {
   lang = "en",
   headingLevel = "h2",
   linkifiedDescriptions,
+  id,
 } = Astro.props;
 
 const listingLayout = headingLevel === "h1";
@@ -30,7 +32,7 @@ const titleClass = listingLayout
   : "text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-10 text-center";
 ---
 
-<section class={sectionClass}>
+<section id={id} class={sectionClass}>
   {headingLevel === "h1" ? (
     <h1 class={titleClass}>{title}</h1>
   ) : (

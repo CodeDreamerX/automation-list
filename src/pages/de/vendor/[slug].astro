@@ -7,6 +7,7 @@ export const prerender = false;
 import { supabase } from '../../../lib/supabaseClient';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import LogoBox from '../../../components/LogoBox.astro';
+import VendorCard from '../../../components/VendorCard.astro';
 import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
 import { truncateDescription } from '../../../lib/vendors/vendorFormatters';
 import { getBooleanEnvVar } from '../../../lib/env';
@@ -182,6 +183,46 @@ const hasProAccess = disableProPaywall || hasPaidPlan;
 const isFree = plan === 'free' && !isFeatured;
 const showUpgradeCta = isFree && !disableProPaywall;
 const isOgMember = normalizedVendor.og_member === true;
+
+// Related vendors — free profiles only, same country, any category
+let relatedVendors: any[] = [];
+if (isFree && normalizedVendor.country) {
+  const relatedCacheKey = `vendor:related:${slug}`;
+  let relatedData: any = getCached(relatedCacheKey);
+  if (!relatedData) {
+    const { data } = await supabase
+      .from('vendors')
+      .select(`
+        id, name, slug, city, country, plan, featured, featured_until,
+        profile_score, logo_url, logo_width, logo_height, logo_alt,
+        logo_background_variant, description_en, description_de,
+        vendor_categories (
+          is_primary,
+          categories:categories (id, slug, name_en, name_de)
+        ),
+        vendor_technologies (
+          technologies:technologies (id, slug, name_en, name_de)
+        ),
+        vendor_countries (
+          countries:countries (id, slug, name_en, name_de)
+        )
+      `)
+      .eq('country', normalizedVendor.country)
+      .neq('slug', slug)
+      .order('profile_score', { ascending: false })
+      .limit(20);
+
+    relatedData = data ?? [];
+    setCached(relatedCacheKey, relatedData, 300);
+  }
+  relatedVendors = ((relatedData ?? []) as any[]).map((v: any) =>
+    normalizeVendor(v, {
+      includeCategories: true,
+      includeTechnologies: true,
+      includeCountries: true,
+    })
+  );
+}
 
 // Build location string
 function getLocation(): string {
@@ -874,6 +915,40 @@ const shouldCollapseDescription = descriptionWordCount > 200;
         </a>
       </div>
     )}
+
+    <!-- SECTION 7 — RELATED VENDORS (free only, same country + overlapping category) -->
+    {isFree && relatedVendors.length > 0 && (
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+          Weitere Anbieter in {getDisplayCountry()}
+        </h2>
+        {/* Pool: server-rendered with display:none — stylesheet loads before JS so no flash */}
+        <div id="related-vendors-pool" class="hidden" aria-hidden="true">
+          {relatedVendors.map((v: any) => (
+            <div>
+              <VendorCard vendor={v} hrefPrefix="/de/vendor" lang="de" countryNameMap={countryNameMap} />
+            </div>
+          ))}
+        </div>
+        <div id="related-vendors-display" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+    )}
+    {isFree && relatedVendors.length > 0 && (
+      <script is:inline>
+        (function () {
+          var pool = document.getElementById('related-vendors-pool');
+          var display = document.getElementById('related-vendors-display');
+          if (!pool || !display || pool.children.length === 0) return;
+          var cards = Array.from(pool.children);
+          for (var i = cards.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = cards[i]; cards[i] = cards[j]; cards[j] = tmp;
+          }
+          cards.slice(0, 2).forEach(function (card) { display.appendChild(card); });
+        })();
+      </script>
+    )}
+
     <p class="text-sm text-gray-400 mt-8 text-center">
       Die Unternehmensangaben werden unabhängig zusammengestellt und sind möglicherweise nicht aktuell.
     </p>
