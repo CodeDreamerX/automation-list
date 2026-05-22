@@ -1,3 +1,26 @@
 echo ""
 echo "husky: running npm test before commit..."
-npm test
+
+tmp=$(mktemp)
+npm test >"$tmp" 2>&1
+status=$?
+
+if [ $status -ne 0 ]; then
+  {
+    echo ""
+    echo "================================================"
+    echo "  COMMIT BLOCKED — tests failed"
+    echo "  Fix failing tests, then commit again."
+    echo "  Run locally: npm test"
+    echo "================================================"
+    echo ""
+    cat "$tmp"
+  } >&2
+  rm -f "$tmp"
+  exit $status
+fi
+
+cat "$tmp"
+rm -f "$tmp"
+echo "husky: all tests passed."
+exit 0
