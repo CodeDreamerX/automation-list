@@ -13,20 +13,31 @@ function getVariantClasses(formVariant: string): string {
   return variantMap[formVariant] || variantMap.white;
 }
 
-// Helper function to update preview with variant
-function updatePreviewWithVariant(variant: string) {
+function isSvgLogo(logoUrl: string, logoFormat?: string): boolean {
+  if (logoFormat?.toLowerCase() === 'svg') return true;
+  if (!logoUrl) return false;
+  try {
+    const pathname = new URL(logoUrl, window.location.origin).pathname;
+    return pathname.toLowerCase().endsWith('.svg');
+  } catch {
+    return /\.svg(\?|#|$)/i.test(logoUrl);
+  }
+}
+
+// Helper function to update preview with variant (optional override URL for local blob preview)
+function updatePreviewWithVariant(variant: string, overrideUrl?: string) {
   const logoPreviewContainer = document.getElementById('logo-preview-container');
   if (!logoPreviewContainer) return;
   
   const logoUrlHidden = document.getElementById('logo_url') as HTMLInputElement;
   const logoAltHidden = document.getElementById('logo_alt') as HTMLInputElement;
+  const logoFormatHidden = document.getElementById('logo_format') as HTMLInputElement;
   const nameInput = document.getElementById('name') as HTMLInputElement;
   
-  const logoUrl = logoUrlHidden?.value?.trim() || '';
+  const logoUrl = overrideUrl?.trim() || logoUrlHidden?.value?.trim() || '';
   const logoAlt = logoAltHidden?.value?.trim() || '';
   const vendorName = nameInput?.value?.trim() || 'Vendor';
   const displayAlt = logoAlt || `${vendorName} logo`;
-  const isSvg = logoUrl.toLowerCase().endsWith('.svg');
   const bgClasses = getVariantClasses(variant);
   
   if (logoUrl) {
@@ -34,22 +45,16 @@ function updatePreviewWithVariant(variant: string) {
     logoBoxDiv.className = `w-[200px] h-[80px] flex items-center justify-center rounded-lg ${bgClasses} p-2`;
     logoBoxDiv.setAttribute('style', 'overflow: hidden;');
     
-    if (isSvg) {
-      const objectEl = document.createElement('object');
-      objectEl.setAttribute('data', logoUrl);
-      objectEl.setAttribute('type', 'image/svg+xml');
-      objectEl.setAttribute('style', 'pointer-events: none; display: block; width: auto; height: auto; max-width: 184px; max-height: 64px; object-fit: contain;');
-      objectEl.setAttribute('aria-label', displayAlt);
-      logoBoxDiv.appendChild(objectEl);
-    } else {
-      const imgEl = document.createElement('img');
-      imgEl.src = logoUrl;
-      imgEl.alt = displayAlt;
-      imgEl.setAttribute('style', 'width: auto; height: auto; max-width: 184px; max-height: 64px; object-fit: contain;');
-      imgEl.loading = 'lazy';
-      imgEl.decoding = 'async';
-      logoBoxDiv.appendChild(imgEl);
+    const imgEl = document.createElement('img');
+    imgEl.src = logoUrl;
+    imgEl.alt = displayAlt;
+    imgEl.setAttribute('style', 'pointer-events: none; display: block; width: auto; height: auto; max-width: 184px; max-height: 64px; object-fit: contain;');
+    imgEl.loading = 'lazy';
+    imgEl.decoding = 'async';
+    if (isSvgLogo(logoUrl, logoFormatHidden?.value)) {
+      imgEl.setAttribute('referrerpolicy', 'no-referrer');
     }
+    logoBoxDiv.appendChild(imgEl);
     
     logoPreviewContainer.innerHTML = '';
     logoPreviewContainer.appendChild(logoBoxDiv);
@@ -211,12 +216,15 @@ export function initVendorForm() {
         return;
       }
       
-      // Validate file type
-      const allowedTypes = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
-      const fileName = file.name.toLowerCase();
-      const isValidType = allowedTypes.some(ext => fileName.endsWith(ext));
+      // Validate file type (extension + MIME — Windows often leaves file.type empty for SVG)
+      const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
+      const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml', 'image/svg'];
+      const fileName = file.name.toLowerCase().trim();
+      const fileMime = file.type.toLowerCase().trim();
+      const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+      const hasValidMime = fileMime.length > 0 && allowedMimeTypes.includes(fileMime);
       
-      if (!isValidType) {
+      if (!hasValidExtension && !hasValidMime) {
         if (logoUploadError && logoUploadErrorText) {
           logoUploadErrorText.textContent = 'Invalid file type. Only PNG, JPG, JPEG, WEBP, and SVG are allowed.';
           logoUploadError.classList.remove('hidden');
@@ -239,6 +247,10 @@ export function initVendorForm() {
       logoUploadLoading?.classList.remove('hidden');
       logoUploadSuccess?.classList.add('hidden');
       logoUploadError?.classList.add('hidden');
+
+      // Immediate local preview (avoids remote <object> loads that trigger browser Save dialogs)
+      const localPreviewUrl = URL.createObjectURL(file);
+      updatePreviewWithVariant(backgroundVariant, localPreviewUrl);
       
       // Prepare FormData
       const formData = new FormData();
@@ -254,9 +266,15 @@ export function initVendorForm() {
         // Upload to API
         const response = await fetch('/api/admin/upload-logo', {
           method: 'POST',
+          credentials: 'same-origin',
           body: formData
         });
-        
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Upload failed (${response.status}). Server returned an unexpected response.`);
+        }
+
         const result = await response.json();
         
         if (!response.ok || !result.success) {
@@ -271,8 +289,11 @@ export function initVendorForm() {
         if (logoFormatHidden) logoFormatHidden.value = uploadData.format || '';
         if (logoAltHidden) logoAltHidden.value = uploadData.altText || '';
         
-        // Update preview with selected variant
+        // Update preview with selected variant (remote URL)
         updatePreviewWithVariant(backgroundVariant);
+
+        // Allow re-selecting the same file
+        logoFileInput.value = '';
         
         // Show success message
         logoUploadLoading?.classList.add('hidden');
@@ -294,10 +315,13 @@ export function initVendorForm() {
         console.error('Logo upload error:', error);
         logoUploadLoading?.classList.add('hidden');
         logoUploadSuccess?.classList.add('hidden');
+        updatePreviewWithVariant(backgroundVariantSelect?.value?.trim() || 'white');
         if (logoUploadError && logoUploadErrorText) {
           logoUploadErrorText.textContent = error.message || 'Failed to upload logo. Please try again.';
           logoUploadError.classList.remove('hidden');
         }
+      } finally {
+        URL.revokeObjectURL(localPreviewUrl);
       }
     });
   }
