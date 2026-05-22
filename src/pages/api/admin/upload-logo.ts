@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 import { mapFormVariantToDbVariant } from '../../../lib/vendors/logoBackgroundVariant';
 import { successResponse, errorResponse } from '../../../lib/api/responses';
+import { looksLikeSvgFromBuffer } from './upload-logo-sniff';
 
 export const prerender = false;
 
@@ -52,14 +53,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Get file type
-    const fileType = file.type.toLowerCase();
-    const fileName = file.name.toLowerCase();
-    
+    const fileType = file.type.toLowerCase().trim();
+    const fileName = file.name.toLowerCase().trim();
+
+    // Read file as buffer (needed for SVG sniffing before processing)
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const looksLikeSvg = looksLikeSvgFromBuffer(buffer);
+
     // Determine if SVG
-    const isSvg = fileType === 'image/svg+xml' || fileName.endsWith('.svg');
+    const isSvg =
+      fileType === 'image/svg+xml' ||
+      fileType === 'image/svg' ||
+      fileName.endsWith('.svg') ||
+      looksLikeSvg;
     
     // Validate file type
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp'];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/svg', 'image/webp'];
     const allowedExtensions = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
     const hasValidType = allowedTypes.includes(fileType);
     const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
@@ -93,11 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       : 'white';
     
     // Construct filename with variant encoding: baseName__variant.ext
-    const variantFileName = `${sanitizedBaseName}__${sanitizedVariant}${extension}`;
-
-    // Read file as buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const variantFileName = `${sanitizedBaseName}__${sanitizedVariant}${isSvg ? '.svg' : extension}`;
 
     let processedBuffer: Buffer;
     let width: number;

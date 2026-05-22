@@ -11,7 +11,8 @@
     "migrate:vendor-tags": "node ./scripts/tag-migration.js",
     "todos": "node generate-todo.js",
     "upload-todos": "node upload-todos.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
@@ -28,6 +29,7 @@
     "tailwindcss": "4.1.10"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "vitest": "^4.1.0"
   }
 }

@@ -30,6 +30,7 @@ export const allowedFields = [
   "featured_until",
   "taking_new_projects",
   "linkedin_url",
+  // source: set server-side on import (admin); submitted only via approve-listing
   // specialization_text: admin UI only — not JSON import/export
   // logo_* and meta_* fields intentionally excluded from JSON import
 ];

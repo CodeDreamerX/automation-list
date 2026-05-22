@@ -141,6 +141,7 @@ if (Astro.request.method === 'POST') {
         featured_until: row.featured_until || null,
         taking_new_projects: row.taking_new_projects ?? null,
         linkedin_url: row.linkedin_url || null,
+        source: 'admin', // submitted is only set via approve-listing
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         // logo_* and meta_* fields intentionally omitted
