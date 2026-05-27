@@ -36,7 +36,10 @@
       "Bash(Sort-Object FullName)",
       "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\" -Recurse -Filter \"*.ts\" -o Name)",
       "Bash(Select-String \"\\(vendor|api\\)\")",
-      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\" -Recurse -Depth 2)"
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\" -Recurse -Depth 2)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\" -Recurse -Force)",
+      "Bash(Select-Object -First 50)",
+      "Bash(Format-Table FullName)"
     ]
   }
 }

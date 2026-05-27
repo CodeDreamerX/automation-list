@@ -1,9 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const VALID_EMAIL_TYPES = ['approved', 'rejected', 'backlink_followup'] as const;
+const VALID_EMAIL_TYPES = ['approved', 'rejected', 'backlink_followup', 'import_backlink_followup'] as const;
 type EmailType = typeof VALID_EMAIL_TYPES[number];
 
-const FROM_ADDRESS = 'noreply@automation-list.com';
+const FROM_ADDRESS = 'listings@automation-list.com';
 const SITE_URL = 'https://www.automation-list.com';
 
 function buildApprovedHtml(listingUrl: string): string {
@@ -60,6 +60,43 @@ function buildRejectedHtml(rejectReason: string | null): string {
           </p>
           <p style="margin:0 0 0;font-size:15px;color:#374151;line-height:1.6;">
             Best regards,<br>The Automation-List team
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildImportBacklinkHtml(website: string | null, listingUrl: string): string {
+  const websiteAndReply = website
+    ? `It references your website at <a href="${website}" style="color:#4f46e5;">${website}</a>. If anything looks off or you'd like to update it, just reply and we'll sort it.`
+    : `If anything looks off or you'd like to update it, just reply and we'll sort it.`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e5e7eb;padding:40px;">
+        <tr><td>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">Hi there,</p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            We've added your company to Automation-List — a free global directory for industrial automation vendors. Your listing is live here:<br>
+            <a href="${listingUrl}" style="color:#4f46e5;">${listingUrl}</a>
+          </p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            ${websiteAndReply}
+          </p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            One small ask: if you have a resources page, blog, or partners section, would you consider adding a link back to <a href="${SITE_URL}" style="color:#4f46e5;">automation-list.com</a>? It helps other automation professionals find the directory — and your listing.
+          </p>
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            No obligation at all. Your listing stays free either way.
+          </p>
+          <p style="margin:0 0 0;font-size:15px;color:#374151;line-height:1.6;">
+            Best,<br>Kevin<br>Automation-List
           </p>
         </td></tr>
       </table>
@@ -138,8 +175,10 @@ Deno.serve(async (req: Request) => {
       headers: { 'Content-Type': 'application/json' },
     });
   }
-  // pendingListingId required for approved/rejected; backlink_followup may run after listing is deleted
-  if (!pendingListingId && type !== 'backlink_followup') {
+  // pendingListingId required for approved/rejected;
+  // backlink_followup and import_backlink_followup run without it (listing deleted or never existed)
+  const noListingRequired = type === 'backlink_followup' || type === 'import_backlink_followup';
+  if (!pendingListingId && !noListingRequired) {
     return new Response(JSON.stringify({ error: 'pendingListingId is required' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -180,9 +219,9 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // backlink_followup: pending_listing is deleted after 1 day by pg_cron;
-  // use vendors table as the authoritative source instead
-  if (!recipientEmail && type === 'backlink_followup' && vendorId) {
+  // backlink_followup / import_backlink_followup: pending_listing is deleted after 1 day by pg_cron
+  // (or never existed for imports) — use vendors table as the authoritative source instead
+  if (!recipientEmail && noListingRequired && vendorId) {
     const { data: vendor } = await supabase
       .from('vendors')
       .select('email, website')
@@ -219,6 +258,9 @@ Deno.serve(async (req: Request) => {
   } else if (type === 'rejected') {
     subject = 'Your Automation-List submission';
     html = buildRejectedHtml(rejectReason);
+  } else if (type === 'import_backlink_followup') {
+    subject = 'Your Automation-List listing — quick question';
+    html = buildImportBacklinkHtml(website, listingUrl);
   } else {
     subject = 'Your Automation-List listing — quick question';
     html = buildBacklinkHtml(website, listingUrl);

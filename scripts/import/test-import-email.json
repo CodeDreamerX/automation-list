@@ -1,0 +1,21 @@
+[
+  {
+    "name": "Test Automation GmbH",
+    "slug": "test-automation-gmbh",
+    "country": "Germany",
+    "category_slugs": ["system-integrator"],
+    "region": "Bavaria",
+    "city": "Munich",
+    "website": "https://example.com",
+    "email": "thoma.kev@gmail.com",
+    "description_en": "Test vendor for email queue verification.",
+    "technology_slugs": ["siemens"],
+    "industry_slugs": ["automotive-and-mobility"],
+    "country_slugs": ["germany"],
+    "languages": ["English", "German"],
+    "plan": "free",
+    "priority": 5,
+    "featured": false,
+    "og_member": false
+  }
+]
