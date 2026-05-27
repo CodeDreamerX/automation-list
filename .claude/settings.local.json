@@ -39,7 +39,11 @@
       "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\" -Recurse -Depth 2)",
       "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\" -Recurse -Force)",
       "Bash(Select-Object -First 50)",
-      "Bash(Format-Table FullName)"
+      "Bash(Format-Table FullName)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\automationlist\\\\supabase\\\\functions\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Find d:\\\\Projects\\\\automationlist -name \"vitest.config.*\" -o -name \"package.json\")",
+      "Bash(Remove-Item \"d:\\\\Projects\\\\automationlist\\\\supabase\\\\functions\\\\process-scheduled-emails\\\\helpers.ts\")"
     ]
   }
 }

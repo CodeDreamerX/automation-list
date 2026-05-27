@@ -156,7 +156,7 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  let body: { pendingListingId?: string; emailType?: string; vendorId?: string };
+  let body: { pendingListingId?: string; emailType?: string; vendorId?: string; skipAuditLog?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -166,7 +166,9 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const { pendingListingId, emailType, vendorId } = body;
+  // skipAuditLog=true when called by process-scheduled-emails: the vendor_emails
+  // row already exists and will be updated by the caller — no new row needed.
+  const { pendingListingId, emailType, vendorId, skipAuditLog = false } = body;
   const type = emailType as EmailType;
 
   if (!emailType || !VALID_EMAIL_TYPES.includes(type)) {
@@ -288,17 +290,20 @@ Deno.serve(async (req: Request) => {
     console.error('send-vendor-email: fetch error', sendErr);
   }
 
-  // Audit log row for this send
-  const { error: logError } = await supabase.from('vendor_emails').insert({
-    pending_listing_id: pendingListingId ?? null,
-    vendor_id: vendorId ?? null,
-    email_type: type,
-    recipient_email: recipientEmail,
-    sent_at: new Date().toISOString(),
-    status: emailStatus,
-  });
-  if (logError) {
-    console.error('send-vendor-email: failed to insert vendor_emails audit row', logError);
+  // Audit log row — skipped when called by process-scheduled-emails, which
+  // owns the existing vendor_emails row and updates it directly after this call.
+  if (!skipAuditLog) {
+    const { error: logError } = await supabase.from('vendor_emails').insert({
+      pending_listing_id: pendingListingId ?? null,
+      vendor_id: vendorId ?? null,
+      email_type: type,
+      recipient_email: recipientEmail,
+      sent_at: new Date().toISOString(),
+      status: emailStatus,
+    });
+    if (logError) {
+      console.error('send-vendor-email: failed to insert vendor_emails audit row', logError);
+    }
   }
 
   // Queue backlink follow-up 21 days out when approval email sent successfully
