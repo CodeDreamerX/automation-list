@@ -247,6 +247,28 @@ if (Astro.request.method === 'POST') {
 
       results.success++;
 
+      // Queue backlink follow-up email for the next cron run (only if vendor has an email address).
+      // scheduled_for is set 5 minutes out; the weekly cron (Tuesdays 09:00 UTC) picks it up on
+      // its next firing, so in practice the email goes out within the same week as the import.
+      if (vendorData.email) {
+        const scheduledFor = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+        const { error: emailQueueError } = await supabaseAdmin
+          .from('vendor_emails')
+          .insert({
+            vendor_id: vendorId,
+            pending_listing_id: null,
+            email_type: 'import_backlink_followup',
+            recipient_email: vendorData.email,
+            scheduled_for: scheduledFor,
+            status: 'pending',
+          });
+        if (emailQueueError) {
+          results.warnings.push(
+            `Row ${rowNum} (${row.name || 'unnamed'}): Failed to queue backlink email: ${emailQueueError.message}`
+          );
+        }
+      }
+
     } catch (error: any) {
       results.errors++;
       results.errorsList.push(`Row ${rowNum} (${row.name || 'unnamed'}): ${error.message || 'Unexpected error'}`);

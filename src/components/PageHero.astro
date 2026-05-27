@@ -8,12 +8,6 @@ interface Props {
   secondaryButtonHref?: string;
   secondaryLabelText?: string;
   secondaryMicroCopy?: string;
-  vendorCount?: number | null;
-  vendorCountLabel?: string;
-  countryCount?: number | null;
-  countriesHref?: string;
-  countryConnectorText?: string;
-  countryLabelText?: string;
 }
 
 const {
@@ -25,12 +19,6 @@ const {
   secondaryButtonHref,
   secondaryLabelText,
   secondaryMicroCopy,
-  vendorCount,
-  vendorCountLabel,
-  countryCount,
-  countriesHref,
-  countryConnectorText = "across",
-  countryLabelText = "countries",
 } = Astro.props;
 ---
 
@@ -43,19 +31,6 @@ const {
     <p class="text-base leading-relaxed font-normal text-gray-600 md:text-lg text-center max-w-2xl mx-auto mb-8">
       {description}
     </p>
-
-    {vendorCount !== null && vendorCount !== undefined && vendorCountLabel && (
-      <div class="mt-4 mb-6 text-sm text-gray-500 text-center">
-        <span class="font-medium text-gray-600">{vendorCount}</span>
-        {" "}{vendorCountLabel}
-        {countryCount && countriesHref && (
-          <>
-            {" "}{countryConnectorText}{" "}
-            <a href={countriesHref} class="text-gray-400 no-underline hover:underline transition-colors">{countryCount} {countryLabelText} →</a>
-          </>
-        )}
-      </div>
-    )}
 
     <div class="flex justify-center gap-4 mb-6 flex-wrap items-center">
       <a 
