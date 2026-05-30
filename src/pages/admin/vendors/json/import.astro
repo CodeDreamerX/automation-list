@@ -5,7 +5,7 @@ import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import { supabase } from '../../../../lib/supabaseClient';
 import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 import { normalizeJsonRow, validateRow } from '../../../../lib/admin/jsonUtils';
-import { resolveCountrySlugsForImport } from '../../../../lib/admin/worldwideCountries';
+import { resolveCountriesServedForSave } from '../../../../lib/admin/worldwideCountries';
 import {
   buildCountryCanonicalLookup,
   resolveCanonicalCountryName,
@@ -68,7 +68,6 @@ if (Astro.request.method === 'POST') {
   const industryMap = new Map((allIndustries || []).map((r: any) => [r.slug, r.id]));
   const certificationMap = new Map((allCertifications || []).map((r: any) => [r.slug, r.id]));
   const countryMap = new Map((allCountries || []).map((r: any) => [r.slug, r.id]));
-  const allActiveCountrySlugs = (allCountries || []).map((r: any) => r.slug).filter(Boolean);
 
   // Normalize all rows
   const normalizedData: any[] = [];
@@ -120,6 +119,8 @@ if (Astro.request.method === 'POST') {
         continue;
       }
 
+      const countriesServedSave = resolveCountriesServedForSave(false, row._countrySlugs || []);
+
       const vendorData = {
         name: row.name,
         slug: row.slug,
@@ -143,6 +144,7 @@ if (Astro.request.method === 'POST') {
         featured_until: row.featured_until || null,
         taking_new_projects: row.taking_new_projects ?? null,
         linkedin_url: row.linkedin_url || null,
+        countries_served: countriesServedSave.countriesServed,
         source: 'admin', // submitted is only set via approve-listing
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -233,10 +235,7 @@ if (Astro.request.method === 'POST') {
       }
 
       // Insert vendor_countries
-      const countrySlugsToLink = resolveCountrySlugsForImport(
-        row._countrySlugs || [],
-        allActiveCountrySlugs
-      );
+      const countrySlugsToLink = countriesServedSave.countrySlugs;
       for (const slug of countrySlugsToLink) {
         const countryId = countryMap.get(slug);
         if (countryId) {

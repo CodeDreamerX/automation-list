@@ -1,3 +1,5 @@
+import { isWorldwideCountriesServed } from '../admin/worldwideCountries';
+
 /**
  * Calculate a vendor profile completeness score (0–100).
  * Baseline fields (name, slug, country, website) are required so not counted.
@@ -32,8 +34,12 @@ export function calculateCompletenessScore(vendor: any): number {
   if (vendor.certifications) score += 5;
   if (vendor.employee_count) score += 5;
   if (vendor.year_founded) score += 5;
-  const servedCountryCount = vendor.vendor_countries?.length ?? vendor.country_slugs?.length ?? 0;
-  if (servedCountryCount > 0) score += 10;
+  if (isWorldwideCountriesServed(vendor.countries_served)) score += 10;
+  else {
+    const servedCountryCount =
+      vendor.vendor_countries?.length ?? vendor.country_slugs?.length ?? 0;
+    if (servedCountryCount > 0) score += 10;
+  }
   if (vendor.taking_new_projects !== null && vendor.taking_new_projects !== undefined) score += 5;
   if (vendor.linkedin_url) score += 5;
   if (vendor.email) score += 5;

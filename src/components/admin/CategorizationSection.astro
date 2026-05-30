@@ -38,8 +38,8 @@ const certificationEntries = Object.entries(certificationsByCategory) as [string
 
 const allCountrySlugs = countries.map((c: CountryFormOption) => c.slug);
 const { worldwide: worldwideCountriesChecked } = deriveWorldwideState(
-  vendor?.country_slugs || [],
-  allCountrySlugs
+  vendor?.countries_served,
+  vendor?.country_slugs || []
 );
 
 ---
@@ -230,7 +230,7 @@ const { worldwide: worldwideCountriesChecked } = deriveWorldwideState(
           <div id="countries-served-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
             {countries.map((country: CountryFormOption) => {
               const checked =
-                worldwideCountriesChecked || vendor?.country_slugs?.includes(country.slug);
+                !worldwideCountriesChecked && vendor?.country_slugs?.includes(country.slug);
               return (
                 <label class="flex items-center gap-2 cursor-pointer" data-search-text={country.name_en.toLowerCase()}>
                   <input
@@ -312,12 +312,7 @@ const { worldwide: worldwideCountriesChecked } = deriveWorldwideState(
 
     const countriesSection = document.getElementById('countries-served-section');
     if (countriesSection) {
-      initCountriesServedWorldwide(
-        countriesSection,
-        Array.from(countriesSection.querySelectorAll<HTMLInputElement>('.country-served-cb')).map(
-          (cb: HTMLInputElement) => cb.value
-        )
-      );
+      initCountriesServedWorldwide(countriesSection);
       countriesSection.addEventListener('countries-served-changed', () => {
         updateCountriesServedCount(countriesSection);
       });

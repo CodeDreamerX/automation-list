@@ -1,3 +1,5 @@
+import { WORLDWIDE_COUNTRY_SENTINEL } from '../lib/admin/worldwideCountries';
+
 export interface SubmitListingStrings {
   countryNoResults: string;
   worldwideLabel: string;
@@ -30,8 +32,6 @@ function el<T extends HTMLElement>(id: string): T {
 
 export function initSubmitListing(options: SubmitListingInitOptions): void {
   const { strings, country: countryCfg, countriesServed: csCfg } = options;
-
-  const WORLDWIDE_SENTINEL = 'WORLDWIDE';
 
   const countryInput = el<HTMLInputElement>('country-input');
   const countryValue = el<HTMLInputElement>('country-value');
@@ -190,11 +190,13 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
     csWorldwideBtn.classList.toggle('ring-brand-300', active);
     csWorldwideBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
     csAddCountries.classList.toggle('hidden', active);
-    csTags.classList.toggle('hidden', active);
     if (active) {
       countriesServedSelected.clear();
       setCountriesServedInputDisabled(true);
-      csTags.innerHTML = '';
+      csTags.classList.remove('hidden');
+      csTags.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-200 text-brand-700 text-xs rounded-full font-medium">
+             <span aria-hidden="true">🌍</span> ${strings.worldwideLabel || 'Worldwide'}<button type="button" class="cs-rm-worldwide text-brand-400 hover:text-brand-700 ml-0.5 text-base leading-none" aria-label="Remove ${strings.worldwideLabel || 'Worldwide'}">&times;</button>
+           </span>`;
     } else {
       setCountriesServedInputDisabled(false);
       renderCountriesServedTags();
@@ -296,6 +298,11 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
   });
 
   csTags.addEventListener('click', e => {
+    if ((e.target as Element).closest('.cs-rm-worldwide')) {
+      setWorldwideActive(false);
+      buildCsDropdown('');
+      return;
+    }
     const btn = (e.target as Element).closest('.cs-rm');
     if (!(btn instanceof HTMLElement)) return;
     const en = btn.dataset.en;
@@ -474,7 +481,7 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
         ),
       ].map(i => i.value),
       countries_served: countriesServedWorldwide
-        ? [WORLDWIDE_SENTINEL]
+        ? [WORLDWIDE_COUNTRY_SENTINEL]
         : countriesServedSelected.size > 0
           ? [...countriesServedSelected]
           : null,

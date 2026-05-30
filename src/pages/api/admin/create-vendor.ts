@@ -10,8 +10,9 @@ import {
 } from '../../../lib/admin/worldwideCountries';
 import {
   isWorldwideRequestedFromBody,
-  resolveCountrySlugsForVendorSave,
+  resolveCountriesServedForVendorSave,
 } from '../../../lib/admin/resolveCountrySlugsForVendorSave';
+import { invalidateVendorDetailCache } from '../../../lib/vendors/vendorDetailCache';
 
 export const prerender = false;
 
@@ -155,11 +156,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       worldwideRequested = isWorldwideRequestedFromBody(body);
     }
 
-    countrySlugs = await resolveCountrySlugsForVendorSave(
-      supabaseAdmin,
-      countrySlugs,
-      worldwideRequested
+    const countriesServedSave = resolveCountriesServedForVendorSave(
+      worldwideRequested,
+      countrySlugs
     );
+    countrySlugs = countriesServedSave.countrySlugs;
+    insertData.countries_served = countriesServedSave.countriesServed;
 
     // Normalize website URL: add https:// if missing
     if (insertData.website && typeof insertData.website === 'string') {
@@ -278,6 +280,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       }
     }
+
+    invalidateVendorDetailCache(insertData.slug);
 
     return successResponse(vendor);
   } catch (error: any) {
