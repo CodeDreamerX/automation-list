@@ -9,6 +9,10 @@ import { calculateCompletenessScore } from '../../../lib/vendors/completenessSco
 import AdminLayout from '../../../components/admin/AdminLayout.astro';
 import VendorForm from '../../../components/admin/VendorForm.astro';
 import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
+import {
+  isWorldwideRequestedFromFormData,
+  resolveCountrySlugsForVendorSave,
+} from '../../../lib/admin/resolveCountrySlugsForVendorSave';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
@@ -112,10 +116,17 @@ if (Astro.request.method === 'POST') {
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
 
-  // Extract country slugs from form data
-  const countrySlugs = formData.getAll("country_slugs")
+  // Extract country slugs from form data (expanded when Worldwide is checked)
+  const rawCountrySlugs = formData.getAll("country_slugs")
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
+  const allCountrySlugs = (countryOptions || []).map((c: { slug: string }) => c.slug);
+  const countrySlugs = await resolveCountrySlugsForVendorSave(
+    supabaseAdmin,
+    rawCountrySlugs,
+    isWorldwideRequestedFromFormData(formData),
+    allCountrySlugs
+  );
 
   // Extract languages from form data
   const selectedLanguages = formData.getAll("languages")

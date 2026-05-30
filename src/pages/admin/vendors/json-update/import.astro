@@ -4,6 +4,7 @@ export const prerender = false;
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 import { parseUpdateRow, RELATION_CONFIG, RELATION_KEYS } from '../../../../lib/admin/jsonUpdateUtils';
+import { resolveCountrySlugsForImport } from '../../../../lib/admin/worldwideCountries';
 
 const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
@@ -57,29 +58,34 @@ const vendorMap = new Map<string, string>(
   (vendorRows || []).map((v: any) => [v.slug, v.id])
 );
 
-// Batch-fetch all 4 M2M slug→id maps (4 queries in parallel)
+// Batch-fetch M2M slug→id maps (5 queries in parallel)
 const [
   { data: allCategories },
   { data: allTechnologies },
   { data: allIndustries },
   { data: allCertifications },
+  { data: allCountries },
 ] = await Promise.all([
   supabaseAdmin.from('categories').select('id, slug'),
   supabaseAdmin.from('technologies').select('id, slug'),
   supabaseAdmin.from('industries').select('id, slug'),
   supabaseAdmin.from('certifications').select('id, slug'),
+  supabaseAdmin.from('countries').select('id, slug').eq('is_active', true),
 ]);
 
 const categoryMap = new Map((allCategories || []).map((r: any) => [r.slug, r.id]));
 const technologyMap = new Map((allTechnologies || []).map((r: any) => [r.slug, r.id]));
 const industryMap = new Map((allIndustries || []).map((r: any) => [r.slug, r.id]));
 const certificationMap = new Map((allCertifications || []).map((r: any) => [r.slug, r.id]));
+const countryMap = new Map((allCountries || []).map((r: any) => [r.slug, r.id]));
+const allActiveCountrySlugs = (allCountries || []).map((r: any) => r.slug).filter(Boolean);
 
 const relationMaps: Record<string, Map<string, string>> = {
   category_slugs:      categoryMap,
   technology_slugs:    technologyMap,
   industry_slugs:      industryMap,
   certification_slugs: certificationMap,
+  country_slugs:       countryMap,
 };
 
 const results = {
@@ -143,7 +149,11 @@ for (let i = 0; i < parsedData.length; i++) {
     for (const key of RELATION_KEYS) {
       if (!(key in presentRelations)) continue;
 
-      const slugsToLink = presentRelations[key]!;
+      const slugsToLinkRaw = presentRelations[key]!;
+      const slugsToLink =
+        key === 'country_slugs'
+          ? resolveCountrySlugsForImport(slugsToLinkRaw, allActiveCountrySlugs)
+          : slugsToLinkRaw;
       const config = RELATION_CONFIG[key];
       const idMap = relationMaps[key];
 

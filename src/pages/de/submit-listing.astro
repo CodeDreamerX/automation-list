@@ -310,9 +310,20 @@ const LANGUAGES = [
 
           <!-- Belieferte Länder (Suche + Tags; gespeichert als englische Namen) -->
           <div id="countries-served-field">
-            <label for="cs-input" class="block text-sm font-medium text-gray-700 mb-1">Belieferte Länder</label>
-            <p class="text-xs text-gray-500 mb-2">Alle Länder ergänzen, in denen Sie Projekte umsetzen (Suche und Auswahl aus der Liste).</p>
+            <p class="block text-sm font-medium text-gray-700 mb-1">Belieferte Länder</p>
+            <p class="text-xs text-gray-500 mb-2">Alle Länder ergänzen, in denen Sie Projekte umsetzen, oder „Weltweit“ wählen.</p>
+            <button
+              type="button"
+              id="cs-worldwide"
+              class="w-full flex items-center gap-2 px-3 py-2 mb-3 text-sm font-medium text-gray-900 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">🌍</span>
+              Weltweit
+            </button>
             <div id="cs-tags" class="flex flex-wrap gap-1.5 mb-2 min-h-0"></div>
+            <div id="cs-add-countries">
+            <label for="cs-input" class="block text-sm font-medium text-gray-700 mb-1">Länder hinzufügen</label>
             <div class="relative">
               <input
                 type="text"
@@ -329,6 +340,7 @@ const LANGUAGES = [
                 role="listbox"
                 class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-52 overflow-y-auto text-sm"
               ></div>
+            </div>
             </div>
           </div>
 
@@ -407,6 +419,7 @@ const LANGUAGES = [
     countriesServed: { mode: 'de', pairs: COUNTRY_PAIRS },
     strings: {
       countryNoResults: 'Keine Ergebnisse',
+      worldwideLabel: 'Weltweit',
       section2Hide: '− Details ausblenden',
       section2Show: '+ Weitere Details hinzufügen — je mehr Sie angeben, desto schneller wird Ihr Eintrag freigeschaltet',
       validateBanner: 'Bitte korrigieren Sie die markierten Felder vor dem Absenden.',

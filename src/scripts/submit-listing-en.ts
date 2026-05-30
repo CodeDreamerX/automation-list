@@ -6,6 +6,7 @@ initSubmitListing({
   countriesServed: { mode: 'en', countries: ISO_COUNTRIES_EN },
   strings: {
     countryNoResults: 'No results',
+    worldwideLabel: 'Worldwide',
     section2Hide: '− Hide extra details',
     section2Show:
       '+ Add more details — the more you provide, the faster your listing goes live',

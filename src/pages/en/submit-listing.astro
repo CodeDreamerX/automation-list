@@ -310,9 +310,20 @@ const LANGUAGES = [
 
           <!-- Countries served (search + tags; stored as English names for review) -->
           <div id="countries-served-field">
-            <label for="cs-input" class="block text-sm font-medium text-gray-700 mb-1">Countries served</label>
-            <p class="text-xs text-gray-500 mb-2">Add every country where you deliver projects (search and pick from the list).</p>
+            <p class="block text-sm font-medium text-gray-700 mb-1">Countries served</p>
+            <p class="text-xs text-gray-500 mb-2">Add every country where you deliver projects, or select Worldwide.</p>
+            <button
+              type="button"
+              id="cs-worldwide"
+              class="w-full flex items-center gap-2 px-3 py-2 mb-3 text-sm font-medium text-gray-900 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">🌍</span>
+              Worldwide
+            </button>
             <div id="cs-tags" class="flex flex-wrap gap-1.5 mb-2 min-h-0"></div>
+            <div id="cs-add-countries">
+            <label for="cs-input" class="block text-sm font-medium text-gray-700 mb-1">Add countries</label>
             <div class="relative">
               <input
                 type="text"
@@ -329,6 +340,7 @@ const LANGUAGES = [
                 role="listbox"
                 class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-52 overflow-y-auto text-sm"
               ></div>
+            </div>
             </div>
           </div>
 
@@ -407,6 +419,7 @@ const LANGUAGES = [
     countriesServed: { mode: 'en', countries: ISO_COUNTRIES_EN },
     strings: {
       countryNoResults: 'No results',
+      worldwideLabel: 'Worldwide',
       section2Hide: '− Hide extra details',
       section2Show: '+ Add more details — the more you provide, the faster your listing goes live',
       validateBanner: 'Please fix the highlighted fields before submitting.',
