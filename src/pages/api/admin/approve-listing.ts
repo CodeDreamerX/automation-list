@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 import { successResponse, errorResponse } from '../../../lib/api/responses';
+import { resolveCountriesServedNamesForApproval } from '../../../lib/admin/worldwideCountries';
 
 export const prerender = false;
 
@@ -135,9 +136,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const techSlugs = Array.isArray(technology_slugs)   ? technology_slugs   : [];
   const indSlugs  = Array.isArray(industry_slugs)     ? industry_slugs     : [];
   const certSlugs = Array.isArray(certification_slugs)? certification_slugs: [];
-  const countriesServed = Array.isArray(countries_served)
+  const rawCountriesServed = Array.isArray(countries_served)
     ? countries_served.map((value: unknown) => String(value).trim()).filter(Boolean)
     : [];
+
+  const { data: activeCountries } = await supabaseAdmin
+    .from('countries')
+    .select('name_en')
+    .eq('is_active', true);
+  const allActiveCountryNamesEn = (activeCountries || [])
+    .map((row: { name_en: string }) => row.name_en)
+    .filter(Boolean);
+
+  const countriesServed = resolveCountriesServedNamesForApproval(
+    rawCountriesServed,
+    allActiveCountryNamesEn
+  );
 
   await insertM2M('categories',    'vendor_categories',    'category_id',    catSlugs);
   await insertM2M('technologies',  'vendor_technologies',  'technology_id',  techSlugs);

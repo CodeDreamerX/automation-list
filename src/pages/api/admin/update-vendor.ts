@@ -4,6 +4,14 @@ import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 import { mapFormVariantToDbVariant } from '../../../lib/vendors/logoBackgroundVariant';
 import { successResponse, errorResponse } from '../../../lib/api/responses';
 import { calculateCompletenessScore } from '../../../lib/vendors/completenessScore';
+import {
+  COUNTRIES_SERVED_WORLDWIDE_FIELD,
+  isCountriesServedWorldwideFormValue,
+} from '../../../lib/admin/worldwideCountries';
+import {
+  isWorldwideRequestedFromBody,
+  resolveCountrySlugsForVendorSave,
+} from '../../../lib/admin/resolveCountrySlugsForVendorSave';
 
 export const prerender = false;
 
@@ -22,6 +30,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let industrySlugs: string[] = [];
     let certificationSlugs: string[] = [];
     let countrySlugs: string[] = [];
+    let worldwideRequested = false;
 
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       // Handle FormData
@@ -49,6 +58,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       countrySlugs = form.getAll("country_slugs")
         .map((s) => String(s).trim())
         .filter(Boolean);
+      worldwideRequested = isCountriesServedWorldwideFormValue(
+        form.get(COUNTRIES_SERVED_WORLDWIDE_FIELD)
+      );
       const selectedLanguages = form.getAll("languages")
         .map((s) => String(s).trim())
         .filter(Boolean);
@@ -135,7 +147,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       if (body.industry_slugs) industrySlugs = [body.industry_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
       if (body.certification_slugs) certificationSlugs = [body.certification_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
       if (body.country_slugs) countrySlugs = [body.country_slugs].flat().map((s: any) => String(s).trim()).filter(Boolean);
+      worldwideRequested = isWorldwideRequestedFromBody(body);
     }
+
+    countrySlugs = await resolveCountrySlugsForVendorSave(
+      supabaseAdmin,
+      countrySlugs,
+      worldwideRequested
+    );
 
     // Normalize website URL: add https:// if missing
     if (updateData.website && typeof updateData.website === 'string') {

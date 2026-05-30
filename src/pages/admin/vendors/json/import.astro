@@ -5,6 +5,7 @@ import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import { supabase } from '../../../../lib/supabaseClient';
 import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 import { normalizeJsonRow, validateRow } from '../../../../lib/admin/jsonUtils';
+import { resolveCountrySlugsForImport } from '../../../../lib/admin/worldwideCountries';
 import {
   buildCountryCanonicalLookup,
   resolveCanonicalCountryName,
@@ -67,6 +68,7 @@ if (Astro.request.method === 'POST') {
   const industryMap = new Map((allIndustries || []).map((r: any) => [r.slug, r.id]));
   const certificationMap = new Map((allCertifications || []).map((r: any) => [r.slug, r.id]));
   const countryMap = new Map((allCountries || []).map((r: any) => [r.slug, r.id]));
+  const allActiveCountrySlugs = (allCountries || []).map((r: any) => r.slug).filter(Boolean);
 
   // Normalize all rows
   const normalizedData: any[] = [];
@@ -231,7 +233,11 @@ if (Astro.request.method === 'POST') {
       }
 
       // Insert vendor_countries
-      for (const slug of row._countrySlugs || []) {
+      const countrySlugsToLink = resolveCountrySlugsForImport(
+        row._countrySlugs || [],
+        allActiveCountrySlugs
+      );
+      for (const slug of countrySlugsToLink) {
         const countryId = countryMap.get(slug);
         if (countryId) {
           const { error: err } = await supabaseAdmin

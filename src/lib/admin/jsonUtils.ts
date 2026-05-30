@@ -1,6 +1,15 @@
 // JSON import schema and validation utilities
 
 import { vendorLanguageSet } from './languageOptions';
+import { WORLDWIDE_COUNTRY_SENTINEL } from './worldwideCountries';
+
+function normalizeCountrySlugToken(raw: string): string {
+  const trimmed = String(raw).trim();
+  if (trimmed.toUpperCase() === WORLDWIDE_COUNTRY_SENTINEL) {
+    return WORLDWIDE_COUNTRY_SENTINEL;
+  }
+  return trimmed.toLowerCase();
+}
 
 export const allowedFields = [
   "name",
@@ -75,7 +84,7 @@ export function normalizeJsonRow(row: any): any {
     : [];
   normalized._countrySlugs = Array.isArray(normalized.country_slugs)
     ? (normalized.country_slugs as string[])
-        .map((s) => String(s).trim().toLowerCase())
+        .map((s) => normalizeCountrySlugToken(String(s)))
         .filter(Boolean)
     : [];
 
@@ -153,7 +162,10 @@ export function validateRow(
     ? (row._certificationSlugs || []).filter((s: string) => !validSlugs.certifications.has(s))
     : [];
   const unknownCountries = validSlugs
-    ? (row._countrySlugs || []).filter((s: string) => !validSlugs.countries.has(s))
+    ? (row._countrySlugs || []).filter(
+        (s: string) =>
+          s !== WORLDWIDE_COUNTRY_SENTINEL && !validSlugs.countries.has(s)
+      )
     : [];
 
   let unknownLanguages: string[] = [];

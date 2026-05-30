@@ -6,6 +6,7 @@ import type { CertificationFormOption } from '../../types/certification';
 import type { CountryFormOption } from '../../types/country';
 import FormSection from './FormSection.astro';
 import { VENDOR_LANGUAGE_OPTIONS } from '../../lib/admin/languageOptions';
+import { deriveWorldwideState } from '../../lib/admin/worldwideCountries';
 
 interface CategorizationSectionProps {
   vendor: any;
@@ -34,6 +35,12 @@ const certificationsByCategory = certifications.reduce((acc: Record<string, Cert
 }, {});
 
 const certificationEntries = Object.entries(certificationsByCategory) as [string, CertificationFormOption[]][];
+
+const allCountrySlugs = countries.map((c: CountryFormOption) => c.slug);
+const { worldwide: worldwideCountriesChecked } = deriveWorldwideState(
+  vendor?.country_slugs || [],
+  allCountrySlugs
+);
 
 ---
 
@@ -189,7 +196,7 @@ const certificationEntries = Object.entries(certificationsByCategory) as [string
   </div>
 
   <!-- Countries Served -->
-  <div class="cat-section" data-expanded="false">
+  <div class="cat-section" id="countries-served-section" data-expanded="false">
     <button type="button" class="cat-section-header w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-left transition-colors" aria-expanded="false">
       <h2 class="text-base font-semibold text-gray-800">Countries Served</h2>
       <div class="flex items-center gap-2">
@@ -203,27 +210,76 @@ const certificationEntries = Object.entries(certificationsByCategory) as [string
       {countries.length === 0 ? (
         <p class="text-sm text-gray-500">No countries available. Run DB migration to populate.</p>
       ) : (
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {countries.map((country: CountryFormOption) => {
-            const checked = vendor?.country_slugs?.includes(country.slug);
-            return (
-              <label class="flex items-center gap-2 cursor-pointer" data-search-text={country.name_en.toLowerCase()}>
-                <input type="checkbox" name="country_slugs" value={country.slug} checked={checked} />
-                <span class="flex items-center gap-1.5">
-                  {country.flag_emoji && <img src={`https://flagcdn.com/16x12/${country.flag_emoji.toLowerCase()}.png`} width="16" height="12" alt="" class="inline-block" />}
-                  {country.name_en}
-                </span>
-              </label>
-            );
-          })}
-        </div>
+        <>
+          <label
+            class="flex items-center gap-2 cursor-pointer w-full pb-3 mb-3 border-b border-gray-200"
+            data-search-text="worldwide"
+          >
+            <input
+              type="checkbox"
+              id="countries-served-worldwide"
+              name="countries_served_worldwide"
+              value="1"
+              checked={worldwideCountriesChecked}
+            />
+            <span class="flex items-center gap-1.5 font-medium text-gray-900">
+              <span aria-hidden="true">🌍</span>
+              Worldwide
+            </span>
+          </label>
+          <div id="countries-served-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {countries.map((country: CountryFormOption) => {
+              const checked =
+                worldwideCountriesChecked || vendor?.country_slugs?.includes(country.slug);
+              return (
+                <label class="flex items-center gap-2 cursor-pointer" data-search-text={country.name_en.toLowerCase()}>
+                  <input
+                    type="checkbox"
+                    name="country_slugs"
+                    value={country.slug}
+                    checked={checked}
+                    disabled={worldwideCountriesChecked}
+                    class="country-served-cb"
+                  />
+                  <span class="flex items-center gap-1.5">
+                    {country.flag_emoji && <img src={`https://flagcdn.com/16x12/${country.flag_emoji.toLowerCase()}.png`} width="16" height="12" alt="" class="inline-block" />}
+                    {country.name_en}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   </div>
 </FormSection>
 
 <script>
+  import { initCountriesServedWorldwide } from './categorization-worldwide';
+
+  function updateCountriesServedCount(section: Element) {
+    const badge = section.querySelector('.cat-section-badge');
+    if (!badge) return;
+    const worldwide = section.querySelector<HTMLInputElement>('#countries-served-worldwide')?.checked;
+    const countryChecked = section.querySelectorAll('.country-served-cb:checked').length;
+    if (worldwide) {
+      badge.textContent = 'WW';
+      badge.classList.remove('hidden');
+    } else if (countryChecked > 0) {
+      badge.textContent = String(countryChecked);
+      badge.classList.remove('hidden');
+    } else {
+      badge.textContent = '';
+      badge.classList.add('hidden');
+    }
+  }
+
   function updateSectionCount(section: Element) {
+    if (section.id === 'countries-served-section') {
+      updateCountriesServedCount(section);
+      return;
+    }
     const checked = section.querySelectorAll('input[type="checkbox"]:checked').length;
     const badge = section.querySelector('.cat-section-badge');
     if (!badge) return;
@@ -253,6 +309,19 @@ const certificationEntries = Object.entries(certificationsByCategory) as [string
   document.addEventListener('DOMContentLoaded', () => {
     const sections = Array.from(document.querySelectorAll('.cat-section'));
     const searchInput = document.getElementById('cat-search') as HTMLInputElement | null;
+
+    const countriesSection = document.getElementById('countries-served-section');
+    if (countriesSection) {
+      initCountriesServedWorldwide(
+        countriesSection,
+        Array.from(countriesSection.querySelectorAll<HTMLInputElement>('.country-served-cb')).map(
+          (cb: HTMLInputElement) => cb.value
+        )
+      );
+      countriesSection.addEventListener('countries-served-changed', () => {
+        updateCountriesServedCount(countriesSection);
+      });
+    }
 
     // Init counts and toggle handlers
     sections.forEach((section) => {

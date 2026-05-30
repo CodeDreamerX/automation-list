@@ -1,5 +1,6 @@
 export interface SubmitListingStrings {
   countryNoResults: string;
+  worldwideLabel: string;
   section2Hide: string;
   section2Show: string;
   validateBanner: string;
@@ -29,6 +30,8 @@ function el<T extends HTMLElement>(id: string): T {
 
 export function initSubmitListing(options: SubmitListingInitOptions): void {
   const { strings, country: countryCfg, countriesServed: csCfg } = options;
+
+  const WORLDWIDE_SENTINEL = 'WORLDWIDE';
 
   const countryInput = el<HTMLInputElement>('country-input');
   const countryValue = el<HTMLInputElement>('country-value');
@@ -151,10 +154,52 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
 
   // --- Countries served (canonical English names; tag UI) ---
   const countriesServedSelected = new Set<string>();
+  let countriesServedWorldwide = false;
   const csTags = el<HTMLElement>('cs-tags');
   const csInput = el<HTMLInputElement>('cs-input');
   const csDropdown = el<HTMLElement>('cs-dropdown');
   const csFieldRoot = el<HTMLElement>('countries-served-field');
+  const csWorldwideBtn = el<HTMLButtonElement>('cs-worldwide');
+  const csAddCountries = el<HTMLElement>('cs-add-countries');
+
+  function allCountriesServedEnglish(): string[] {
+    if (csCfg.mode === 'en') return [...csCfg.countries];
+    return csCfg.pairs.map(p => p.en);
+  }
+
+  function isAllCountriesSelected(): boolean {
+    const all = allCountriesServedEnglish();
+    if (all.length === 0) return false;
+    if (countriesServedSelected.size !== all.length) return false;
+    return all.every(name => countriesServedSelected.has(name));
+  }
+
+  function setCountriesServedInputDisabled(disabled: boolean) {
+    csInput.disabled = disabled;
+    csInput.classList.toggle('opacity-50', disabled);
+    csInput.classList.toggle('cursor-not-allowed', disabled);
+    csInput.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    if (disabled) hideCsDropdown();
+  }
+
+  function setWorldwideActive(active: boolean) {
+    countriesServedWorldwide = active;
+    csWorldwideBtn.classList.toggle('border-brand-500', active);
+    csWorldwideBtn.classList.toggle('bg-brand-50', active);
+    csWorldwideBtn.classList.toggle('ring-2', active);
+    csWorldwideBtn.classList.toggle('ring-brand-300', active);
+    csWorldwideBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    csAddCountries.classList.toggle('hidden', active);
+    csTags.classList.toggle('hidden', active);
+    if (active) {
+      countriesServedSelected.clear();
+      setCountriesServedInputDisabled(true);
+      csTags.innerHTML = '';
+    } else {
+      setCountriesServedInputDisabled(false);
+      renderCountriesServedTags();
+    }
+  }
 
   function labelForCountryEn(en: string): string {
     if (csCfg.mode === 'en') return en;
@@ -163,6 +208,8 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
   }
 
   function renderCountriesServedTags() {
+    if (countriesServedWorldwide) return;
+
     csTags.innerHTML = [...countriesServedSelected]
       .map(
         en =>
@@ -179,6 +226,7 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
   }
 
   function buildCsDropdown(query: string) {
+    if (countriesServedWorldwide) return;
     const q = query.trim().toLowerCase();
     const optClass =
       'cs-opt px-3 py-2 cursor-pointer hover:bg-gray-50 text-gray-800';
@@ -234,7 +282,13 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
     if (!(opt instanceof HTMLElement)) return;
     e.preventDefault();
     const en = opt.dataset.en ?? '';
-    if (en) countriesServedSelected.add(en);
+    if (en) {
+      countriesServedSelected.add(en);
+      if (isAllCountriesSelected()) {
+        setWorldwideActive(true);
+        return;
+      }
+    }
     renderCountriesServedTags();
     csInput.value = '';
     buildCsDropdown('');
@@ -248,6 +302,11 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
     if (en) countriesServedSelected.delete(en);
     renderCountriesServedTags();
     buildCsDropdown(csInput.value);
+  });
+
+  csWorldwideBtn.addEventListener('click', () => {
+    setWorldwideActive(!countriesServedWorldwide);
+    if (!countriesServedWorldwide) buildCsDropdown('');
   });
 
   document.addEventListener('pointerdown', e => {
@@ -414,8 +473,9 @@ export function initSubmitListing(options: SubmitListingInitOptions): void {
           '[name="languages"]:checked'
         ),
       ].map(i => i.value),
-      countries_served:
-        countriesServedSelected.size > 0
+      countries_served: countriesServedWorldwide
+        ? [WORLDWIDE_SENTINEL]
+        : countriesServedSelected.size > 0
           ? [...countriesServedSelected]
           : null,
       year_founded: yearVal ? parseInt(yearVal, 10) : null,

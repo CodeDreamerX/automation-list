@@ -6,6 +6,7 @@ initSubmitListing({
   countriesServed: { mode: 'de', pairs: COUNTRY_PAIRS },
   strings: {
     countryNoResults: 'Keine Ergebnisse',
+    worldwideLabel: 'Weltweit',
     section2Hide: '− Details ausblenden',
     section2Show:
       '+ Weitere Details hinzufügen — je mehr Sie angeben, desto schneller wird Ihr Eintrag freigeschaltet',

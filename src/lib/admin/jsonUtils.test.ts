@@ -114,6 +114,17 @@ describe("normalizeJsonRow", () => {
     expect(normalized._countrySlugs).toEqual(["germany", "france"]);
   });
 
+  it("preserves WORLDWIDE sentinel in country_slugs", () => {
+    const normalized = normalizeJsonRow({
+      name: "Acme",
+      slug: "acme",
+      country: "Germany",
+      category_slugs: ["plc"],
+      country_slugs: ["WORLDWIDE"],
+    });
+    expect(normalized._countrySlugs).toEqual(["WORLDWIDE"]);
+  });
+
   it("uses empty arrays when relation slug fields are missing", () => {
     const normalized = normalizeJsonRow({
       name: "Acme",
@@ -216,5 +227,17 @@ describe("validateRow", () => {
     expect(result.unknownCertifications).toEqual(["unknown-cert"]);
     expect(result.unknownCountries).toEqual(["unknown-country"]);
     expect(result.unknownLanguages).toEqual(["Klingon"]);
+  });
+
+  it("does not treat WORLDWIDE as an unknown country slug", () => {
+    const row = normalizeJsonRow({
+      name: "Acme",
+      slug: "acme",
+      country: "Germany",
+      category_slugs: ["plc"],
+      country_slugs: ["WORLDWIDE"],
+    });
+    const result = validateRow(row, 0, ["acme"], validSlugs);
+    expect(result.unknownCountries).toEqual([]);
   });
 });
