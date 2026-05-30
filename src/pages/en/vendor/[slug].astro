@@ -14,6 +14,9 @@ import { getBooleanEnvVar } from '../../../lib/env';
 import { getCountryNameMap, normalizeCountryName, slugifyCountry } from '../../../lib/countryUtils';
 import { buildVendorTitle } from '../../../utils/seo';
 import { getCached, setCached } from '../../../lib/cache';
+import { isWorldwideCountriesServed } from '../../../lib/admin/worldwideCountries';
+import { getCountriesServedDisplayLabel } from '../../../lib/vendors/countriesServedDisplay';
+import { vendorDetailCacheKey } from '../../../lib/vendors/vendorDetailCache';
 
 // Helper function to parse logo background variant from logo URL
 // Supports pattern: __{variant}.{ext} (e.g., logo__dark.svg)
@@ -73,7 +76,7 @@ function getLogoVariant(vendor: any): "light" | "dark" | "neutral" | "brand" {
 // Fetch full vendor data by slug with vendor_categories JOIN
 const { slug } = Astro.params;
 
-const vendorCacheKey = `vendor:detail:${slug}`;
+const vendorCacheKey = vendorDetailCacheKey(slug!);
 let vendorData: any = getCached(vendorCacheKey);
 if (!vendorData) {
   const { data, error } = await supabase
@@ -404,9 +407,18 @@ const languages = normalizedVendor.languages ? splitValue(normalizedVendor.langu
 
 // Prepare industries data
 const allIndustries = normalizedVendor.vendor_industries || [];
-const servedCountries = (normalizedVendor.vendor_countries || [])
-  .map((vc: any) => vc?.countries?.name_en || vc?.countries?.name_de)
-  .filter(Boolean);
+const countriesServedField = vendor.countries_served ?? normalizedVendor.countries_served;
+const isWorldwideServed = isWorldwideCountriesServed(countriesServedField);
+const servedCountryNames = isWorldwideServed
+  ? []
+  : (normalizedVendor.vendor_countries || [])
+      .map((vc: any) => vc?.countries?.name_en || vc?.countries?.name_de)
+      .filter(Boolean);
+const countriesServedDisplay = getCountriesServedDisplayLabel(
+  countriesServedField,
+  servedCountryNames,
+  'en'
+);
 
 // Prepare categories data (show everywhere, not just for Pro)
 const allCategories = normalizedVendor.vendor_categories || [];
@@ -792,11 +804,11 @@ const shouldCollapseDescription = descriptionWordCount > 200;
             )}
           </div>
         )}
-        {servedCountries.length > 0 && (
+        {countriesServedDisplay && (
           <div>
             <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Countries Served</p>
-            {hasProAccess ? (
-              <p class="text-sm font-medium text-gray-900">{servedCountries.join(', ')}</p>
+            {isWorldwideServed || hasProAccess ? (
+              <p class="text-sm font-medium text-gray-900">{countriesServedDisplay}</p>
             ) : (
               <span class="inline-flex items-center gap-1 text-xs text-gray-400 select-none">🔒 Pro only</span>
             )}

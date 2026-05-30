@@ -4,7 +4,7 @@ export const prerender = false;
 import { protectAdminRoute } from '../../../../lib/admin/authUtils';
 import { supabaseAdmin } from '../../../../lib/supabaseAdminClient';
 import { parseUpdateRow, RELATION_CONFIG, RELATION_KEYS } from '../../../../lib/admin/jsonUpdateUtils';
-import { resolveCountrySlugsForImport } from '../../../../lib/admin/worldwideCountries';
+import { resolveCountriesServedForSave } from '../../../../lib/admin/worldwideCountries';
 
 const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
@@ -78,7 +78,6 @@ const technologyMap = new Map((allTechnologies || []).map((r: any) => [r.slug, r
 const industryMap = new Map((allIndustries || []).map((r: any) => [r.slug, r.id]));
 const certificationMap = new Map((allCertifications || []).map((r: any) => [r.slug, r.id]));
 const countryMap = new Map((allCountries || []).map((r: any) => [r.slug, r.id]));
-const allActiveCountrySlugs = (allCountries || []).map((r: any) => r.slug).filter(Boolean);
 
 const relationMaps: Record<string, Map<string, string>> = {
   category_slugs:      categoryMap,
@@ -150,10 +149,18 @@ for (let i = 0; i < parsedData.length; i++) {
       if (!(key in presentRelations)) continue;
 
       const slugsToLinkRaw = presentRelations[key]!;
-      const slugsToLink =
-        key === 'country_slugs'
-          ? resolveCountrySlugsForImport(slugsToLinkRaw, allActiveCountrySlugs)
-          : slugsToLinkRaw;
+      let slugsToLink = slugsToLinkRaw;
+      if (key === 'country_slugs') {
+        const countriesSave = resolveCountriesServedForSave(false, slugsToLinkRaw);
+        slugsToLink = countriesSave.countrySlugs;
+        const { error: flagError } = await supabaseAdmin
+          .from('vendors')
+          .update({ countries_served: countriesSave.countriesServed })
+          .eq('id', vendorId);
+        if (flagError) {
+          results.warnings.push(`Row ${rowNum} ("${slug}"): Failed to update countries_served: ${flagError.message}`);
+        }
+      }
       const config = RELATION_CONFIG[key];
       const idMap = relationMaps[key];
 

@@ -11,8 +11,9 @@ import VendorForm from '../../../components/admin/VendorForm.astro';
 import { normalizeVendor } from '../../../lib/vendors/vendorUtils';
 import {
   isWorldwideRequestedFromFormData,
-  resolveCountrySlugsForVendorSave,
+  resolveCountriesServedForVendorSave,
 } from '../../../lib/admin/resolveCountrySlugsForVendorSave';
+import { invalidateVendorDetailCache } from '../../../lib/vendors/vendorDetailCache';
 
 // Handle logout first (before auth check)
 if (Astro.url.searchParams.get('logout') === 'true') {
@@ -120,12 +121,9 @@ if (Astro.request.method === 'POST') {
   const rawCountrySlugs = formData.getAll("country_slugs")
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
-  const allCountrySlugs = (countryOptions || []).map((c: { slug: string }) => c.slug);
-  const countrySlugs = await resolveCountrySlugsForVendorSave(
-    supabaseAdmin,
-    rawCountrySlugs,
+  const { countrySlugs, countriesServed } = resolveCountriesServedForVendorSave(
     isWorldwideRequestedFromFormData(formData),
-    allCountrySlugs
+    rawCountrySlugs
   );
 
   // Extract languages from form data
@@ -155,6 +153,7 @@ if (Astro.request.method === 'POST') {
     taking_new_projects: formData.get('taking_new_projects') === 'on',
     linkedin_url: formData.get('linkedin_url')?.toString() || null,
     specialization_text: formData.get('specialization_text')?.toString() || null,
+    countries_served: countriesServed,
     plan: formData.get('plan')?.toString() || 'free',
     priority: formData.get('priority')?.toString() ? parseInt(formData.get('priority')!.toString()) : null,
     featured: formData.get('featured') === 'on',
@@ -204,6 +203,11 @@ if (Astro.request.method === 'POST') {
   if (updateError) {
     console.error('Error updating vendor:', updateError);
     return Astro.redirect(`/admin/edit/${vendorId}?error=update_failed`);
+  }
+
+  invalidateVendorDetailCache(updateData.slug);
+  if (updateData.slug !== slug) {
+    invalidateVendorDetailCache(slug);
   }
 
   // Update vendor_categories: delete all existing entries and reinsert new ones

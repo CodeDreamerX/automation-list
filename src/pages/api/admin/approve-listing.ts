@@ -2,7 +2,11 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabaseAdminClient';
 import { protectAdminApiRoute } from '../../../lib/admin/authUtils';
 import { successResponse, errorResponse } from '../../../lib/api/responses';
-import { resolveCountriesServedNamesForApproval } from '../../../lib/admin/worldwideCountries';
+import {
+  isWorldwideCountrySlugsInput,
+  WORLDWIDE_COUNTRY_SENTINEL,
+} from '../../../lib/admin/worldwideCountries';
+import { invalidateVendorDetailCache } from '../../../lib/vendors/vendorDetailCache';
 
 export const prerender = false;
 
@@ -38,6 +42,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     ? languages.join(', ')
     : null;
 
+  const rawCountriesServed = Array.isArray(countries_served)
+    ? countries_served.map((value: unknown) => String(value).trim()).filter(Boolean)
+    : [];
+  const worldwide = isWorldwideCountrySlugsInput(rawCountriesServed);
+  const countriesServedNames = worldwide
+    ? []
+    : rawCountriesServed.filter((n) => n.toUpperCase() !== WORLDWIDE_COUNTRY_SENTINEL);
+
   const now = new Date().toISOString();
 
   const vendorData = {
@@ -57,6 +69,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     year_founded: year_founded ? (Number(year_founded) || null) : null,
     employee_count: employee_count || null,
     taking_new_projects: taking_new_projects === true ? true : taking_new_projects === false ? false : null,
+    countries_served: worldwide ? WORLDWIDE_COUNTRY_SENTINEL : null,
     // Admin defaults for new vendor
     plan: 'free',
     priority: 5,
@@ -136,30 +149,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const techSlugs = Array.isArray(technology_slugs)   ? technology_slugs   : [];
   const indSlugs  = Array.isArray(industry_slugs)     ? industry_slugs     : [];
   const certSlugs = Array.isArray(certification_slugs)? certification_slugs: [];
-  const rawCountriesServed = Array.isArray(countries_served)
-    ? countries_served.map((value: unknown) => String(value).trim()).filter(Boolean)
-    : [];
-
-  const { data: activeCountries } = await supabaseAdmin
-    .from('countries')
-    .select('name_en')
-    .eq('is_active', true);
-  const allActiveCountryNamesEn = (activeCountries || [])
-    .map((row: { name_en: string }) => row.name_en)
-    .filter(Boolean);
-
-  const countriesServed = resolveCountriesServedNamesForApproval(
-    rawCountriesServed,
-    allActiveCountryNamesEn
-  );
 
   await insertM2M('categories',    'vendor_categories',    'category_id',    catSlugs);
   await insertM2M('technologies',  'vendor_technologies',  'technology_id',  techSlugs);
   await insertM2M('industries',    'vendor_industries',    'industry_id',    indSlugs);
   await insertM2M('certifications','vendor_certifications','certification_id',certSlugs);
 
-  // Persist countries served as structured M2M rows (source of truth).
-  for (const countryName of countriesServed) {
+  // Persist countries served as structured M2M rows (skipped when worldwide).
+  for (const countryName of countriesServedNames) {
     const countryId = await resolveCountryId(countryName);
     if (countryId) {
       await supabaseAdmin
@@ -183,6 +180,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   supabaseAdmin.functions.invoke('send-vendor-email', {
     body: { pendingListingId: id, emailType: 'approved', vendorId },
   }).catch((err: unknown) => console.error('Email trigger error (approve):', err));
+
+  invalidateVendorDetailCache(slug.trim());
 
   return successResponse({ vendor_id: vendorId });
 };

@@ -8,8 +8,9 @@ import { mapFormVariantToDbVariant } from '../../lib/vendors/logoBackgroundVaria
 import { calculateCompletenessScore } from '../../lib/vendors/completenessScore';
 import {
   isWorldwideRequestedFromFormData,
-  resolveCountrySlugsForVendorSave,
+  resolveCountriesServedForVendorSave,
 } from '../../lib/admin/resolveCountrySlugsForVendorSave';
+import { invalidateVendorDetailCache } from '../../lib/vendors/vendorDetailCache';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import VendorForm from '../../components/admin/VendorForm.astro';
 
@@ -124,12 +125,9 @@ if (Astro.request.method === 'POST') {
   const rawCountrySlugs = formData.getAll("country_slugs")
     .map((slug) => String(slug).trim())
     .filter((slug) => slug.length > 0);
-  const allCountrySlugs = (countryOptions || []).map((c: { slug: string }) => c.slug);
-  const countrySlugs = await resolveCountrySlugsForVendorSave(
-    supabaseAdmin,
-    rawCountrySlugs,
+  const { countrySlugs, countriesServed } = resolveCountriesServedForVendorSave(
     isWorldwideRequestedFromFormData(formData),
-    allCountrySlugs
+    rawCountrySlugs
   );
 
   // Extract languages from form data
@@ -158,6 +156,7 @@ if (Astro.request.method === 'POST') {
     hourly_rate: formData.get('hourly_rate')?.toString() || null,
     taking_new_projects: formData.get('taking_new_projects') === 'on',
     linkedin_url: formData.get('linkedin_url')?.toString() || null,
+    countries_served: countriesServed,
     specialization_text: formData.get('specialization_text')?.toString() || null,
     plan: formData.get('plan')?.toString() || 'free',
     priority: formData.get('priority')?.toString() ? parseInt(formData.get('priority')!.toString()) : null,
@@ -314,6 +313,7 @@ if (Astro.request.method === 'POST') {
   }
 
   // Redirect to edit page of the newly created vendor
+  invalidateVendorDetailCache(insertData.slug);
   if (vendor?.id) {
     return Astro.redirect(`/admin/edit/${vendor.id}`);
   } else {

@@ -10,8 +10,9 @@ import {
 } from '../../../lib/admin/worldwideCountries';
 import {
   isWorldwideRequestedFromBody,
-  resolveCountrySlugsForVendorSave,
+  resolveCountriesServedForVendorSave,
 } from '../../../lib/admin/resolveCountrySlugsForVendorSave';
+import { invalidateVendorDetailCache } from '../../../lib/vendors/vendorDetailCache';
 
 export const prerender = false;
 
@@ -150,11 +151,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       worldwideRequested = isWorldwideRequestedFromBody(body);
     }
 
-    countrySlugs = await resolveCountrySlugsForVendorSave(
-      supabaseAdmin,
-      countrySlugs,
-      worldwideRequested
+    const countriesServedSave = resolveCountriesServedForVendorSave(
+      worldwideRequested,
+      countrySlugs
     );
+    countrySlugs = countriesServedSave.countrySlugs;
+    updateData.countries_served = countriesServedSave.countriesServed;
 
     // Normalize website URL: add https:// if missing
     if (updateData.website && typeof updateData.website === 'string') {
@@ -186,6 +188,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       console.error('Error updating vendor:', error);
       return errorResponse(error.message || 'Failed to update vendor', 500);
     }
+
+    invalidateVendorDetailCache(updateData.slug);
 
     // Update vendor_categories: delete all existing entries and reinsert new ones
     await supabaseAdmin.from('vendor_categories').delete().eq('vendor_id', id);

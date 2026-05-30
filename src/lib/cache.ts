@@ -55,6 +55,17 @@ export function setCached<T>(key: string, data: T, ttlSeconds: number): void {
 }
 
 /**
+ * Remove a single cache entry by key
+ */
+export function deleteCached(key: string): void {
+  try {
+    cache.delete(key);
+  } catch (error) {
+    console.error('Cache delete error:', error);
+  }
+}
+
+/**
  * Clear expired entries from cache (optional cleanup function)
  */
 export function clearExpired(): void {

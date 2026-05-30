@@ -453,11 +453,12 @@ const csInput    = document.getElementById('cs-input');
 const csDropdown = document.getElementById('cs-dropdown');
 
 function renderCSTags() {
-  csTags.innerHTML = [...selectedCS].map(c =>
-    `<span class="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-200 text-brand-700 text-xs rounded-full">
-       ${c}<button type="button" class="cs-rm text-brand-400 hover:text-brand-700 ml-0.5 text-base leading-none" data-c="${c}">&times;</button>
-     </span>`
-  ).join('');
+  csTags.innerHTML = [...selectedCS].map(c => {
+    const label = String(c).trim().toUpperCase() === 'WORLDWIDE' ? 'Worldwide' : c;
+    return `<span class="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-200 text-brand-700 text-xs rounded-full">
+       ${label}<button type="button" class="cs-rm text-brand-400 hover:text-brand-700 ml-0.5 text-base leading-none" data-c="${c}">&times;</button>
+     </span>`;
+  }).join('');
 }
 renderCSTags(); // pre-populate from server data
 
