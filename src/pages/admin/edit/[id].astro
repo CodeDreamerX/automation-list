@@ -194,6 +194,14 @@ if (Astro.request.method === 'POST') {
   // Add updated_at timestamp
   updateData.updated_at = new Date().toISOString();
 
+  // Fetch current slug before update so we can invalidate the old cache entry if it changed
+  const { data: currentVendor } = await supabaseAdmin
+    .from('vendors')
+    .select('slug')
+    .eq('id', vendorId)
+    .single();
+  const oldSlug = currentVendor?.slug ?? null;
+
   // Update vendor using admin client
   const { error: updateError } = await supabaseAdmin
     .from('vendors')
@@ -206,8 +214,8 @@ if (Astro.request.method === 'POST') {
   }
 
   invalidateVendorDetailCache(updateData.slug);
-  if (updateData.slug !== slug) {
-    invalidateVendorDetailCache(slug);
+  if (oldSlug && oldSlug !== updateData.slug) {
+    invalidateVendorDetailCache(oldSlug);
   }
 
   // Update vendor_categories: delete all existing entries and reinsert new ones
