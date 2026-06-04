@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const meta_title_de = body.get("meta_title_de");
     const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
-    const is_active = body.get("is_active") ? true : false;
+    const force_active = body.get("force_active") ? true : false;
     const faq_en_raw = body.get("faq_en");
     const faq_de_raw = body.get("faq_de");
 
@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       meta_title_de: meta_title_de?.toString().trim() || null,
       icon_name: icon_name?.toString().trim() || null,
       order_index: order_index ? parseInt(order_index.toString()) : null,
-      is_active: is_active,
+      force_active: force_active,
       faq_en: parseFaq(faq_en_raw),
       faq_de: parseFaq(faq_de_raw),
     };

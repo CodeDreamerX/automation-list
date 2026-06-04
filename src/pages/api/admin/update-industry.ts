@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const meta_title_de = body.get("meta_title_de");
     const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
-    const is_active = body.get("is_active") ? true : false;
+    const force_active = body.get("force_active") ? true : false;
     const faq_en_raw = body.get("faq_en");
     const faq_de_raw = body.get("faq_de");
 
@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       updateData.order_index = null;
     }
-    updateData.is_active = is_active;
+    updateData.force_active = force_active;
     updateData.faq_en = parseFaq(faq_en_raw);
     updateData.faq_de = parseFaq(faq_de_raw);
 

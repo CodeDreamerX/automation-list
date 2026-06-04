@@ -252,18 +252,35 @@ const formAction = isNewIndustry
         <p class="text-xs text-gray-500 mt-1">Lower numbers appear first (0, 1, 2, ...)</p>
       </div>
       
-      <div class="flex items-center pt-6">
+      <div class="flex flex-col gap-3 pt-6">
+        <div>
+          <p class="text-sm font-medium text-gray-700 mb-1">Status</p>
+          {isNewIndustry ? (
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              Pending (auto-managed)
+            </span>
+          ) : industry?.status === 'active' || industry?.is_active ? (
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Active
+            </span>
+          ) : (
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              Pending
+            </span>
+          )}
+          <p class="text-xs text-gray-500 mt-1">Managed automatically. Activates at 3 vendors. Use Force Active to override.</p>
+        </div>
         <label class="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
-            id="is_active"
-            name="is_active"
-            checked={industry?.is_active !== false}
+            id="force_active"
+            name="force_active"
+            checked={industry?.force_active === true}
             class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
           />
-          <span class="text-sm font-medium text-gray-700">Active</span>
+          <span class="text-sm font-medium text-gray-700">Force Active</span>
         </label>
-        <p class="text-xs text-gray-500 ml-4">Inactive industries are hidden from public pages</p>
+        <p class="text-xs text-gray-500">Force this industry live regardless of vendor count.</p>
       </div>
     </div>
   </section>
