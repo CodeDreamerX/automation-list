@@ -18,11 +18,11 @@ if (redirectResponse) {
   return redirectResponse;
 }
 
-// Fetch all categories from Supabase
+// Fetch ALL categories (including pending) so admins can assign vendors
+// to categories that haven't reached the activation threshold yet.
 const { data: categories } = await supabaseAdmin
   .from("categories")
   .select("*")
-  .eq("is_active", true)
   .order("order_index", { ascending: true });
 
 // Fetch all technologies from Supabase

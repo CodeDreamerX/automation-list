@@ -25,7 +25,7 @@ const [
   { data: indData },
   { data: certData },
 ] = await Promise.all([
-  supabaseAdmin.from('categories').select('slug, name_en').eq('is_active', true).order('name_en'),
+  supabaseAdmin.from('categories').select('slug, name_en').order('name_en'),
   supabaseAdmin.from('technologies').select('slug, name_en').eq('is_active', true).order('name_en'),
   supabaseAdmin.from('industries').select('slug, name_en').eq('is_active', true).order('name_en'),
   supabaseAdmin.from('certifications').select('slug, name').order('name'),
