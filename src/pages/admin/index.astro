@@ -313,7 +313,7 @@ const { data: vendors, error, count: totalCount } = await query
   .range(offset, offset + PAGE_SIZE - 1);
 
 if (error) {
-  console.error('Error fetching vendors:', summarizeSupabaseError(error));
+  console.error('[admin/index] Error fetching vendors:', summarizeSupabaseError(error));
 }
 
 const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));

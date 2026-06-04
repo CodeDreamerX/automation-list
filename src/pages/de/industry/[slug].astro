@@ -168,7 +168,7 @@ if (cachedResult) {
   const { data, error } = await paginatedQuery;
 
   if (error) {
-    console.error('Error fetching vendors:', summarizeSupabaseError(error));
+    console.error(`[de/industry/${industrySlug}] Error fetching vendors:`, summarizeSupabaseError(error));
     vendors = [];
   } else {
     vendors = data || [];
