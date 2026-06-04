@@ -28,7 +28,11 @@ export interface FaqItem {
  * Display:
  * - icon_name: Icon identifier (e.g., "plcs", "scada-hmi")
  * - order_index: Display order
- * - is_active: Whether category is active
+ * - is_active: Derived — true when status='active' OR force_active=true (managed by DB trigger)
+ *
+ * Status system:
+ * - status: Auto-set to 'active' when vendor count >= 3, else 'pending'
+ * - force_active: Admin override — forces is_active=true regardless of status
  */
 export interface Category {
   id: string;                   // UUID
@@ -43,7 +47,9 @@ export interface Category {
   card_description_de?: string | null; // German card description
   icon_name?: string | null;   // Icon identifier (e.g., "plcs", "scada-hmi")
   order_index?: number | null; // Display order
-  is_active?: boolean | null;         // Whether category is active
+  is_active?: boolean | null;  // Derived: (status='active') OR force_active — do not set directly
+  status?: 'pending' | 'active' | null; // Auto-managed by vendor count trigger
+  force_active?: boolean | null; // Admin override: activates category regardless of vendor count
   meta_title_en?: string | null;
   meta_title_de?: string | null;
   meta_description_en?: string | null;
