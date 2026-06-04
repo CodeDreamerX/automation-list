@@ -5,33 +5,45 @@ import type { VendorWithRelations } from '../../types/vendor';
 interface VendorTableProps {
   vendors: VendorWithRelations[];
   searchQuery?: string;
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
+  totalPages?: number;
 }
 
-const { vendors = [], searchQuery = '' } = Astro.props as VendorTableProps;
+const {
+  vendors = [],
+  searchQuery = '',
+  page = 1,
+  pageSize = 50,
+  totalCount = 0,
+  totalPages = 1,
+} = Astro.props as VendorTableProps;
 
-// Filter vendors based on search query
-let filteredVendors: VendorWithRelations[] = vendors || [];
+// Vendors are already filtered and paginated server-side.
+const filteredVendors: VendorWithRelations[] = vendors;
 
-if (searchQuery) {
-  const query = searchQuery.toLowerCase();
-  filteredVendors = filteredVendors.filter((vendor: VendorWithRelations) => {
-    const nameMatch = vendor.name?.toLowerCase().includes(query) ?? false;
-    const slugMatch = vendor.slug?.toLowerCase().includes(query) ?? false;
-    // Search in vendor_technologies
-    const technologiesMatch = (vendor.vendor_technologies || []).some((vt: any) => {
-      const techNameEn = vt.technologies?.name_en?.toLowerCase() || '';
-      const techNameDe = vt.technologies?.name_de?.toLowerCase() || '';
-      return techNameEn.includes(query) || techNameDe.includes(query);
-    });
-    // Search in vendor_categories
-    const categoryMatch = (vendor.vendor_categories || []).some((vc: any) => {
-      const catNameEn = vc.categories?.name_en?.toLowerCase() || '';
-      const catNameDe = vc.categories?.name_de?.toLowerCase() || '';
-      return catNameEn.includes(query) || catNameDe.includes(query);
-    });
-    const countryMatch = vendor.country?.toLowerCase().includes(query) ?? false;
-    return nameMatch || slugMatch || technologiesMatch || categoryMatch || countryMatch;
-  });
+const rangeStart = (page - 1) * pageSize + 1;
+const rangeEnd = Math.min(page * pageSize, totalCount);
+
+function pageUrl(p: number) {
+  const params = new URLSearchParams();
+  if (searchQuery) params.set('q', searchQuery);
+  if (p > 1) params.set('page', String(p));
+  const qs = params.toString();
+  return `/admin${qs ? `?${qs}` : ''}`;
+}
+
+// Build pagination buttons: numbers near current page + ellipsis gaps
+type PageBtn = { kind: 'page'; num: number; href: string; active: boolean } | { kind: 'gap' };
+const pageButtons: PageBtn[] = [];
+{
+  const nums = Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2);
+  for (let i = 0; i < nums.length; i++) {
+    if (i > 0 && nums[i] - nums[i - 1] > 1) pageButtons.push({ kind: 'gap' });
+    pageButtons.push({ kind: 'page', num: nums[i], href: pageUrl(nums[i]), active: nums[i] === page });
+  }
 }
 
 function formatUpdatedAt(dateStr: string | null | undefined): { label: string; colorClass: string } {
@@ -265,6 +277,58 @@ function completenessColor(score: number): string {
       </tbody>
     </table>
   </div>
+
+  <!-- PAGINATION -->
+  {totalPages > 1 && (
+    <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+      <p class="text-sm text-gray-600">
+        Showing <span class="font-medium">{rangeStart}–{rangeEnd}</span> of <span class="font-medium">{totalCount}</span> vendors
+      </p>
+      <div class="flex items-center gap-1">
+        {page > 1 ? (
+          <a
+            href={pageUrl(page - 1)}
+            class="px-3 py-1.5 text-sm rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            ← Prev
+          </a>
+        ) : (
+          <span class="px-3 py-1.5 text-sm rounded-md bg-white border border-gray-200 text-gray-300 cursor-not-allowed select-none">
+            ← Prev
+          </span>
+        )}
+
+        {pageButtons.map(btn =>
+          btn.kind === 'gap'
+            ? <span class="px-2 py-1.5 text-sm text-gray-400">…</span>
+            : <a
+                href={btn.href}
+                class={`px-3 py-1.5 text-sm rounded-md border transition-colors ${btn.active ? 'bg-black text-white border-black' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+              >{btn.num}</a>
+        )}
+
+        {page < totalPages ? (
+          <a
+            href={pageUrl(page + 1)}
+            class="px-3 py-1.5 text-sm rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Next →
+          </a>
+        ) : (
+          <span class="px-3 py-1.5 text-sm rounded-md bg-white border border-gray-200 text-gray-300 cursor-not-allowed select-none">
+            Next →
+          </span>
+        )}
+      </div>
+    </div>
+  )}
+  {totalPages === 1 && totalCount > 0 && (
+    <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+      <p class="text-sm text-gray-600">
+        Showing all <span class="font-medium">{totalCount}</span> vendor{totalCount !== 1 ? 's' : ''}
+      </p>
+    </div>
+  )}
 </div>
 
 <script is:inline>

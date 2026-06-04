@@ -16,8 +16,8 @@ describe("normalizeVendor", () => {
   it("extracts category slugs by default", () => {
     const vendor = makeVendor({
       vendor_categories: [
-        { categories: { slug: "plc" } },
-        { categories: { slug: "robotics" } },
+        { categories: { id: "c1", slug: "plc" } },
+        { categories: { id: "c2", slug: "robotics" } },
       ],
     });
 
@@ -35,9 +35,9 @@ describe("normalizeVendor", () => {
   it("filters out relations without a slug", () => {
     const vendor = makeVendor({
       vendor_categories: [
-        { categories: { slug: "plc" } },
+        { categories: { id: "c1", slug: "plc" } },
         { categories: null },
-        { categories: { slug: undefined } },
+        { categories: { id: "c3", slug: undefined as unknown as string } },
       ],
     });
 
@@ -46,10 +46,10 @@ describe("normalizeVendor", () => {
 
   it("extracts optional relation slugs when flags are enabled", () => {
     const vendor = makeVendor({
-      vendor_technologies: [{ technologies: { slug: "scada" } }],
-      vendor_industries: [{ industries: { slug: "automotive" } }],
-      vendor_certifications: [{ certifications: { slug: "iso-9001" } }],
-      vendor_countries: [{ countries: { slug: "germany" } }],
+      vendor_technologies: [{ technologies: { id: "t1", slug: "scada", name_en: "SCADA" } }],
+      vendor_industries: [{ industries: { id: "i1", slug: "automotive" } }],
+      vendor_certifications: [{ certifications: { id: "cert1", slug: "iso-9001", name: "ISO 9001" } }],
+      vendor_countries: [{ countries: { id: "co1", slug: "germany", name_en: "Germany" } }],
     });
 
     const normalized = normalizeVendor(vendor, {
@@ -67,7 +67,7 @@ describe("normalizeVendor", () => {
 
   it("does not set technology slugs unless includeTechnologies is true", () => {
     const vendor = makeVendor({
-      vendor_technologies: [{ technologies: { slug: "scada" } }],
+      vendor_technologies: [{ technologies: { id: "t1", slug: "scada", name_en: "SCADA" } }],
     });
 
     const normalized = normalizeVendor(vendor);
@@ -77,7 +77,7 @@ describe("normalizeVendor", () => {
 
   it("does not extract categories when includeCategories is false", () => {
     const vendor = makeVendor({
-      vendor_categories: [{ categories: { slug: "plc" } }],
+      vendor_categories: [{ categories: { id: "c1", slug: "plc" } }],
       category_slugs: ["legacy"],
     });
 
@@ -91,10 +91,10 @@ describe("normalizeVendors", () => {
   it("normalizes each vendor in the array", () => {
     const vendors = [
       makeVendor({
-        vendor_categories: [{ categories: { slug: "plc" } }],
+        vendor_categories: [{ categories: { id: "c1", slug: "plc" } }],
       }),
       makeVendor({
-        vendor_categories: [{ categories: { slug: "robotics" } }],
+        vendor_categories: [{ categories: { id: "c2", slug: "robotics" } }],
       }),
     ];
 

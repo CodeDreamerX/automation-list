@@ -251,18 +251,55 @@ const formAction = isNewCategory
         <p class="text-xs text-gray-500 mt-1">Lower numbers appear first (0, 1, 2, ...)</p>
       </div>
       
-      <div class="flex items-center pt-6">
-        <label class="flex items-center gap-2 cursor-pointer">
+      <!-- Status (read-only, managed by DB trigger) -->
+      <div>
+        <p class="block text-sm font-medium text-gray-700 mb-2">Status</p>
+        {(() => {
+          const status = category?.status ?? 'pending';
+          const forceActive = category?.force_active ?? false;
+          const isForcedOnly = forceActive && status === 'pending';
+          const isActive = category?.is_active ?? false;
+          return (
+            <div class="flex items-center gap-3 flex-wrap">
+              {isForcedOnly ? (
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                  Active (forced)
+                </span>
+              ) : isActive ? (
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Active
+                </span>
+              ) : (
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Pending
+                </span>
+              )}
+              <p class="text-xs text-gray-500">
+                Managed automatically. Activates when {3} vendors are assigned.
+              </p>
+            </div>
+          );
+        })()}
+      </div>
+
+      <!-- Force Active override -->
+      <div class="pt-2">
+        <label class="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
-            id="is_active"
-            name="is_active"
-            checked={category?.is_active !== false}
-            class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+            id="force_active"
+            name="force_active"
+            value="true"
+            checked={category?.force_active === true}
+            class="mt-0.5 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
           />
-          <span class="text-sm font-medium text-gray-700">Active</span>
+          <div>
+            <span class="text-sm font-medium text-gray-700">Force Active</span>
+            <p class="text-xs text-gray-500 mt-0.5">
+              Override automatic status. Use to activate a category before it reaches the vendor threshold.
+            </p>
+          </div>
         </label>
-        <p class="text-xs text-gray-500 ml-4">Inactive categories are hidden from public pages</p>
       </div>
     </div>
   </section>

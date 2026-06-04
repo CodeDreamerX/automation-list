@@ -29,7 +29,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const headline_de = body.get("headline_de");
     const icon_name = body.get("icon_name");
     const order_index = body.get("order_index");
-    const is_active = body.get("is_active") ? true : false;
+    // Checkbox: submitted as "true" when checked, absent when unchecked
+    const force_active = body.get("force_active") === 'true';
     const faq_en_raw = body.get("faq_en");
     const faq_de_raw = body.get("faq_de");
 
@@ -67,7 +68,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       updateData.order_index = null;
     }
-    updateData.is_active = is_active;
+    updateData.force_active = force_active;
+    // is_active is derived by DB trigger — do not set it directly here.
     updateData.faq_en = parseFaq(faq_en_raw);
     updateData.faq_de = parseFaq(faq_de_raw);
 

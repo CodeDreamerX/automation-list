@@ -126,6 +126,7 @@ export interface VendorCategoryRelation {
     slug: string;
     name_en?: string | null;
     name_de?: string | null;
+    is_active?: boolean | null;
   } | null;
 }
 

@@ -5,33 +5,38 @@ import { supabase } from '../../lib/supabaseClient';
 import { protectAdminRoute } from '../../lib/admin/authUtils';
 import AdminLayout from '../../components/admin/AdminLayout.astro';
 import LucideIcon from '../../components/LucideIcon.astro';
+import { thresholdProgress, VENDOR_THRESHOLD } from '../../lib/categoryStatus';
 
-// Check authentication and redirect if not logged in
 const redirectResponse = await protectAdminRoute(Astro.locals);
 if (redirectResponse) {
   return redirectResponse;
 }
 
-// Fetch all categories from Supabase
 const { data: categories, error } = await supabase
   .from('categories')
-  .select('id, slug, name_en, name_de, icon_name, order_index')
-  .order('order_index', { ascending: true });
+  .select('id, slug, name_en, name_de, icon_name, order_index, status, force_active, is_active');
 
 if (error) {
   console.error('Error fetching categories:', error);
 }
 
-// Fetch vendor counts per category
+// Live vendor counts per category from the junction table
 const { data: categoryLinks } = await supabase
   .from('vendor_categories')
   .select('category_id');
 
-const categoryVendorCounts = new Map<string, number>();
+const countMap = new Map<string, number>();
 for (const row of categoryLinks || []) {
-  categoryVendorCounts.set(row.category_id, (categoryVendorCounts.get(row.category_id) || 0) + 1);
+  countMap.set(row.category_id, (countMap.get(row.category_id) || 0) + 1);
 }
 
+// Sort: active first, then force-active pending, then remaining pending — each group by vendor count desc
+const sorted = (categories || []).slice().sort((a, b) => {
+  const aActive = a.is_active ?? false;
+  const bActive = b.is_active ?? false;
+  if (aActive !== bActive) return aActive ? -1 : 1;
+  return (countMap.get(b.id) ?? 0) - (countMap.get(a.id) ?? 0);
+});
 ---
 
 <AdminLayout title="Category Management - Admin Panel" currentPath="/admin/categories">
@@ -41,7 +46,7 @@ for (const row of categoryLinks || []) {
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Category Management</h1>
         <p class="mt-1 text-sm text-gray-600">
-          Manage all categories in the Automation List directory
+          Categories activate automatically when they reach {VENDOR_THRESHOLD} vendors.
         </p>
       </div>
       <div class="flex items-center gap-4">
@@ -63,54 +68,110 @@ for (const row of categoryLinks || []) {
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Icon
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Slug
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Order
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vendors
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Icon</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendors</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Force Active</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            {categories && categories.length > 0 ? (
-              categories.map((category) => {
+            {sorted.length > 0 ? (
+              sorted.map((category) => {
                 const displayName = category.name_en || category.name_de || '-';
+                const vendorCount = countMap.get(category.id) ?? 0;
+                const progress = thresholdProgress(vendorCount);
+                const isActive = category.is_active ?? false;
+                const isForcedOnly = (category.force_active ?? false) && (category.status ?? 'pending') === 'pending';
 
                 return (
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
+                  <tr class="hover:bg-gray-50" data-category-id={category.id}>
+                    <!-- Icon -->
+                    <td class="px-4 py-4 whitespace-nowrap">
                       <div class="flex items-center justify-center w-8 h-8 text-gray-700">
                         <LucideIcon name={category.icon_name} size={20} />
                       </div>
                     </td>
-                    <td class="px-6 py-4">
+
+                    <!-- Name -->
+                    <td class="px-4 py-4">
                       <div class="text-sm font-medium text-gray-900">{displayName}</div>
                       {category.name_en && category.name_de && (
                         <div class="text-xs text-gray-500">{category.name_de}</div>
                       )}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{category.slug || '-'}</div>
+
+                    <!-- Slug -->
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-600">{category.slug || '-'}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{category.order_index ?? '-'}</div>
+
+                    <!-- Order -->
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-600">{category.order_index ?? '-'}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{categoryVendorCounts.get(category.id) ?? 0}</div>
+
+                    <!-- Vendors + progress -->
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900 font-medium">{vendorCount}</div>
+                      {!isActive && (
+                        <div class="mt-1 w-20">
+                          <div class="flex items-center gap-1">
+                            <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                class="h-full bg-yellow-400 rounded-full transition-all"
+                                style={`width: ${progress.pct}%`}
+                              ></div>
+                            </div>
+                            <span class="text-xs text-gray-400 whitespace-nowrap">{progress.label}</span>
+                          </div>
+                        </div>
+                      )}
+                      {isActive && !isForcedOnly && (
+                        <div class="text-xs text-green-600 mt-0.5">Threshold met</div>
+                      )}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+
+                    <!-- Status badge -->
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      {isForcedOnly ? (
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                          Active (forced)
+                        </span>
+                      ) : isActive ? (
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
+                      ) : (
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Pending
+                        </span>
+                      )}
+                    </td>
+
+                    <!-- Force Active toggle -->
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      <button
+                        type="button"
+                        class={`force-active-btn inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          (category.force_active ?? false)
+                            ? 'bg-black text-white hover:bg-gray-800'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        data-category-id={category.id}
+                        data-force-active={String(category.force_active ?? false)}
+                        aria-pressed={category.force_active ?? false}
+                        title={(category.force_active ?? false) ? 'Click to remove force-active override' : 'Click to force-activate this category'}
+                      >
+                        {(category.force_active ?? false) ? 'On' : 'Off'}
+                      </button>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div class="flex items-center justify-end gap-2">
                         <a
                           href={`/admin/categories/edit/${category.id}`}
@@ -133,7 +194,7 @@ for (const row of categoryLinks || []) {
               })
             ) : (
               <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">
+                <td colspan="8" class="px-6 py-8 text-center text-sm text-gray-500">
                   No categories found.
                 </td>
               </tr>
@@ -154,6 +215,68 @@ for (const row of categoryLinks || []) {
       endpoint: '/api/admin/delete-category',
       entityFallbackName: 'this category',
       errorFallbackMessage: 'Failed to delete category',
+    });
+
+    // Force Active toggle — fetch-based, no page reload
+    document.querySelectorAll<HTMLButtonElement>('.force-active-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.categoryId!;
+        const current = btn.dataset.forceActive === 'true';
+        const next = !current;
+
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+
+        try {
+          const res = await fetch('/api/admin/update-category-force-active', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, force_active: next }),
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert(`Failed to update: ${err.error || res.statusText}`);
+            return;
+          }
+
+          const data = await res.json();
+          const isActive: boolean = data.is_active;
+          const forceActive: boolean = data.force_active;
+          const status: string = data.status;
+
+          // Update button state
+          btn.dataset.forceActive = String(forceActive);
+          btn.setAttribute('aria-pressed', String(forceActive));
+          btn.textContent = forceActive ? 'On' : 'Off';
+          btn.className = `force-active-btn inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            forceActive
+              ? 'bg-black text-white hover:bg-gray-800'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`;
+
+          // Update status badge in same row
+          const row = btn.closest('tr');
+          if (row) {
+            const statusCell = row.querySelector<HTMLElement>('td:nth-child(6)');
+            if (statusCell) {
+              const isForcedOnly = forceActive && status === 'pending';
+              if (isForcedOnly) {
+                statusCell.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Active (forced)</span>`;
+              } else if (isActive) {
+                statusCell.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>`;
+              } else {
+                statusCell.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>`;
+              }
+            }
+          }
+        } catch (e) {
+          alert('Network error. Please try again.');
+        } finally {
+          btn.disabled = false;
+          btn.style.opacity = '';
+        }
+      });
     });
   </script>
 </AdminLayout>
