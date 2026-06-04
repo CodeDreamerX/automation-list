@@ -20,6 +20,11 @@ export interface FaqItem {
 
 /**
  * Raw industry data from database
+ *
+ * Status system (mirrors categories):
+ * - status: auto-set to 'active' when vendor count >= 3, else 'pending'
+ * - force_active: admin override — forces is_active=true regardless of status
+ * - is_active: derived — (status='active') OR force_active — managed by DB trigger, do not set directly
  */
 export interface IndustryDB {
   id: string;
@@ -32,7 +37,9 @@ export interface IndustryDB {
   card_description_de?: string | null;
   icon_name?: string | null;
   order_index?: number | null;
-  is_active?: boolean;
+  is_active?: boolean;  // Derived: (status='active') OR force_active
+  status?: 'pending' | 'active' | null;
+  force_active?: boolean | null;
   meta_description_en?: string | null;
   meta_description_de?: string | null;
   headline_en?: string | null;

@@ -12,7 +12,7 @@ const [
 ] = await Promise.all([
   supabase.from('categories').select('slug, name_en, name_de').order('name_de'),
   supabase.from('technologies').select('slug, name_en, name_de').eq('is_active', true).order('name_de'),
-  supabase.from('industries').select('slug, name_en, name_de').eq('is_active', true).order('name_de'),
+  supabase.from('industries').select('slug, name_en, name_de').order('name_de'),
   supabase.from('certifications').select('slug, name').order('name'),
 ]);
 
