@@ -6,6 +6,9 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
+// TODO: add size/TTL limit — this Map is unbounded; consider evicting the oldest
+// entries when size exceeds a threshold (e.g. 500 keys) to prevent memory growth
+// in long-running SSR processes.
 const cache = new Map<string, CacheEntry<any>>();
 
 /**
