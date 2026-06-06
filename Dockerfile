@@ -42,7 +42,7 @@ EXPOSE 4321
 ENV PORT=4321
 ENV HOST=0.0.0.0
 
-CMD ["node", "./dist/server/entry.mjs"]
+CMD ["node", "--max-old-space-size=384", "./dist/server/entry.mjs"]
 
 
 
