@@ -1,0 +1,21 @@
+---
+description: Reminds the AI that supabase/functions/ contains Deno edge functions, not Node.js SSR code
+globs: supabase/functions/**
+alwaysApply: false
+---
+
+# supabase/functions/ — Deno Edge Functions (NOT Node.js SSR)
+
+The `supabase/functions/` folder contains **Supabase Edge Functions** that run on Deno Deploy, Supabase's serverless infrastructure. They are completely separate from the Astro SSR Node.js process in `src/`.
+
+- Runtime: **Deno** (not Node.js)
+- Deployed to: **Supabase Deno Deploy** (not the app server)
+- Memory space: isolated per Deno isolate — unrelated to the Node.js SSR heap
+- Imports: use ESM CDN URLs (`https://esm.sh/...`), not `node_modules`
+
+## Consequences
+
+- SSR memory fixes (e.g. Node.js singleton patterns in `src/lib/`) have **no effect** on these files.
+- Do not suggest Node.js-specific APIs, `require()`, or `node_modules` imports here.
+- The correct Supabase client pattern here is a module-level singleton (created once per cold start), not per-request — but this is a **Deno isolate** optimisation, not an SSR memory concern.
+- Do not confuse these functions with Astro API routes in `src/pages/api/`.

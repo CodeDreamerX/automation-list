@@ -1,3 +1,10 @@
+# Supabase
+
+> **Edge functions** (Deno Deploy) are documented separately in [`functions/README.md`](./functions/README.md).
+> They run on Supabase's infrastructure and are independent of the Astro SSR Node.js process.
+
+---
+
 # Supabase Database Setup
 
 ## Initial Setup

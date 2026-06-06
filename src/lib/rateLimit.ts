@@ -8,6 +8,9 @@ interface RateLimitEntry {
   firstAttempt: number; // Timestamp of first attempt in this window
 }
 
+// TODO: add size/TTL limit — rateLimitStore is unbounded; a high-traffic server
+// receiving many unique IPs could grow this Map without bound despite the
+// probabilistic cleanup. Consider a hard cap with LRU eviction.
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 /**
