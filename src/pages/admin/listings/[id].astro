@@ -60,7 +60,7 @@ function normalizeInitialCountriesServed(raw: unknown): string[] {
   return [];
 }
 
-const isActioned = listing.status === 'approved' || listing.status === 'rejected';
+const isActioned = listing.status === 'approved' || listing.status === 'rejected' || listing.status === 'spam';
 
 const initialSlug = nameToSlug(listing.name || '');
 const categorySlugs     = (listing.category_slugs     || []) as string[];
@@ -98,6 +98,9 @@ function fmtDate(iso: string) {
           )}
           {listing.status === 'rejected' && (
             <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Rejected</span>
+          )}
+          {listing.status === 'spam' && (
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">Spam</span>
           )}
         </p>
       </div>
@@ -369,8 +372,15 @@ function fmtDate(iso: string) {
       <div id="reject-panel" class="hidden bg-red-50 border border-red-200 rounded-xl p-5 space-y-3">
         <h2 class="text-sm font-semibold text-red-800">Reject this submission</h2>
         <div>
-          <label for="reject-reason" class="block text-xs font-medium text-red-700 mb-1">Reason (optional — sent to applicant log)</label>
+          <label for="reject-reason" class="block text-xs font-medium text-red-700 mb-1">Reason (optional — sent to applicant)</label>
           <textarea id="reject-reason" rows="3" class="w-full px-3 py-2 text-sm border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-300 bg-white resize-y" placeholder="e.g. Duplicate, incomplete information, outside scope..."></textarea>
+        </div>
+        <div>
+          <label class="flex items-center gap-2 text-sm text-red-800 cursor-pointer select-none">
+            <input type="checkbox" id="reject-spam" class="rounded border-red-300" />
+            <span class="font-medium">Mark as spam</span>
+            <span class="text-xs text-red-600 font-normal">(no email will be sent, status set to "spam")</span>
+          </label>
         </div>
         <div class="flex gap-3">
           <button type="button" id="reject-confirm-btn" class="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Confirm rejection</button>
@@ -599,6 +609,7 @@ document.getElementById('reject-cancel-btn').addEventListener('click', () => rej
 
 document.getElementById('reject-confirm-btn').addEventListener('click', async () => {
   const reason = document.getElementById('reject-reason').value.trim();
+  const isSpam = document.getElementById('reject-spam').checked;
   const btn = document.getElementById('reject-confirm-btn');
   btn.disabled = true;
   btn.textContent = 'Rejecting…';
@@ -607,7 +618,7 @@ document.getElementById('reject-confirm-btn').addEventListener('click', async ()
     const res  = await fetch('/api/admin/reject-listing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: listingId, reject_reason: reason || null }),
+      body: JSON.stringify({ id: listingId, reject_reason: reason || null, is_spam: isSpam }),
     });
     const data = await res.json();
     if (!res.ok || data.error) {
