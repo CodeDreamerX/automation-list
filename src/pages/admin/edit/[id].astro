@@ -160,6 +160,7 @@ if (Astro.request.method === 'POST') {
     og_member: formData.get('og_member') === 'on',
     featured_until: formData.get('featured_until')?.toString() || null,
     meta_title: formData.get('meta_title')?.toString() || null,
+    meta_title_de: formData.get('meta_title_de')?.toString() || null,
     meta_description: formData.get('meta_description')?.toString() || null,
     canonical_url: formData.get('canonical_url')?.toString() || null,
     logo_url: formData.get('logo_url')?.toString() || null,
